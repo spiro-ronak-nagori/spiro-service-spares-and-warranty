@@ -294,27 +294,36 @@ export type Database = {
         Row: {
           description_prompt: string | null
           id: string
+          is_required: boolean
           job_card_spare_id: string
           photo_kind: Database["public"]["Enums"]["spare_photo_kind"]
           photo_url: string
+          prompt: string | null
+          slot_index: number | null
           uploaded_at: string
           uploaded_by: string
         }
         Insert: {
           description_prompt?: string | null
           id?: string
+          is_required?: boolean
           job_card_spare_id: string
           photo_kind: Database["public"]["Enums"]["spare_photo_kind"]
           photo_url: string
+          prompt?: string | null
+          slot_index?: number | null
           uploaded_at?: string
           uploaded_by: string
         }
         Update: {
           description_prompt?: string | null
           id?: string
+          is_required?: boolean
           job_card_spare_id?: string
           photo_kind?: Database["public"]["Enums"]["spare_photo_kind"]
           photo_url?: string
+          prompt?: string | null
+          slot_index?: number | null
           uploaded_at?: string
           uploaded_by?: string
         }
@@ -330,43 +339,55 @@ export type Database = {
       }
       job_card_spares: {
         Row: {
+          approval_state: Database["public"]["Enums"]["approval_state"]
           claim_type: Database["public"]["Enums"]["claim_type"]
           created_at: string
           created_by: string
+          decided_at: string | null
           id: string
           job_card_id: string
+          last_submitted_at: string | null
           part_number: string | null
           qty: number
           serial_number: string | null
           spare_part_id: string
+          submitted_at: string | null
           technician_comment: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          approval_state?: Database["public"]["Enums"]["approval_state"]
           claim_type?: Database["public"]["Enums"]["claim_type"]
           created_at?: string
           created_by: string
+          decided_at?: string | null
           id?: string
           job_card_id: string
+          last_submitted_at?: string | null
           part_number?: string | null
           qty?: number
           serial_number?: string | null
           spare_part_id: string
+          submitted_at?: string | null
           technician_comment?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          approval_state?: Database["public"]["Enums"]["approval_state"]
           claim_type?: Database["public"]["Enums"]["claim_type"]
           created_at?: string
           created_by?: string
+          decided_at?: string | null
           id?: string
           job_card_id?: string
+          last_submitted_at?: string | null
           part_number?: string | null
           qty?: number
           serial_number?: string | null
           spare_part_id?: string
+          submitted_at?: string | null
           technician_comment?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1452,6 +1473,13 @@ export type Database = {
       }
     }
     Enums: {
+      approval_state:
+        | "DRAFT"
+        | "SUBMITTED"
+        | "NEEDS_INFO"
+        | "RESUBMITTED"
+        | "APPROVED"
+        | "REJECTED"
       claim_type: "USER_PAID" | "WARRANTY" | "GOODWILL"
       feedback_question_type: "SCALE_1_5" | "NPS_0_10" | "TEXT"
       feedback_request_status: "PENDING" | "SUBMITTED" | "EXPIRED"
@@ -1601,6 +1629,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      approval_state: [
+        "DRAFT",
+        "SUBMITTED",
+        "NEEDS_INFO",
+        "RESUBMITTED",
+        "APPROVED",
+        "REJECTED",
+      ],
       claim_type: ["USER_PAID", "WARRANTY", "GOODWILL"],
       feedback_question_type: ["SCALE_1_5", "NPS_0_10", "TEXT"],
       feedback_request_status: ["PENDING", "SUBMITTED", "EXPIRED"],
