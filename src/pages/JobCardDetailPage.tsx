@@ -35,7 +35,7 @@ import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/De
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
 import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
-import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare } from '@/hooks/useSparesFlow';
+import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';
@@ -61,6 +61,7 @@ export default function JobCardDetailPage() {
   const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
   const [warrantySpare, setWarrantySpare] = useState<JobCardSpare | null>(null);
+  const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -194,12 +195,24 @@ export default function JobCardDetailPage() {
   };
 
   const handleEditSpare = (spare: JobCardSpare) => {
+    // Block editing non-DRAFT spares
+    if (spare.approval_state !== 'DRAFT') {
+      toast.error('Claim submitted. Withdraw to make changes.');
+      return;
+    }
     setEditingSpare(spare);
     setShowSparesModal(true);
   };
 
   const handleDeleteSpare = async () => {
     if (!deletingSpareId) return;
+    // Find the spare to check state
+    const spare = spares.find(s => s.id === deletingSpareId);
+    if (spare && spare.approval_state !== 'DRAFT') {
+      toast.error('Cannot delete a submitted spare. Withdraw first.');
+      setDeletingSpareId(null);
+      return;
+    }
     try {
       await deleteJobCardSpare(deletingSpareId);
       toast.success('Spare removed');
@@ -208,6 +221,19 @@ export default function JobCardDetailPage() {
       toast.error(err.message || 'Failed to delete spare');
     } finally {
       setDeletingSpareId(null);
+    }
+  };
+
+  const handleWithdrawSpare = async () => {
+    if (!withdrawingSpare || !profile) return;
+    try {
+      await withdrawSpare(withdrawingSpare.id, profile.id);
+      toast.success('Submission withdrawn. You can now edit this spare.');
+      refetchSpares();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to withdraw');
+    } finally {
+      setWithdrawingSpare(null);
     }
   };
 
@@ -558,6 +584,7 @@ export default function JobCardDetailPage() {
             onEditSpare={handleEditSpare}
             onDeleteSpare={(id) => setDeletingSpareId(id)}
             onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
+            onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
             warrantyEnabled={warrantyEnabled}
           />
@@ -720,6 +747,17 @@ export default function JobCardDetailPage() {
         description="Are you sure you want to remove this spare part? This action cannot be undone."
         onConfirm={handleDeleteSpare}
         confirmLabel="Delete"
+        variant="destructive"
+      />
+
+      {/* Withdraw spare confirmation */}
+      <ConfirmationDialog
+        open={!!withdrawingSpare}
+        onOpenChange={(open) => { if (!open) setWithdrawingSpare(null); }}
+        title="Withdraw submission?"
+        description="This claim is already submitted. Withdrawing will reset the submission so you can edit the part/qty/type. Old-part evidence photos and serial will be cleared. Continue?"
+        onConfirm={handleWithdrawSpare}
+        confirmLabel="Withdraw"
         variant="destructive"
       />
     </AppLayout>

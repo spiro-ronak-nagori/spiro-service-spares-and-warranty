@@ -5,7 +5,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send } from 'lucide-react';
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw } from 'lucide-react';
 import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
 
 interface SparesUsedSectionProps {
@@ -15,6 +18,7 @@ interface SparesUsedSectionProps {
   onEditSpare?: (spare: JobCardSpare) => void;
   onDeleteSpare?: (spareId: string) => void;
   onSubmitWarranty?: (spare: JobCardSpare) => void;
+  onWithdrawSpare?: (spare: JobCardSpare) => void;
   canEdit?: boolean;
   warrantyEnabled?: boolean;
 }
@@ -40,6 +44,11 @@ const WARRANTY_STATE_CONFIG: Record<WarrantyDisplayState, { label: string; class
   APPROVED: { label: 'Approved', className: 'bg-green-100 text-green-800 border-green-200' },
   REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200' },
 };
+
+/** Whether a spare line is locked (non-DRAFT = submitted or beyond) */
+function isLocked(spare: JobCardSpare): boolean {
+  return spare.approval_state !== 'DRAFT';
+}
 
 function DocsIndicator({ spare }: { spare: JobCardSpare }) {
   const part = spare.spare_part;
@@ -76,8 +85,6 @@ function WarrantyBadge({ spare, warrantyEnabled }: { spare: JobCardSpare; warran
   if (spare.claim_type === 'USER_PAID') return null;
   const displayState = getWarrantyDisplayState(spare);
 
-  // When warranty flow is OFF, hide non-submitted badges (SUBMISSION_PENDING, READY_TO_SUBMIT)
-  // but keep historically submitted badges visible
   const isSubmittedState = ['SUBMITTED', 'NEEDS_INFO', 'RESUBMITTED', 'APPROVED', 'REJECTED'].includes(displayState);
   if (!warrantyEnabled && !isSubmittedState) return null;
 
@@ -89,7 +96,7 @@ function WarrantyBadge({ spare, warrantyEnabled }: { spare: JobCardSpare; warran
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
       <Card>
@@ -139,125 +146,165 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
           </div>
         ) : (
           <Accordion type="multiple" className="w-full">
-            {spares.map((spare) => (
-              <AccordionItem key={spare.id} value={spare.id}>
-                <AccordionTrigger className="py-3 hover:no-underline">
-                  <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {spare.spare_part?.part_name || 'Unknown Part'}
-                        {spare.spare_part?.part_code && (
-                          <span className="text-muted-foreground font-normal"> ({spare.spare_part.part_code})</span>
-                        )}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <Badge variant="outline" className="text-[10px] h-5 px-1.5">
-                          Qty: {spare.qty}
-                        </Badge>
-                        <Badge
-                          variant={spare.claim_type === 'USER_PAID' ? 'secondary' : 'default'}
-                          className="text-[10px] h-5 px-1.5"
-                        >
-                          {CLAIM_LABEL[spare.claim_type]}
-                        </Badge>
-                        <WarrantyBadge spare={spare} warrantyEnabled={warrantyEnabled} />
-                        <DocsIndicator spare={spare} />
+            {spares.map((spare) => {
+              const locked = isLocked(spare);
+              return (
+                <AccordionItem key={spare.id} value={spare.id}>
+                  <AccordionTrigger className="py-3 hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {spare.spare_part?.part_name || 'Unknown Part'}
+                          {spare.spare_part?.part_code && (
+                            <span className="text-muted-foreground font-normal"> ({spare.spare_part.part_code})</span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                            Qty: {spare.qty}
+                          </Badge>
+                          <Badge
+                            variant={spare.claim_type === 'USER_PAID' ? 'secondary' : 'default'}
+                            className="text-[10px] h-5 px-1.5"
+                          >
+                            {CLAIM_LABEL[spare.claim_type]}
+                          </Badge>
+                          <WarrantyBadge spare={spare} warrantyEnabled={warrantyEnabled} />
+                          <DocsIndicator spare={spare} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-3 pt-1">
-                    {spare.serial_number && (
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">Part Serial#:</span>{' '}
-                        <span className="font-medium">{spare.serial_number}</span>
-                      </div>
-                    )}
-
-                    {spare.technician_comment && (
-                      <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
-                    )}
-
-                    {/* Photos grouped by kind */}
-                    {(() => {
-                      const groups: Record<string, typeof spare.photos> = {};
-                      (spare.photos || []).forEach(p => {
-                        if (!groups[p.photo_kind]) groups[p.photo_kind] = [];
-                        groups[p.photo_kind]!.push(p);
-                      });
-                      return Object.entries(groups).map(([kind, photos]) => (
-                        <div key={kind} className="space-y-1">
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Camera className="h-3 w-3" />
-                            {PHOTO_KIND_LABEL[kind as SparePhotoKind] || kind}
-                          </p>
-                          <div className="flex gap-2 flex-wrap">
-                            {(photos || []).map(photo => (
-                              <a
-                                key={photo.id}
-                                href={photo.photo_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-16 h-16 rounded-md overflow-hidden border bg-muted"
-                              >
-                                <img
-                                  src={photo.photo_url}
-                                  alt={photo.description_prompt || 'Spare photo'}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              </a>
-                            ))}
-                          </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3 pt-1">
+                      {spare.serial_number && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Part Serial#:</span>{' '}
+                          <span className="font-medium">{spare.serial_number}</span>
                         </div>
-                      ));
-                    })()}
+                      )}
 
-                    {/* Submit Warranty CTA — only when warranty flow is ON */}
-                    {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="h-8 text-xs w-full"
-                        onClick={(e) => { e.stopPropagation(); onSubmitWarranty(spare); }}
-                      >
-                        <Send className="h-3 w-3 mr-1" />
-                        Submit {CLAIM_LABEL[spare.claim_type]}
-                      </Button>
-                    )}
+                      {spare.old_part_serial_number && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
+                          <span className="font-medium">{spare.old_part_serial_number}</span>
+                        </div>
+                      )}
 
-                    {/* Edit / Delete buttons */}
-                    {canEdit && (
-                      <div className="flex items-center gap-2 pt-2 border-t">
-                        {onEditSpare && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={(e) => { e.stopPropagation(); onEditSpare(spare); }}
-                          >
-                            <Pencil className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                        )}
-                        {onDeleteSpare && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-destructive hover:text-destructive"
-                            onClick={(e) => { e.stopPropagation(); onDeleteSpare(spare.id); }}
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Delete
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
+                      {spare.technician_comment && (
+                        <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+                      )}
+
+                      {/* Photos grouped by kind */}
+                      {(() => {
+                        const groups: Record<string, typeof spare.photos> = {};
+                        (spare.photos || []).forEach(p => {
+                          if (!groups[p.photo_kind]) groups[p.photo_kind] = [];
+                          groups[p.photo_kind]!.push(p);
+                        });
+                        return Object.entries(groups).map(([kind, photos]) => (
+                          <div key={kind} className="space-y-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Camera className="h-3 w-3" />
+                              {PHOTO_KIND_LABEL[kind as SparePhotoKind] || kind}
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              {(photos || []).map(photo => (
+                                <a
+                                  key={photo.id}
+                                  href={photo.photo_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block w-16 h-16 rounded-md overflow-hidden border bg-muted"
+                                >
+                                  <img
+                                    src={photo.photo_url}
+                                    alt={photo.description_prompt || 'Spare photo'}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+
+                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON */}
+                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 text-xs w-full"
+                          onClick={(e) => { e.stopPropagation(); onSubmitWarranty(spare); }}
+                        >
+                          <Send className="h-3 w-3 mr-1" />
+                          Submit {CLAIM_LABEL[spare.claim_type]}
+                        </Button>
+                      )}
+
+                      {/* Withdraw & Edit — for SUBMITTED spares */}
+                      {canEdit && locked && spare.approval_state === 'SUBMITTED' && onWithdrawSpare && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs w-full"
+                          onClick={(e) => { e.stopPropagation(); onWithdrawSpare(spare); }}
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          Withdraw & Edit
+                        </Button>
+                      )}
+
+                      {/* Edit / Delete buttons — only for DRAFT spares */}
+                      {canEdit && (
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          {locked ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-xs text-muted-foreground">
+                                    Claim submitted. Withdraw to make changes.
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>This spare line is locked because the claim has been submitted. Use "Withdraw & Edit" to reset and make changes.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <>
+                              {onEditSpare && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={(e) => { e.stopPropagation(); onEditSpare(spare); }}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              )}
+                              {onDeleteSpare && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs text-destructive hover:text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); onDeleteSpare(spare.id); }}
+                                >
+                                  <Trash2 className="h-3 w-3 mr-1" />
+                                  Delete
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
           </Accordion>
         )}
       </CardContent>

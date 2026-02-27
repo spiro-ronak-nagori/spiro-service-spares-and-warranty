@@ -94,11 +94,40 @@ export function SparesModal({
 
   const selectPart = (idx: number, partId: string) => {
     const part = parts.find(p => p.id === partId) || null;
+    const prevPartId = lines[idx].spare_part_id;
+
+    // If part changed, clear old-part evidence (serial + photos) since they belong to the old part
+    const partChanged = prevPartId && prevPartId !== partId;
     updateLine(idx, {
       spare_part_id: partId,
       part,
       claim_type: warrantyEnabled ? lines[idx].claim_type : 'USER_PAID',
+      // Clear old-part data when part changes
+      ...(partChanged ? {
+        existingPhotos: lines[idx].existingPhotos.filter(p => p.photo_kind !== 'OLD_PART_EVIDENCE'),
+      } : {}),
     });
+
+    // If editing and part changed, delete OLD_PART_EVIDENCE photos from DB
+    if (partChanged && editingSpare) {
+      supabase
+        .from('job_card_spare_photos' as any)
+        .delete()
+        .eq('job_card_spare_id', editingSpare.id)
+        .eq('photo_kind', 'OLD_PART_EVIDENCE')
+        .then(({ error }) => {
+          if (error) console.error('Failed to clear old-part photos on part change:', error);
+        });
+
+      // Clear old_part_serial_number in DB
+      supabase
+        .from('job_card_spares' as any)
+        .update({ old_part_serial_number: null } as any)
+        .eq('id', editingSpare.id)
+        .then(({ error }) => {
+          if (error) console.error('Failed to clear old_part_serial_number on part change:', error);
+        });
+    }
   };
 
   const addLine = () => setLines(prev => [...prev, emptyLine()]);
