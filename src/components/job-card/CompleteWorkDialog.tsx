@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,15 +11,26 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { JobCard } from '@/types';
+import { AlertCircle, CheckCircle2, Package } from 'lucide-react';
+import { JobCard, JobCardSpare } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CompleteWorkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   jobCard: JobCard;
   onComplete: (remarks: string) => void;
+  sparesEnabled?: boolean;
+  spares?: JobCardSpare[];
+  warrantyEnabled?: boolean;
+  onOpenSparesModal?: () => void;
+}
+
+interface SparesBlocker {
+  missingSpares: boolean;
+  issuesRequiringSpares: string[];
+  lineBlockers: string[];
 }
 
 const MIN_REMARKS_LENGTH = 30;
@@ -29,15 +40,79 @@ export function CompleteWorkDialog({
   onOpenChange,
   jobCard,
   onComplete,
+  sparesEnabled,
+  spares = [],
+  warrantyEnabled,
+  onOpenSparesModal,
 }: CompleteWorkDialogProps) {
   const [remarks, setRemarks] = useState('');
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const { resolve: resolveCategoryName } = useServiceCategoryNames();
+  const [sparesBlocker, setSparesBlocker] = useState<SparesBlocker | null>(null);
+  const [checkingSpares, setCheckingSpares] = useState(false);
 
   const allIssues = jobCard.issue_categories;
   const isRemarksValid = remarks.trim().length >= MIN_REMARKS_LENGTH;
   const allChecked = allIssues.length === 0 || allIssues.every(item => checkedItems.has(item));
-  const canSubmit = isRemarksValid && allChecked;
+  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.lineBlockers.length > 0);
+  const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker;
+
+  // Check spares blockers when dialog opens
+  useEffect(() => {
+    if (open && sparesEnabled) {
+      checkSparesBlockers();
+    } else {
+      setSparesBlocker(null);
+    }
+  }, [open, sparesEnabled, spares]);
+
+  const checkSparesBlockers = async () => {
+    setCheckingSpares(true);
+    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], lineBlockers: [] };
+
+    try {
+      // Check if any selected issue requires spares
+      if (spares.length === 0 && jobCard.issue_categories.length > 0) {
+        const { data: issueRows } = await supabase
+          .from('service_categories')
+          .select('name, code, requires_spares')
+          .in('code', jobCard.issue_categories)
+          .eq('requires_spares', true);
+
+        if (issueRows && issueRows.length > 0) {
+          blocker.missingSpares = true;
+          blocker.issuesRequiringSpares = issueRows.map(r => r.name);
+        }
+      }
+
+      // Check each spare line for missing required fields/photos
+      for (const spare of spares) {
+        const part = spare.spare_part;
+        if (!part) continue;
+        if (part.serial_required && !spare.serial_number) {
+          blocker.lineBlockers.push(`${part.part_name}: Part serial number is required`);
+        }
+        const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
+        if (part.usage_proof_photos_required_count > 0 && proofPhotos.length < part.usage_proof_photos_required_count) {
+          blocker.lineBlockers.push(`${part.part_name}: ${part.usage_proof_photos_required_count} proof photo(s) required, ${proofPhotos.length} uploaded`);
+        }
+        if (warrantyEnabled && spare.claim_type !== 'USER_PAID') {
+          const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
+          const reqCount = spare.claim_type === 'WARRANTY'
+            ? part.warranty_old_part_photos_required_count
+            : part.goodwill_old_part_photos_required_count;
+          if (reqCount > 0 && oldPhotos.length < reqCount) {
+            blocker.lineBlockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check spares blockers:', err);
+    } finally {
+      setSparesBlocker(blocker);
+      setCheckingSpares(false);
+    }
+  };
 
   const handleToggle = (item: string) => {
     const newChecked = new Set(checkedItems);
@@ -63,6 +138,11 @@ export function CompleteWorkDialog({
     onOpenChange(false);
   };
 
+  const handleAddSparesNow = () => {
+    handleClose();
+    onOpenSparesModal?.();
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -74,6 +154,62 @@ export function CompleteWorkDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Spares Blocker Warning */}
+          {hasSparesBlocker && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-medium text-destructive">
+                    {sparesBlocker!.missingSpares
+                      ? 'Spares are required for one or more selected issues. Please add spares before completing work.'
+                      : 'Some spare parts have incomplete documentation.'}
+                  </p>
+
+                  {sparesBlocker!.issuesRequiringSpares.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-destructive mb-1">Issues requiring spares:</p>
+                      <ul className="space-y-1">
+                        {sparesBlocker!.issuesRequiringSpares.map((name, i) => (
+                          <li key={i} className="text-xs text-destructive/80 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                            {name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {sparesBlocker!.lineBlockers.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-destructive mb-1">Missing documentation:</p>
+                      <ul className="space-y-1">
+                        {sparesBlocker!.lineBlockers.map((msg, i) => (
+                          <li key={i} className="text-xs text-destructive/80 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                            {msg}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {onOpenSparesModal && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleAddSparesNow}
+                      className="mt-2"
+                    >
+                      <Package className="h-3.5 w-3.5 mr-1.5" />
+                      Add Spares Now
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Issues Checklist */}
           {allIssues.length > 0 && (
             <div className="space-y-3">

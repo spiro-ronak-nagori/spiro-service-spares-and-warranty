@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Plus, Trash2, Camera, Search, Package } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Camera, Package } from 'lucide-react';
 import { SparePart, ClaimType } from '@/types';
 import { useApplicableSpareParts } from '@/hooks/useSparesFlow';
+import { SearchablePartSelect } from '@/components/job-card/SearchablePartSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -53,18 +54,8 @@ export function SparesModal({
 }: SparesModalProps) {
   const { parts, isLoading: partsLoading, warnings } = useApplicableSpareParts(vehicleModel, vehicleColorCode);
   const [lines, setLines] = useState<SpareLineInput[]>([emptyLine()]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
   const [activeLineIdx, setActiveLineIdx] = useState(0);
-
-  const filteredParts = useMemo(() => {
-    if (!searchTerm.trim()) return parts;
-    const term = searchTerm.toLowerCase();
-    return parts.filter(p =>
-      p.part_name.toLowerCase().includes(term) ||
-      (p.part_code && p.part_code.toLowerCase().includes(term))
-    );
-  }, [parts, searchTerm]);
 
   const updateLine = (idx: number, updates: Partial<SpareLineInput>) => {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
@@ -231,36 +222,14 @@ export function SparesModal({
         {currentLine && (
           <div className="space-y-4">
             {/* Part selector with search */}
-            <div className="space-y-2">
+          <div className="space-y-2">
               <Label>Spare Part *</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search parts..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              {partsLoading ? (
-                <p className="text-xs text-muted-foreground">Loading parts...</p>
-              ) : (
-                <Select
-                  value={currentLine.spare_part_id}
-                  onValueChange={(val) => selectPart(activeLineIdx, val)}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select a part" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-48">
-                    {filteredParts.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.part_name}{p.part_code ? ` (${p.part_code})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <SearchablePartSelect
+                parts={parts}
+                value={currentLine.spare_part_id}
+                onSelect={(val) => selectPart(activeLineIdx, val)}
+                isLoading={partsLoading}
+              />
             </div>
 
             {/* Qty */}

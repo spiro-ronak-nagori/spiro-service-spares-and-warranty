@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Package
 } from 'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
@@ -53,6 +54,7 @@ export default function JobCardDetailPage() {
   const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
+  const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -173,7 +175,7 @@ export default function JobCardDetailPage() {
   const handleStartWork = () => {
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
       if (sparesEnabled) {
-        // Show spares modal first, then proceed
+        setSparesModalFromStartWork(true);
         setShowSparesModal(true);
       } else {
         updateStatus('IN_PROGRESS');
@@ -187,58 +189,6 @@ export default function JobCardDetailPage() {
 
   const handleCompleteWork = async (remarks: string) => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
-
-    // Work completion blockers (Phase 1)
-    if (sparesEnabled) {
-      const blockers: string[] = [];
-
-      // Check if any selected ISSUE requires spares (issues have parent_code set)
-      // issue_categories contains codes of selected issues
-      if (spares.length === 0 && jobCard.issue_categories.length > 0) {
-        try {
-          const { data: issueRows } = await supabase
-            .from('service_categories')
-            .select('name, requires_spares')
-            .in('code', jobCard.issue_categories)
-            .eq('requires_spares', true);
-          if (issueRows && issueRows.length > 0) {
-            const names = issueRows.map(r => r.name).join(', ');
-            blockers.push(`No spares recorded. Required by: ${names}`);
-          }
-        } catch { /* proceed without blocking */ }
-      }
-
-      // Check each spare line for missing required fields/photos
-      for (const spare of spares) {
-        const part = spare.spare_part;
-        if (!part) continue;
-        if (part.serial_required && !spare.serial_number) {
-          blockers.push(`${part.part_name}: Part serial number is required`);
-        }
-        const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
-        if (part.usage_proof_photos_required_count > 0 && proofPhotos.length < part.usage_proof_photos_required_count) {
-          blockers.push(`${part.part_name}: ${part.usage_proof_photos_required_count} proof photo(s) required, ${proofPhotos.length} uploaded`);
-        }
-        // Old part evidence check (warranty flow)
-        if (warrantyEnabled && spare.claim_type !== 'USER_PAID') {
-          const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
-          const reqCount = spare.claim_type === 'WARRANTY'
-            ? part.warranty_old_part_photos_required_count
-            : part.goodwill_old_part_photos_required_count;
-          if (reqCount > 0 && oldPhotos.length < reqCount) {
-            blockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
-          }
-        }
-      }
-
-      if (blockers.length > 0) {
-        toast.error('Cannot complete work', {
-          description: blockers.join('\n'),
-          duration: 8000,
-        });
-        return;
-      }
-    }
 
     updateStatus('READY', { completion_remarks: remarks });
     sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
@@ -442,6 +392,9 @@ export default function JobCardDetailPage() {
           onCompleteWork={() => setShowCompleteWork(true)}
           onConfirmDelivery={handleDeliveryAction}
           onReopenJobCard={() => setShowReopenDialog(true)}
+          sparesEnabled={sparesEnabled}
+          sparesCount={spares.length}
+          onAddSpares={() => setShowSparesModal(true)}
         />
 
         {/* Vehicle & Customer Info */}
@@ -574,7 +527,12 @@ export default function JobCardDetailPage() {
 
         {/* Spares Used Section */}
         {sparesEnabled && (
-          <SparesUsedSection spares={spares} isLoading={sparesLoading} />
+          <SparesUsedSection
+            spares={spares}
+            isLoading={sparesLoading}
+            onAddSpares={() => setShowSparesModal(true)}
+            canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
+          />
         )}
 
         {/* Timeline */}
@@ -672,6 +630,10 @@ export default function JobCardDetailPage() {
         onOpenChange={setShowCompleteWork}
         jobCard={jobCard}
         onComplete={handleCompleteWork}
+        sparesEnabled={sparesEnabled}
+        spares={spares}
+        warrantyEnabled={warrantyEnabled}
+        onOpenSparesModal={() => setShowSparesModal(true)}
       />
 
       <ReopenJobCardDialog
@@ -691,8 +653,8 @@ export default function JobCardDetailPage() {
           open={showSparesModal}
           onOpenChange={(open) => {
             setShowSparesModal(open);
-            if (!open) {
-              // If modal dismissed without saving, still start work
+            if (!open && sparesModalFromStartWork) {
+              setSparesModalFromStartWork(false);
               updateStatus('IN_PROGRESS');
             }
           }}
@@ -716,6 +678,9 @@ interface ActionButtonsProps {
   onCompleteWork: () => void;
   onConfirmDelivery: () => void;
   onReopenJobCard: () => void;
+  sparesEnabled?: boolean;
+  sparesCount?: number;
+  onAddSpares?: () => void;
 }
 
 function ActionButtons({ 
@@ -726,6 +691,9 @@ function ActionButtons({
   onCompleteWork,
   onConfirmDelivery,
   onReopenJobCard,
+  sparesEnabled,
+  sparesCount = 0,
+  onAddSpares,
 }: ActionButtonsProps) {
   const status = jobCard.status;
 
@@ -755,13 +723,27 @@ function ActionButtons({
 
   if (status === 'IN_PROGRESS') {
     return (
-      <Button 
-        className="w-full h-12 text-base"
-        onClick={onCompleteWork}
-        disabled={isUpdating}
-      >
-        Complete Work
-      </Button>
+      <div className="space-y-3">
+        {sparesEnabled && sparesCount === 0 && onAddSpares && (
+          <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+            <p className="text-sm text-destructive flex-1">
+              Action required: Add spares to complete this job card.
+            </p>
+            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={onAddSpares}>
+              <Package className="h-3.5 w-3.5 mr-1" />
+              Add Spares
+            </Button>
+          </div>
+        )}
+        <Button 
+          className="w-full h-12 text-base"
+          onClick={onCompleteWork}
+          disabled={isUpdating}
+        >
+          Complete Work
+        </Button>
+      </div>
     );
   }
 
