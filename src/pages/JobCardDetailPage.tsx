@@ -569,6 +569,11 @@ export default function JobCardDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Spares Used Section */}
+        {sparesEnabled && (
+          <SparesUsedSection spares={spares} isLoading={sparesLoading} />
+        )}
+
         {/* Timeline */}
         <Card>
           <CardHeader 
