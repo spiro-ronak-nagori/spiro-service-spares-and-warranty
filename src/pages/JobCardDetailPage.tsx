@@ -524,7 +524,12 @@ export default function JobCardDetailPage() {
 
         {/* Spares Used Section */}
         {sparesEnabled && (
-          <SparesUsedSection spares={spares} isLoading={sparesLoading} />
+          <SparesUsedSection
+            spares={spares}
+            isLoading={sparesLoading}
+            onAddSpares={() => setShowSparesModal(true)}
+            canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
+          />
         )}
 
         {/* Timeline */}
