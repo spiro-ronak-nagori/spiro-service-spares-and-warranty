@@ -35,6 +35,7 @@ import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/De
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
 import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
+import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
@@ -62,6 +63,7 @@ export default function JobCardDetailPage() {
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
   const [warrantySpare, setWarrantySpare] = useState<JobCardSpare | null>(null);
   const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
+  const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -585,6 +587,7 @@ export default function JobCardDetailPage() {
             onDeleteSpare={(id) => setDeletingSpareId(id)}
             onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
             onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
+            onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
             warrantyEnabled={warrantyEnabled}
           />
