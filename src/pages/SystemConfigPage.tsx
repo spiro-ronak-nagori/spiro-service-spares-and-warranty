@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -68,7 +69,7 @@ const TOGGLE_SETTINGS: SettingItem[] = [
     key: 'ENABLE_WARRANTY_FLOW',
     label: 'Enable Warranty Flow',
     description: 'Controls warranty/goodwill claim types and old-part evidence.',
-    tooltip: 'When enabled, claim types include WARRANTY and GOODWILL with old-part evidence photo requirements. When disabled, all spares default to USER_PAID only.',
+    tooltip: 'When enabled, claim types include WARRANTY and GOODWILL with old-part evidence photo requirements. When disabled, all spares default to USER_PAID only. Existing draft warranty/goodwill claims will be auto-converted to User Paid.',
     icon: ListTree,
   },
 ];
@@ -79,6 +80,10 @@ export default function SystemConfigPage() {
   const [settings, setSettings] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+
+  // Warranty OFF confirmation
+  const [showWarrantyOffConfirm, setShowWarrantyOffConfirm] = useState(false);
+  const [warrantyOffLoading, setWarrantyOffLoading] = useState(false);
 
   const isSystemAdmin = profile?.role === 'system_admin';
   const isSuperAdmin = profile?.role === 'super_admin';
@@ -107,6 +112,16 @@ export default function SystemConfigPage() {
   };
 
   const handleToggle = async (key: string, checked: boolean) => {
+    // Intercept warranty flow OFF → show confirmation
+    if (key === 'ENABLE_WARRANTY_FLOW' && !checked && settings[key]) {
+      setShowWarrantyOffConfirm(true);
+      return;
+    }
+
+    await applyToggle(key, checked);
+  };
+
+  const applyToggle = async (key: string, checked: boolean) => {
     setUpdatingKey(key);
     const prev = settings[key];
     setSettings((s) => ({ ...s, [key]: checked }));
@@ -123,6 +138,34 @@ export default function SystemConfigPage() {
       toast.error(err.message || 'Failed to update setting');
     } finally {
       setUpdatingKey(null);
+    }
+  };
+
+  const handleConfirmWarrantyOff = async () => {
+    setWarrantyOffLoading(true);
+    try {
+      // Auto-convert draft WARRANTY/GOODWILL claims to USER_PAID
+      const { error: convertErr } = await supabase
+        .from('job_card_spares' as any)
+        .update({
+          claim_type: 'USER_PAID',
+          old_part_serial_number: null,
+          claim_comment: null,
+        } as any)
+        .in('claim_type', ['WARRANTY', 'GOODWILL'])
+        .eq('approval_state', 'DRAFT');
+
+      if (convertErr) throw convertErr;
+
+      // Now apply the toggle
+      await applyToggle('ENABLE_WARRANTY_FLOW', false);
+      toast.success('Draft warranty/goodwill claims converted to User Paid');
+    } catch (err: any) {
+      console.error('Failed to convert draft claims:', err);
+      toast.error(err.message || 'Failed to disable warranty flow');
+    } finally {
+      setWarrantyOffLoading(false);
+      setShowWarrantyOffConfirm(false);
     }
   };
 
@@ -215,11 +258,22 @@ export default function SystemConfigPage() {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </CardContent>
               </Card>
-
-
           </>
         )}
       </div>
+
+      {/* Warranty OFF confirmation */}
+      <ConfirmationDialog
+        open={showWarrantyOffConfirm}
+        onOpenChange={setShowWarrantyOffConfirm}
+        title="Disable Warranty Flow?"
+        description="Draft warranty/goodwill entries will be converted to User Paid. Submitted claims will remain unchanged. Continue?"
+        confirmLabel="Disable"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={warrantyOffLoading}
+        onConfirm={handleConfirmWarrantyOff}
+      />
     </AppLayout>
   );
 }
