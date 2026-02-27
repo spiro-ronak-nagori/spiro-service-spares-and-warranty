@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const SEED_EMAIL = "product@spironet.com";
+    const SEED_EMAIL = "ronak.nagori@spironet.com";
     const SEED_PASSWORD = "Spiro@123";
     const SEED_NAME = "System Admin";
 
