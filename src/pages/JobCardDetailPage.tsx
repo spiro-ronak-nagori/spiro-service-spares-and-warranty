@@ -392,6 +392,9 @@ export default function JobCardDetailPage() {
           onCompleteWork={() => setShowCompleteWork(true)}
           onConfirmDelivery={handleDeliveryAction}
           onReopenJobCard={() => setShowReopenDialog(true)}
+          sparesEnabled={sparesEnabled}
+          sparesCount={spares.length}
+          onAddSpares={() => setShowSparesModal(true)}
         />
 
         {/* Vehicle & Customer Info */}
