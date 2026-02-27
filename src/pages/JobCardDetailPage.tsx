@@ -58,6 +58,7 @@ export default function JobCardDetailPage() {
   const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
+  const [mandatorySparesRequired, setMandatorySparesRequired] = useState(false);
   const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
   const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
