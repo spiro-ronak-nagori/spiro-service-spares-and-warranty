@@ -461,7 +461,7 @@ export default function ManageSpareMasterPage() {
                 <Input type="number" min={1} value={form.max_qty_allowed} onChange={e => setForm(f => ({ ...f, max_qty_allowed: parseInt(e.target.value) || 50 }))} />
               </div>
               <div className="space-y-1">
-                <Label>New Part Proof Photos (count)</Label>
+                <Label>Count of new part photos</Label>
                 <Input type="number" min={0} value={form.usage_proof_photos_required_count} onChange={e => handleProofCountChange(parseInt(e.target.value) || 0)} />
               </div>
             </div>
