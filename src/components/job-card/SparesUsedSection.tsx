@@ -331,8 +331,8 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                       {/* Decision info (admin name for APPROVED/REJECTED/NEEDS_INFO) */}
                       <SpareDecisionInfo spare={spare} />
 
-                      {/* Withdraw & Edit — for SUBMITTED spares */}
-                      {canEdit && locked && spare.approval_state === 'SUBMITTED' && onWithdrawSpare && (
+                      {/* Withdraw & Edit — for SUBMITTED/RESUBMITTED spares */}
+                      {canEdit && locked && (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') && onWithdrawSpare && (
                         <Button
                           variant="outline"
                           size="sm"
