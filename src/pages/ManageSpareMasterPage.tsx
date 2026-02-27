@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Package, Plus, ChevronDown, Pencil, Settings2, Link2,
+  Package, Plus, ChevronDown, Pencil, Link2, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SparePart, SparePartApplicability } from '@/types';
@@ -45,10 +45,11 @@ export default function ManageSpareMasterPage() {
   const [form, setForm] = useState({
     part_name: '',
     part_code: '',
-    partno_required: false,
+    active: true,
     serial_required: false,
     max_qty_allowed: 50,
     usage_proof_photos_required_count: 0,
+    usage_proof_photo_prompts: [] as string[],
     warranty_available: true,
     goodwill_available: true,
   });
@@ -79,8 +80,9 @@ export default function ManageSpareMasterPage() {
   const openAddDialog = () => {
     setEditingPart(null);
     setForm({
-      part_name: '', part_code: '', partno_required: false, serial_required: false,
+      part_name: '', part_code: '', active: true, serial_required: false,
       max_qty_allowed: 50, usage_proof_photos_required_count: 0,
+      usage_proof_photo_prompts: [],
       warranty_available: true, goodwill_available: true,
     });
     setShowDialog(true);
@@ -88,49 +90,71 @@ export default function ManageSpareMasterPage() {
 
   const openEditDialog = (part: SparePart) => {
     setEditingPart(part);
+    const prompts = Array.isArray(part.usage_proof_photo_prompts)
+      ? part.usage_proof_photo_prompts
+      : [];
     setForm({
       part_name: part.part_name,
       part_code: part.part_code || '',
-      partno_required: part.partno_required,
+      active: part.active,
       serial_required: part.serial_required,
       max_qty_allowed: part.max_qty_allowed,
       usage_proof_photos_required_count: part.usage_proof_photos_required_count,
+      usage_proof_photo_prompts: prompts,
       warranty_available: part.warranty_available,
       goodwill_available: part.goodwill_available,
     });
     setShowDialog(true);
   };
 
+  // Sync prompts array length to count
+  const handleProofCountChange = (count: number) => {
+    const prompts = [...form.usage_proof_photo_prompts];
+    while (prompts.length < count) prompts.push('');
+    setForm(f => ({
+      ...f,
+      usage_proof_photos_required_count: count,
+      usage_proof_photo_prompts: prompts.slice(0, Math.max(count, prompts.length)),
+    }));
+  };
+
+  const updatePrompt = (idx: number, value: string) => {
+    setForm(f => {
+      const prompts = [...f.usage_proof_photo_prompts];
+      prompts[idx] = value;
+      return { ...f, usage_proof_photo_prompts: prompts };
+    });
+  };
+
   const handleSavePart = async () => {
     if (!form.part_name.trim()) { toast.error('Part name is required'); return; }
+    // Trim prompts to match count, filter empties for storage
+    const finalPrompts = form.usage_proof_photo_prompts
+      .slice(0, form.usage_proof_photos_required_count)
+      .map(p => p.trim() || `Photo ${form.usage_proof_photo_prompts.indexOf(p) + 1}`);
+
     try {
+      const payload = {
+        part_name: form.part_name.trim(),
+        part_code: form.part_code.trim() || null,
+        active: form.active,
+        serial_required: form.serial_required,
+        max_qty_allowed: form.max_qty_allowed,
+        usage_proof_photos_required_count: form.usage_proof_photos_required_count,
+        usage_proof_photo_prompts: JSON.stringify(finalPrompts),
+        warranty_available: form.warranty_available,
+        goodwill_available: form.goodwill_available,
+      };
+
       if (editingPart) {
         const { error } = await supabase.from('spare_parts_master' as any)
-          .update({
-            part_name: form.part_name.trim(),
-            part_code: form.part_code.trim() || null,
-            partno_required: form.partno_required,
-            serial_required: form.serial_required,
-            max_qty_allowed: form.max_qty_allowed,
-            usage_proof_photos_required_count: form.usage_proof_photos_required_count,
-            warranty_available: form.warranty_available,
-            goodwill_available: form.goodwill_available,
-          } as any)
+          .update(payload as any)
           .eq('id', editingPart.id);
         if (error) throw error;
         toast.success('Part updated');
       } else {
         const { error } = await supabase.from('spare_parts_master' as any)
-          .insert({
-            part_name: form.part_name.trim(),
-            part_code: form.part_code.trim() || null,
-            partno_required: form.partno_required,
-            serial_required: form.serial_required,
-            max_qty_allowed: form.max_qty_allowed,
-            usage_proof_photos_required_count: form.usage_proof_photos_required_count,
-            warranty_available: form.warranty_available,
-            goodwill_available: form.goodwill_available,
-          } as any);
+          .insert(payload as any);
         if (error) throw error;
         toast.success('Part created');
       }
@@ -163,15 +187,47 @@ export default function ManageSpareMasterPage() {
 
   const handleAddApplicability = async () => {
     if (!appModelId) { toast.error('Select a model'); return; }
+    const colorCode = appColor === 'ALL' ? null : appColor;
+
+    // Check for exact duplicate
+    const existing = applicability.filter(
+      a => a.spare_part_id === appPartId && a.vehicle_model_id === appModelId
+    );
+    const exactDuplicate = existing.find(a =>
+      (colorCode === null && a.color_code === null) ||
+      (colorCode !== null && a.color_code === colorCode)
+    );
+    if (exactDuplicate) {
+      toast.error('Mapping already exists');
+      return;
+    }
+
+    // Warnings for overlapping mappings
+    const hasAllColors = existing.some(a => a.color_code === null);
+    const hasSpecific = existing.some(a => a.color_code !== null);
+
+    if (colorCode !== null && hasAllColors) {
+      toast.warning(
+        `All-colors mapping already exists. ${colorCode} mapping will override it for ${colorCode} vehicles.`,
+        { duration: 5000 }
+      );
+    }
+    if (colorCode === null && hasSpecific) {
+      toast.warning(
+        'Specific color mappings exist. All-colors will apply only when no specific mapping matches.',
+        { duration: 5000 }
+      );
+    }
+
     try {
       const { error } = await supabase.from('spare_parts_applicability' as any)
         .insert({
           spare_part_id: appPartId,
           vehicle_model_id: appModelId,
-          color_code: appColor === 'ALL' ? null : appColor,
+          color_code: colorCode,
         } as any);
       if (error) {
-        if (error.message.includes('unique_applicability')) {
+        if (error.message.includes('unique') || error.message.includes('duplicate')) {
           toast.error('This mapping already exists');
         } else throw error;
         return;
@@ -217,7 +273,7 @@ export default function ManageSpareMasterPage() {
       <PageHeader
         title="Spare Parts Master"
         showBack
-        backTo="/console"
+        backTo="/console/system-config"
         rightAction={
           <Button size="sm" onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-1" />Add Part
@@ -262,8 +318,12 @@ export default function ManageSpareMasterPage() {
                         </div>
                       </div>
                       <div className="flex gap-2 mt-1 flex-wrap">
-                        {part.partno_required && <Badge variant="outline" className="text-[10px]">Part# Req</Badge>}
                         {part.serial_required && <Badge variant="outline" className="text-[10px]">Serial# Req</Badge>}
+                        {part.usage_proof_photos_required_count > 0 && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {part.usage_proof_photos_required_count} Proof Photo{part.usage_proof_photos_required_count > 1 ? 's' : ''}
+                          </Badge>
+                        )}
                         {part.warranty_available && <Badge variant="outline" className="text-[10px]">Warranty</Badge>}
                         {part.goodwill_available && <Badge variant="outline" className="text-[10px]">Goodwill</Badge>}
                       </div>
@@ -338,17 +398,36 @@ export default function ManageSpareMasterPage() {
                 <Input type="number" min={1} value={form.max_qty_allowed} onChange={e => setForm(f => ({ ...f, max_qty_allowed: parseInt(e.target.value) || 50 }))} />
               </div>
               <div className="space-y-1">
-                <Label>Proof Photos Count</Label>
-                <Input type="number" min={0} value={form.usage_proof_photos_required_count} onChange={e => setForm(f => ({ ...f, usage_proof_photos_required_count: parseInt(e.target.value) || 0 }))} />
+                <Label>New Part Proof Photos (count)</Label>
+                <Input type="number" min={0} value={form.usage_proof_photos_required_count} onChange={e => handleProofCountChange(parseInt(e.target.value) || 0)} />
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Part Number Required</Label>
-                <Switch checked={form.partno_required} onCheckedChange={v => setForm(f => ({ ...f, partno_required: v }))} />
+
+            {/* Proof photo prompts */}
+            {form.usage_proof_photos_required_count > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">New Part Proof Photo Prompts</Label>
+                {Array.from({ length: form.usage_proof_photos_required_count }).map((_, idx) => (
+                  <Input
+                    key={idx}
+                    placeholder={`Prompt for photo ${idx + 1}`}
+                    value={form.usage_proof_photo_prompts[idx] || ''}
+                    onChange={e => updatePrompt(idx, e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                ))}
               </div>
+            )}
+
+            <div className="space-y-3">
+              {editingPart && (
+                <div className="flex items-center justify-between">
+                  <Label>Active</Label>
+                  <Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />
+                </div>
+              )}
               <div className="flex items-center justify-between">
-                <Label>Serial Number Required</Label>
+                <Label>Part Serial Number Required</Label>
                 <Switch checked={form.serial_required} onCheckedChange={v => setForm(f => ({ ...f, serial_required: v }))} />
               </div>
               <div className="flex items-center justify-between">

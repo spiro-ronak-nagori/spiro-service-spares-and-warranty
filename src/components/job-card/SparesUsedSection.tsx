@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Package, Camera, ImageIcon } from 'lucide-react';
+import { Package, Camera } from 'lucide-react';
 import { JobCardSpare, SparePhotoKind } from '@/types';
 
 interface SparesUsedSectionProps {
@@ -41,7 +41,6 @@ export function SparesUsedSection({ spares, isLoading }: SparesUsedSectionProps)
 
   if (spares.length === 0) return null;
 
-  // Group photos by kind for each spare
   const groupPhotos = (photos: JobCardSpare['photos']) => {
     const groups: Record<string, typeof photos> = {};
     (photos || []).forEach(p => {
@@ -89,10 +88,9 @@ export function SparesUsedSection({ spares, isLoading }: SparesUsedSectionProps)
                   </div>
                 </div>
 
-                {/* Part/Serial numbers */}
+                {/* Serial number only */}
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  {spare.part_number && <span>Part#: {spare.part_number}</span>}
-                  {spare.serial_number && <span>Serial#: {spare.serial_number}</span>}
+                  {spare.serial_number && <span>Part Serial#: {spare.serial_number}</span>}
                 </div>
 
                 {spare.technician_comment && (
