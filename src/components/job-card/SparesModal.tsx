@@ -135,6 +135,9 @@ export function SparesModal({
       const part = line.part;
       if (!part) return true;
 
+      // Serial number required check
+      if (part.serial_required && !line.serial_number.trim()) return false;
+
       const existProof = line.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
       const newProof = line.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
       if (part.usage_proof_photos_required_count > 0 && (existProof + newProof) < part.usage_proof_photos_required_count) return false;
