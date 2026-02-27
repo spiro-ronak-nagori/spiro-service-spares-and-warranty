@@ -205,7 +205,7 @@ export default function JobCardDetailPage() {
         const part = spare.spare_part;
         if (!part) continue;
         if (part.serial_required && !spare.serial_number) {
-          blockers.push(`${part.part_name}: Serial number is required`);
+          blockers.push(`${part.part_name}: Part serial number is required`);
         }
         const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
         if (part.usage_proof_photos_required_count > 0 && proofPhotos.length < part.usage_proof_photos_required_count) {
