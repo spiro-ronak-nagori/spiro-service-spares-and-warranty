@@ -498,10 +498,8 @@ export default function ManageSpareMasterPage() {
                 <Label>Part Serial Number Required</Label>
                 <Switch checked={form.serial_required} onCheckedChange={v => setForm(f => ({ ...f, serial_required: v }))} />
               </div>
-              <div className="flex items-center justify-between">
-                <Label>Old Part Serial Number Required</Label>
-                <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
-              </div>
+
+
               <div className="flex items-center justify-between">
                 <Label>Warranty Available</Label>
                 <Switch checked={form.warranty_available} onCheckedChange={v => setForm(f => ({ ...f, warranty_available: v }))} />
@@ -567,6 +565,14 @@ export default function ManageSpareMasterPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Old Part Serial — only relevant when warranty or goodwill is on */}
+              {(form.warranty_available || form.goodwill_available) && (
+                <div className="flex items-center justify-between pl-4 border-l-2 border-muted">
+                  <Label className="text-xs">Old Part Serial Number Required</Label>
+                  <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
                 </div>
               )}
             </div>
