@@ -51,19 +51,14 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
 
   const workshops = useAdminScopeWorkshops();
 
-  const { items, isLoading } = useWarrantyApprovalQueue({
+  const { items, bucketCounts, isLoading } = useWarrantyApprovalQueue({
     status: statusFilter,
     search: search.trim() || undefined,
     workshopId: workshopFilter !== 'all' ? workshopFilter : undefined,
     tatBucket: tatFilter,
   });
 
-  // TAT bucket counts (from current filtered results)
-  const buckets = items.reduce((acc, item) => {
-    const bucket = getTatBucket(item.tat_minutes);
-    acc[bucket] = (acc[bucket] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const totalCount = Object.values(bucketCounts).reduce((sum, c) => sum + c, 0);
 
   return (
     <div className="p-4 space-y-4">

@@ -208,7 +208,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
     fetchQueue();
   }, [fetchQueue]);
 
-  return { items, isLoading, refetch: fetchQueue };
+  return { items, bucketCounts, isLoading, refetch: fetchQueue };
 }
 
 /** Helper to build denormalized action insert */
