@@ -11,11 +11,13 @@ export type JobCardStatus =
 
 export type UserRole = 'technician' | 'workshop_admin' | 'country_admin' | 'super_admin' | 'system_admin' | 'warranty_admin';
 
-export type SpareActionType = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'TECH_RESPONSE' | 'RESUBMIT' | 'EDIT_RESET';
+export type SpareActionType = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'TECH_RESPONSE' | 'RESUBMIT' | 'EDIT_RESET' | 'WITHDRAW';
 
 export interface SpareAction {
   id: string;
   job_card_spare_id: string;
+  job_card_id?: string | null;
+  workshop_id?: string | null;
   action_type: SpareActionType;
   comment: string | null;
   actor_user_id: string;
@@ -216,6 +218,7 @@ export interface JobCardSpare {
   submitted_at: string | null;
   last_submitted_at: string | null;
   decided_at: string | null;
+  submitted_by: string | null;
   created_by: string;
   updated_by: string | null;
   created_at: string;
