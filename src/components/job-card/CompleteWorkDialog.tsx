@@ -50,7 +50,7 @@ export function CompleteWorkDialog({
   const allIssues = jobCard.issue_categories;
   const isRemarksValid = remarks.trim().length >= MIN_REMARKS_LENGTH;
   const allChecked = allIssues.length === 0 || allIssues.every(item => checkedItems.has(item));
-  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.lineBlockers.length > 0);
+  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.docBlockers.length > 0 || sparesBlocker.approvalBlockers.length > 0);
   const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker;
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function CompleteWorkDialog({
 
   const checkSparesBlockers = async () => {
     setCheckingSpares(true);
-    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], lineBlockers: [] };
+    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], docBlockers: [], approvalBlockers: [] };
 
     try {
       if (spares.length === 0 && jobCard.issue_categories.length > 0) {
@@ -83,30 +83,22 @@ export function CompleteWorkDialog({
         const part = spare.spare_part;
         if (!part) continue;
         if (part.serial_required && !spare.serial_number) {
-          blocker.lineBlockers.push(`${part.part_name}: Part serial number is required`);
+          blocker.docBlockers.push(`${part.part_name}: New part serial number is required`);
         }
         const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
         if (part.usage_proof_photos_required_count > 0 && proofPhotos.length < part.usage_proof_photos_required_count) {
-          blocker.lineBlockers.push(`${part.part_name}: ${part.usage_proof_photos_required_count} proof photo(s) required, ${proofPhotos.length} uploaded`);
+          blocker.docBlockers.push(`${part.part_name}: ${part.usage_proof_photos_required_count} proof photo(s) required, ${proofPhotos.length} uploaded`);
         }
         if (warrantyEnabled && spare.claim_type !== 'USER_PAID') {
-          const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
-          const reqCount = spare.claim_type === 'WARRANTY'
-            ? part.warranty_old_part_photos_required_count
-            : part.goodwill_old_part_photos_required_count;
-          if (reqCount > 0 && oldPhotos.length < reqCount) {
-            blocker.lineBlockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
-          }
-
           const isWarranty = spare.claim_type === 'WARRANTY';
           const approvalNeeded = isWarranty ? part.warranty_approval_needed : part.goodwill_approval_needed;
           if (approvalNeeded) {
             if (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') {
-              blocker.lineBlockers.push(`${part.part_name}: ${spare.claim_type} claim pending admin approval`);
+              blocker.approvalBlockers.push(`${part.part_name}: ${spare.claim_type} claim pending admin approval`);
             } else if (spare.approval_state === 'NEEDS_INFO') {
-              blocker.lineBlockers.push(`${part.part_name}: Admin requested more info — respond before completing`);
+              blocker.approvalBlockers.push(`${part.part_name}: Admin requested more info — respond before completing`);
             } else if (spare.approval_state === 'REJECTED') {
-              blocker.lineBlockers.push(`${part.part_name}: ${spare.claim_type} claim rejected — withdraw & edit, change to User Paid, or remove`);
+              blocker.approvalBlockers.push(`${part.part_name}: ${spare.claim_type} claim rejected — withdraw & edit, change to User Paid, or remove`);
             }
           }
         }
