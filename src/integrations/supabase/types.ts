@@ -1383,39 +1383,31 @@ export type Database = {
         Row: {
           active: boolean
           admin_user_id: string
-          country_id: string | null
+          country_ids: string[]
           created_at: string
           created_by: string
           id: string
-          workshop_id: string | null
+          workshop_ids: string[]
         }
         Insert: {
           active?: boolean
           admin_user_id: string
-          country_id?: string | null
+          country_ids?: string[]
           created_at?: string
           created_by: string
           id?: string
-          workshop_id?: string | null
+          workshop_ids?: string[]
         }
         Update: {
           active?: boolean
           admin_user_id?: string
-          country_id?: string | null
+          country_ids?: string[]
           created_at?: string
           created_by?: string
           id?: string
-          workshop_id?: string | null
+          workshop_ids?: string[]
         }
-        Relationships: [
-          {
-            foreignKeyName: "warranty_admin_assignments_workshop_id_fkey"
-            columns: ["workshop_id"]
-            isOneToOne: false
-            referencedRelation: "workshops"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       workshops: {
         Row: {
