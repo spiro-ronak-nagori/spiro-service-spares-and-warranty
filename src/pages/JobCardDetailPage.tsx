@@ -599,6 +599,7 @@ export default function JobCardDetailPage() {
             onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
             onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
             onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
+            onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
             warrantyEnabled={warrantyEnabled}
           />
