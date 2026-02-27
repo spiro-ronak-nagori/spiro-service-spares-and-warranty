@@ -137,16 +137,56 @@ export function SubmitWarrantySheet({
         : part?.goodwill_approval_needed ?? true;
 
       const now = new Date().toISOString();
-      const finalState = needsApproval ? 'SUBMITTED' : 'APPROVED';
 
-      // Update spare with approval_state, serial, comment
+      // --- Resubmission identity logic ---
+      // Check if this spare has ever been submitted before
+      const { data: priorActions } = await supabase
+        .from('job_card_spare_actions' as any)
+        .select('id')
+        .eq('job_card_spare_id', spare.id)
+        .eq('action_type', 'SUBMIT')
+        .limit(1);
+
+      const hasBeenSubmittedBefore = (priorActions && priorActions.length > 0);
+
+      let isResubmission = false;
+      let identityChangedComment: string | null = null;
+
+      if (hasBeenSubmittedBefore) {
+        // Compare current identity with last-submitted snapshot
+        const lastPartId = (spare as any).last_submitted_spare_part_id;
+        const lastQty = (spare as any).last_submitted_qty;
+        const lastClaimType = (spare as any).last_submitted_claim_type;
+
+        const identityMatch =
+          lastPartId === spare.spare_part_id &&
+          lastQty === spare.qty &&
+          lastClaimType === spare.claim_type;
+
+        if (identityMatch) {
+          isResubmission = true;
+        } else {
+          // Identity changed — treat as new submission
+          identityChangedComment = 'Identity changed: treated as new submission';
+        }
+      }
+
+      const submissionState = needsApproval
+        ? (isResubmission ? 'RESUBMITTED' : 'SUBMITTED')
+        : 'APPROVED';
+
+      // Update spare with approval_state, serial, comment, identity snapshot
       const updatePayload: any = {
-        approval_state: finalState,
-        submitted_at: now,
+        approval_state: submissionState,
+        submitted_at: spare.submitted_at || now, // keep original if exists
         last_submitted_at: now,
         old_part_serial_number: oldPartSerial.trim() || null,
         claim_comment: claimComment.trim() || null,
         submitted_by: null as string | null,
+        // Store identity snapshot for future comparisons
+        last_submitted_spare_part_id: spare.spare_part_id,
+        last_submitted_qty: spare.qty,
+        last_submitted_claim_type: spare.claim_type,
       };
       if (!needsApproval) {
         updatePayload.decided_at = now;
@@ -174,14 +214,17 @@ export function SubmitWarrantySheet({
         .maybeSingle();
       workshopId = jcRow?.workshop_id || null;
 
-      // Log SUBMIT action
+      // Log action
       if (userData?.user) {
+        const actionType = isResubmission ? 'RESUBMIT' : 'SUBMIT';
+        const actionComment = identityChangedComment || claimComment.trim() || null;
+
         await supabase.from('job_card_spare_actions' as any).insert({
           job_card_spare_id: spare.id,
           job_card_id: jobCardId,
           workshop_id: workshopId,
-          action_type: 'SUBMIT',
-          comment: claimComment.trim() || null,
+          action_type: actionType,
+          comment: actionComment,
           actor_user_id: userData.user.id,
         } as any);
 
@@ -198,11 +241,8 @@ export function SubmitWarrantySheet({
         }
       }
 
-      toast.success(
-        needsApproval
-          ? `${CLAIM_LABEL[spare.claim_type]} claim submitted`
-          : `${CLAIM_LABEL[spare.claim_type]} claim auto-approved`
-      );
+      const stateLabel = isResubmission ? 'resubmitted' : (needsApproval ? 'submitted' : 'auto-approved');
+      toast.success(`${CLAIM_LABEL[spare.claim_type]} claim ${stateLabel}`);
       setNewPhotos([]);
       setOldPartSerial('');
       setClaimComment('');
