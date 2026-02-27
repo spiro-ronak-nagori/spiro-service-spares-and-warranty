@@ -21,22 +21,30 @@ export default function ManageServiceCategoriesPage() {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryRequiresSpares, setNewCategoryRequiresSpares] = useState(false);
-  const [addingCategory, setAddingCategory] = useState(false);
+
+  // Add category flow (multi-step: name then issues)
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [newIssueName, setNewIssueName] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryIssues, setNewCategoryIssues] = useState<{ name: string; requires_spares: boolean }[]>([]);
+  const [newIssueDraft, setNewIssueDraft] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+
+  // Inline add issue to existing category
   const [addingIssueFor, setAddingIssueFor] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<{ id: string; name: string; requires_spares?: boolean } | null>(null);
+  const [newIssueName, setNewIssueName] = useState('');
+  const [newIssueRequiresSpares, setNewIssueRequiresSpares] = useState(false);
+
+  // Edit
+  const [editingItem, setEditingItem] = useState<{ id: string; name: string; parent_code: string | null; requires_spares: boolean } | null>(null);
   const [editName, setEditName] = useState('');
   const [editRequiresSpares, setEditRequiresSpares] = useState(false);
+
+  // Delete
   const [deletingItem, setDeletingItem] = useState<ServiceCategory | null>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  useEffect(() => { fetchCategories(); }, []);
 
   const fetchCategories = async () => {
     setIsLoading(true);
@@ -59,23 +67,57 @@ export default function ManageServiceCategoriesPage() {
   const parentCategories = categories.filter((c) => !c.parent_code);
   const getIssues = (parentCode: string) => categories.filter((c) => c.parent_code === parentCode);
 
+  // ---- Add Category (with mandatory issues) ----
+  const addIssueToNewCategory = () => {
+    if (!newIssueDraft.trim()) return;
+    setNewCategoryIssues(prev => [...prev, { name: newIssueDraft.trim(), requires_spares: false }]);
+    setNewIssueDraft('');
+  };
+
+  const removeIssueFromNew = (idx: number) => {
+    setNewCategoryIssues(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const toggleNewIssueSpares = (idx: number) => {
+    setNewCategoryIssues(prev => prev.map((iss, i) => i === idx ? { ...iss, requires_spares: !iss.requires_spares } : iss));
+  };
+
   const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return;
+    if (!newCategoryName.trim()) { toast.error('Category name is required'); return; }
+    if (newCategoryIssues.length === 0) { toast.error('Add at least 1 issue before saving'); return; }
     setAddingCategory(true);
     try {
-      const code = newCategoryName.trim().toUpperCase().replace(/\s+/g, '_');
+      const catCode = newCategoryName.trim().toUpperCase().replace(/\s+/g, '_');
       const maxOrder = Math.max(0, ...parentCategories.map((c) => c.sort_order || 0));
-      const { error } = await supabase.from('service_categories').insert({
-        code,
+
+      // Insert category (trigger forces requires_spares=false)
+      const { error: catErr } = await supabase.from('service_categories').insert({
+        code: catCode,
         name: newCategoryName.trim(),
         parent_code: null,
         sort_order: maxOrder + 1,
-        requires_spares: newCategoryRequiresSpares,
+        requires_spares: false,
       } as any);
-      if (error) throw error;
-      toast.success('Category added');
+      if (catErr) throw catErr;
+
+      // Insert issues
+      for (let i = 0; i < newCategoryIssues.length; i++) {
+        const iss = newCategoryIssues[i];
+        const issCode = `${catCode}_${iss.name.toUpperCase().replace(/\s+/g, '_')}`;
+        const { error: issErr } = await supabase.from('service_categories').insert({
+          code: issCode,
+          name: iss.name,
+          parent_code: catCode,
+          sort_order: i + 1,
+          requires_spares: iss.requires_spares,
+        } as any);
+        if (issErr) throw issErr;
+      }
+
+      toast.success('Category created with issues');
       setNewCategoryName('');
-      setNewCategoryRequiresSpares(false);
+      setNewCategoryIssues([]);
+      setNewIssueDraft('');
       setShowAddCategory(false);
       fetchCategories();
     } catch (err: any) {
@@ -85,6 +127,7 @@ export default function ManageServiceCategoriesPage() {
     }
   };
 
+  // ---- Add issue to existing category ----
   const handleAddIssue = async (parentCode: string) => {
     if (!newIssueName.trim()) return;
     try {
@@ -96,10 +139,12 @@ export default function ManageServiceCategoriesPage() {
         name: newIssueName.trim(),
         parent_code: parentCode,
         sort_order: maxOrder + 1,
+        requires_spares: newIssueRequiresSpares,
       } as any);
       if (error) throw error;
       toast.success('Issue added');
       setNewIssueName('');
+      setNewIssueRequiresSpares(false);
       setAddingIssueFor(null);
       fetchCategories();
     } catch (err: any) {
@@ -107,13 +152,13 @@ export default function ManageServiceCategoriesPage() {
     }
   };
 
+  // ---- Edit ----
   const handleEditSave = async () => {
     if (!editingItem || !editName.trim()) return;
     try {
       const updatePayload: any = { name: editName.trim() };
-      // Only update requires_spares for parent categories
-      const cat = categories.find(c => c.id === editingItem.id);
-      if (cat && !cat.parent_code) {
+      // Only allow requires_spares on issue rows (parent_code != null)
+      if (editingItem.parent_code) {
         updatePayload.requires_spares = editRequiresSpares;
       }
       const { error } = await supabase
@@ -129,6 +174,7 @@ export default function ManageServiceCategoriesPage() {
     }
   };
 
+  // ---- Delete ----
   const handleDelete = async () => {
     if (!deletingItem) return;
     try {
@@ -173,34 +219,60 @@ export default function ManageServiceCategoriesPage() {
         }
       />
       <div className="p-4 space-y-3">
+        {/* Add Category flow */}
         {showAddCategory && (
           <Card>
-            <CardContent className="p-3 space-y-2">
-              <div className="flex gap-2 items-center">
+            <CardContent className="p-3 space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Category Name *</Label>
                 <Input
                   placeholder="Category name"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="flex-1 h-9"
+                  className="h-9"
                   autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
                 />
-                <Button size="sm" className="h-9" onClick={handleAddCategory} disabled={addingCategory}>
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" className="h-9" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryRequiresSpares(false); }}>
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
-              <div className="flex items-center gap-2 pl-1">
-                <Switch
-                  id="new-cat-requires-spares"
-                  checked={newCategoryRequiresSpares}
-                  onCheckedChange={setNewCategoryRequiresSpares}
-                />
-                <Label htmlFor="new-cat-requires-spares" className="text-xs text-muted-foreground cursor-pointer">
-                  Requires Spares
-                </Label>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Issues (at least 1 required) *</Label>
+                {newCategoryIssues.map((iss, idx) => (
+                  <div key={idx} className="flex items-center gap-2 pl-3 py-1 bg-muted/50 rounded">
+                    <span className="text-sm flex-1">{iss.name}</span>
+                    {iss.requires_spares && (
+                      <Badge variant="secondary" className="text-[10px] gap-0.5">
+                        <Package className="h-2.5 w-2.5" />Spares
+                      </Badge>
+                    )}
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-xs" onClick={() => toggleNewIssueSpares(idx)}>
+                      <Package className={`h-3 w-3 ${iss.requires_spares ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => removeIssueFromNew(idx)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-1 items-center pl-3">
+                  <Input
+                    placeholder="Issue name"
+                    value={newIssueDraft}
+                    onChange={(e) => setNewIssueDraft(e.target.value)}
+                    className="h-7 text-sm flex-1"
+                    onKeyDown={(e) => e.key === 'Enter' && addIssueToNewCategory()}
+                  />
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={addIssueToNewCategory}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="ghost" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryIssues([]); setNewIssueDraft(''); }}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleAddCategory} disabled={addingCategory}>
+                  Save Category
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -227,34 +299,25 @@ export default function ManageServiceCategoriesPage() {
                         <div className="flex items-center gap-2">
                           <ListTree className="h-4 w-4 text-muted-foreground" />
                           {editingItem?.id === cat.id ? (
-                            <div className="flex gap-1 items-center flex-wrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-1 items-center" onClick={(e) => e.stopPropagation()}>
                               <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-sm w-40" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleEditSave()} />
-                              <div className="flex items-center gap-1">
-                                <Switch
-                                  checked={editRequiresSpares}
-                                  onCheckedChange={setEditRequiresSpares}
-                                  className="scale-75"
-                                />
-                                <span className="text-[10px] text-muted-foreground">Spares</span>
-                              </div>
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleEditSave}><Check className="h-3 w-3" /></Button>
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingItem(null)}><X className="h-3 w-3" /></Button>
                             </div>
                           ) : (
                             <span className="font-medium text-sm">{cat.name}</span>
                           )}
-                          {cat.requires_spares && editingItem?.id !== cat.id && (
-                            <Badge variant="secondary" className="text-[10px] gap-0.5">
-                              <Package className="h-2.5 w-2.5" />
-                              Spares
-                            </Badge>
-                          )}
                           <span className="text-xs text-muted-foreground">({issues.length})</span>
                         </div>
                         <div className="flex items-center gap-1">
                           {editingItem?.id !== cat.id && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setEditingItem({ id: cat.id, name: cat.name, requires_spares: cat.requires_spares }); setEditName(cat.name); setEditRequiresSpares(cat.requires_spares); }}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingItem({ id: cat.id, name: cat.name, parent_code: null, requires_spares: false });
+                                setEditName(cat.name);
+                                setEditRequiresSpares(false);
+                              }}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); setDeletingItem(cat); }}>
@@ -271,16 +334,35 @@ export default function ManageServiceCategoriesPage() {
                         {issues.map((issue) => (
                           <div key={issue.id} className="flex items-center justify-between pl-6 py-1">
                             {editingItem?.id === issue.id ? (
-                              <div className="flex gap-1 items-center flex-1">
-                                <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-sm flex-1" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleEditSave()} />
+                              <div className="flex gap-1 items-center flex-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                                <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-sm flex-1 min-w-[120px]" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleEditSave()} />
+                                <div className="flex items-center gap-1">
+                                  <Switch
+                                    checked={editRequiresSpares}
+                                    onCheckedChange={setEditRequiresSpares}
+                                    className="scale-75"
+                                  />
+                                  <span className="text-[10px] text-muted-foreground">Spares</span>
+                                </div>
                                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleEditSave}><Check className="h-3 w-3" /></Button>
                                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingItem(null)}><X className="h-3 w-3" /></Button>
                               </div>
                             ) : (
                               <>
-                                <span className="text-sm">{issue.name}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm">{issue.name}</span>
+                                  {issue.requires_spares && (
+                                    <Badge variant="secondary" className="text-[10px] gap-0.5">
+                                      <Package className="h-2.5 w-2.5" />Spares
+                                    </Badge>
+                                  )}
+                                </div>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => { setEditingItem({ id: issue.id, name: issue.name }); setEditName(issue.name); }}>
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => {
+                                    setEditingItem({ id: issue.id, name: issue.name, parent_code: issue.parent_code, requires_spares: issue.requires_spares });
+                                    setEditName(issue.name);
+                                    setEditRequiresSpares(issue.requires_spares);
+                                  }}>
                                     <Pencil className="h-3 w-3" />
                                   </Button>
                                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => setDeletingItem(issue)}>
@@ -292,10 +374,23 @@ export default function ManageServiceCategoriesPage() {
                           </div>
                         ))}
                         {addingIssueFor === cat.code ? (
-                          <div className="flex gap-1 items-center pl-6">
-                            <Input placeholder="Issue name" value={newIssueName} onChange={(e) => setNewIssueName(e.target.value)} className="h-7 text-sm flex-1" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAddIssue(cat.code)} />
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleAddIssue(cat.code)}><Check className="h-3 w-3" /></Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setAddingIssueFor(null); setNewIssueName(''); }}><X className="h-3 w-3" /></Button>
+                          <div className="pl-6 space-y-1">
+                            <div className="flex gap-1 items-center">
+                              <Input placeholder="Issue name" value={newIssueName} onChange={(e) => setNewIssueName(e.target.value)} className="h-7 text-sm flex-1" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAddIssue(cat.code)} />
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleAddIssue(cat.code)}><Check className="h-3 w-3" /></Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setAddingIssueFor(null); setNewIssueName(''); setNewIssueRequiresSpares(false); }}><X className="h-3 w-3" /></Button>
+                            </div>
+                            <div className="flex items-center gap-2 pl-1">
+                              <Switch
+                                id="new-issue-requires-spares"
+                                checked={newIssueRequiresSpares}
+                                onCheckedChange={setNewIssueRequiresSpares}
+                                className="scale-75"
+                              />
+                              <Label htmlFor="new-issue-requires-spares" className="text-[10px] text-muted-foreground cursor-pointer">
+                                Requires Spares
+                              </Label>
+                            </div>
                           </div>
                         ) : (
                           <Button variant="ghost" size="sm" className="h-7 text-xs ml-6" onClick={() => setAddingIssueFor(cat.code)}>

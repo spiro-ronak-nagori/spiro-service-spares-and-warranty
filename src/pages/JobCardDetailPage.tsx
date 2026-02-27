@@ -185,19 +185,27 @@ export default function JobCardDetailPage() {
     refetchSpares();
   };
 
-  const handleCompleteWork = (remarks: string) => {
+  const handleCompleteWork = async (remarks: string) => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
 
     // Work completion blockers (Phase 1)
     if (sparesEnabled) {
       const blockers: string[] = [];
 
-      // Check if any service/issue category requires spares
-      const allCats = [...jobCard.service_categories, ...jobCard.issue_categories];
-      // We need to check requires_spares - fetch from cache or check spares count
-      if (spares.length === 0) {
-        // Simple check: if spares flow is on and no spares added, warn but don't hard-block
-        // unless we know a category requires it (we'll do a soft check here)
+      // Check if any selected ISSUE requires spares (issues have parent_code set)
+      // issue_categories contains codes of selected issues
+      if (spares.length === 0 && jobCard.issue_categories.length > 0) {
+        try {
+          const { data: issueRows } = await supabase
+            .from('service_categories')
+            .select('name, requires_spares')
+            .in('code', jobCard.issue_categories)
+            .eq('requires_spares', true);
+          if (issueRows && issueRows.length > 0) {
+            const names = issueRows.map(r => r.name).join(', ');
+            blockers.push(`No spares recorded. Required by: ${names}`);
+          }
+        } catch { /* proceed without blocking */ }
       }
 
       // Check each spare line for missing required fields/photos
