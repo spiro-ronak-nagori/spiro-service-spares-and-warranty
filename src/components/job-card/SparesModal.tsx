@@ -54,8 +54,8 @@ export function SparesModal({
 }: SparesModalProps) {
   const { parts, isLoading: partsLoading, warnings } = useApplicableSpareParts(vehicleModel, vehicleColorCode);
   const [lines, setLines] = useState<SpareLineInput[]>([emptyLine()]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [activeLineIdx, setActiveLineIdx] = useState(0);
   const [activeLineIdx, setActiveLineIdx] = useState(0);
 
   const filteredParts = useMemo(() => {
