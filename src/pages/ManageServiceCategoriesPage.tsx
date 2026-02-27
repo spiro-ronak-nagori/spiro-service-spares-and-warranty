@@ -6,10 +6,13 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, ChevronDown, Pencil, Trash2, ListTree, X, Check } from 'lucide-react';
+import { Plus, ChevronDown, Pencil, Trash2, ListTree, X, Check, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { ServiceCategory } from '@/types';
 
@@ -19,12 +22,14 @@ export default function ManageServiceCategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryRequiresSpares, setNewCategoryRequiresSpares] = useState(false);
   const [addingCategory, setAddingCategory] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newIssueName, setNewIssueName] = useState('');
   const [addingIssueFor, setAddingIssueFor] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<{ id: string; name: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{ id: string; name: string; requires_spares?: boolean } | null>(null);
   const [editName, setEditName] = useState('');
+  const [editRequiresSpares, setEditRequiresSpares] = useState(false);
   const [deletingItem, setDeletingItem] = useState<ServiceCategory | null>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
@@ -65,10 +70,12 @@ export default function ManageServiceCategoriesPage() {
         name: newCategoryName.trim(),
         parent_code: null,
         sort_order: maxOrder + 1,
+        requires_spares: newCategoryRequiresSpares,
       } as any);
       if (error) throw error;
       toast.success('Category added');
       setNewCategoryName('');
+      setNewCategoryRequiresSpares(false);
       setShowAddCategory(false);
       fetchCategories();
     } catch (err: any) {
@@ -103,9 +110,15 @@ export default function ManageServiceCategoriesPage() {
   const handleEditSave = async () => {
     if (!editingItem || !editName.trim()) return;
     try {
+      const updatePayload: any = { name: editName.trim() };
+      // Only update requires_spares for parent categories
+      const cat = categories.find(c => c.id === editingItem.id);
+      if (cat && !cat.parent_code) {
+        updatePayload.requires_spares = editRequiresSpares;
+      }
       const { error } = await supabase
         .from('service_categories')
-        .update({ name: editName.trim() } as any)
+        .update(updatePayload as any)
         .eq('id', editingItem.id);
       if (error) throw error;
       toast.success('Updated');
@@ -119,7 +132,6 @@ export default function ManageServiceCategoriesPage() {
   const handleDelete = async () => {
     if (!deletingItem) return;
     try {
-      // If it's a parent, also deactivate children
       if (!deletingItem.parent_code) {
         await supabase
           .from('service_categories')
@@ -153,7 +165,7 @@ export default function ManageServiceCategoriesPage() {
       <PageHeader
         title="Service Categories"
         showBack
-        backTo="/console"
+        backTo="/console/system-config"
         rightAction={
           <Button size="sm" onClick={() => setShowAddCategory(true)}>
             <Plus className="h-4 w-4 mr-1" />Category
@@ -163,21 +175,33 @@ export default function ManageServiceCategoriesPage() {
       <div className="p-4 space-y-3">
         {showAddCategory && (
           <Card>
-            <CardContent className="p-3 flex gap-2 items-center">
-              <Input
-                placeholder="Category name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="flex-1 h-9"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-              />
-              <Button size="sm" className="h-9" onClick={handleAddCategory} disabled={addingCategory}>
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" className="h-9" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); }}>
-                <X className="h-4 w-4" />
-              </Button>
+            <CardContent className="p-3 space-y-2">
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Category name"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1 h-9"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                />
+                <Button size="sm" className="h-9" onClick={handleAddCategory} disabled={addingCategory}>
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-9" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryRequiresSpares(false); }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 pl-1">
+                <Switch
+                  id="new-cat-requires-spares"
+                  checked={newCategoryRequiresSpares}
+                  onCheckedChange={setNewCategoryRequiresSpares}
+                />
+                <Label htmlFor="new-cat-requires-spares" className="text-xs text-muted-foreground cursor-pointer">
+                  Requires Spares
+                </Label>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -203,20 +227,34 @@ export default function ManageServiceCategoriesPage() {
                         <div className="flex items-center gap-2">
                           <ListTree className="h-4 w-4 text-muted-foreground" />
                           {editingItem?.id === cat.id ? (
-                            <div className="flex gap-1 items-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-1 items-center flex-wrap" onClick={(e) => e.stopPropagation()}>
                               <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-sm w-40" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleEditSave()} />
+                              <div className="flex items-center gap-1">
+                                <Switch
+                                  checked={editRequiresSpares}
+                                  onCheckedChange={setEditRequiresSpares}
+                                  className="scale-75"
+                                />
+                                <span className="text-[10px] text-muted-foreground">Spares</span>
+                              </div>
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={handleEditSave}><Check className="h-3 w-3" /></Button>
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingItem(null)}><X className="h-3 w-3" /></Button>
                             </div>
                           ) : (
                             <span className="font-medium text-sm">{cat.name}</span>
                           )}
+                          {cat.requires_spares && editingItem?.id !== cat.id && (
+                            <Badge variant="secondary" className="text-[10px] gap-0.5">
+                              <Package className="h-2.5 w-2.5" />
+                              Spares
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">({issues.length})</span>
                         </div>
                         <div className="flex items-center gap-1">
                           {editingItem?.id !== cat.id && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setEditingItem({ id: cat.id, name: cat.name }); setEditName(cat.name); }}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setEditingItem({ id: cat.id, name: cat.name, requires_spares: cat.requires_spares }); setEditName(cat.name); setEditRequiresSpares(cat.requires_spares); }}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); setDeletingItem(cat); }}>

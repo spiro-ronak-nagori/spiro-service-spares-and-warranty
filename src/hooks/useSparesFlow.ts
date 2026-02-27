@@ -76,23 +76,52 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         return;
       }
 
-      // Get applicable part IDs
-      let query = supabase
+      // Get applicable part IDs - fetch ALL mappings for this model (both specific color and NULL)
+      const { data: appData } = await supabase
         .from('spare_parts_applicability' as any)
-        .select('spare_part_id')
+        .select('spare_part_id, color_code')
         .eq('vehicle_model_id', modelData.id);
 
-      // Filter by color_code: match exact OR null
-      if (colorCode && ['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK'].includes(colorCode)) {
-        query = query.or(`color_code.eq.${colorCode},color_code.is.null`);
-      } else {
-        if (colorCode) w.push('Vehicle color not recognized — filtering by model only.');
-        query = query.is('color_code', null);
+      const allMappings = (appData || []) as { spare_part_id: string; color_code: string | null }[];
+
+      if (allMappings.length === 0) {
+        w.push('No spare parts mapped for this vehicle configuration.');
+        setParts([]);
+        setWarnings(w);
+        return;
       }
 
-      const { data: appData } = await query;
-      const partIds = [...new Set((appData || []).map((a: any) => a.spare_part_id))];
+      // Apply precedence: exact color match > NULL (all-colors)
+      // Deduplicate by spare_part_id — prefer specific color match
+      const partIdSet = new Set<string>();
+      const validColorCodes = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK'];
+      const vehicleColor = colorCode && validColorCodes.includes(colorCode) ? colorCode : null;
 
+      if (!vehicleColor && colorCode) {
+        w.push('Vehicle color not recognized — filtering by model only.');
+      }
+
+      // Group mappings by spare_part_id
+      const byPart = new Map<string, { specific: boolean; allColors: boolean }>();
+      for (const m of allMappings) {
+        const entry = byPart.get(m.spare_part_id) || { specific: false, allColors: false };
+        if (m.color_code === null) {
+          entry.allColors = true;
+        } else if (vehicleColor && m.color_code === vehicleColor) {
+          entry.specific = true;
+        }
+        // If color_code is set but doesn't match vehicle color, skip
+        if (m.color_code === null || (vehicleColor && m.color_code === vehicleColor)) {
+          byPart.set(m.spare_part_id, entry);
+        }
+      }
+
+      // Include parts that have either a specific match or an all-colors match
+      for (const [partId] of byPart) {
+        partIdSet.add(partId);
+      }
+
+      const partIds = [...partIdSet];
       if (partIds.length === 0) {
         w.push('No spare parts mapped for this vehicle configuration.');
         setParts([]);

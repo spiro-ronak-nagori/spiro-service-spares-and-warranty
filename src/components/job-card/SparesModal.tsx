@@ -19,7 +19,6 @@ interface SpareLineInput {
   part: SparePart | null;
   qty: number;
   claim_type: ClaimType;
-  part_number: string;
   serial_number: string;
   comment: string;
   photos: File[];
@@ -42,7 +41,6 @@ const emptyLine = (): SpareLineInput => ({
   part: null,
   qty: 1,
   claim_type: 'USER_PAID',
-  part_number: '',
   serial_number: '',
   comment: '',
   photos: [],
@@ -116,7 +114,6 @@ export function SparesModal({
             existingRows[0].serial_number !== line.serial_number);
 
         if (shouldMerge && existingRows.length > 0) {
-          // Merge: increase qty
           const row = existingRows[0];
           const { error } = await supabase
             .from('job_card_spares' as any)
@@ -124,13 +121,11 @@ export function SparesModal({
               qty: row.qty + line.qty,
               updated_by: profileId,
               technician_comment: line.comment || row.technician_comment,
-              part_number: line.part_number || row.part_number,
             } as any)
             .eq('id', row.id);
           if (error) throw error;
           spareId = row.id;
         } else {
-          // Insert new
           const { data: inserted, error } = await supabase
             .from('job_card_spares' as any)
             .insert({
@@ -138,7 +133,6 @@ export function SparesModal({
               spare_part_id: line.spare_part_id,
               qty: line.qty,
               claim_type: line.claim_type,
-              part_number: line.part_number || null,
               serial_number: line.serial_number || null,
               technician_comment: line.comment || null,
               created_by: profileId,
@@ -306,27 +300,14 @@ export function SparesModal({
               </div>
             </div>
 
-            {/* Conditional: part_number */}
-            {currentPart?.partno_required && (
-              <div className="space-y-1">
-                <Label>Part Number *</Label>
-                <Input
-                  value={currentLine.part_number}
-                  onChange={(e) => updateLine(activeLineIdx, { part_number: e.target.value })}
-                  placeholder="Enter part number"
-                  className="h-9"
-                />
-              </div>
-            )}
-
-            {/* Conditional: serial_number */}
+            {/* Conditional: serial_number (unified) */}
             {currentPart?.serial_required && (
               <div className="space-y-1">
-                <Label>Serial Number *</Label>
+                <Label>Part Serial Number *</Label>
                 <Input
                   value={currentLine.serial_number}
                   onChange={(e) => updateLine(activeLineIdx, { serial_number: e.target.value })}
-                  placeholder="Enter serial number"
+                  placeholder="Enter part serial number"
                   className="h-9"
                 />
               </div>
