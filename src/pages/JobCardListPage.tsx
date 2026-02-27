@@ -190,6 +190,11 @@ export default function JobCardListPage() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Warranty admins land on the approvals page instead
+  if (profile?.role === 'warranty_admin') {
+    return <Navigate to="/warranty-approvals" replace />;
+  }
+
   return (
     <AppLayout>
       <PageHeader 
