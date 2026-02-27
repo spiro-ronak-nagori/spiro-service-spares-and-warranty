@@ -10,6 +10,8 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { LogOut, Building2, Phone, Mail, Shield, Edit, Users, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ProfilePage() {
   const { profile, workshop, signOut } = useAuth();
