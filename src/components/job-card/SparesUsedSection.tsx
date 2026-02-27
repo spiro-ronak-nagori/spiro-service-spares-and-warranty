@@ -22,6 +22,7 @@ interface SparesUsedSectionProps {
   onSubmitWarranty?: (spare: JobCardSpare) => void;
   onWithdrawSpare?: (spare: JobCardSpare) => void;
   onRespondNeedsInfo?: (spare: JobCardSpare) => void;
+  onConvertToUserPaid?: (spare: JobCardSpare) => void;
   canEdit?: boolean;
   warrantyEnabled?: boolean;
 }
