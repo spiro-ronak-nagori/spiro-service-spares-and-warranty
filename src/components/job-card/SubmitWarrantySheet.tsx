@@ -139,20 +139,20 @@ export function SubmitWarrantySheet({
       const now = new Date().toISOString();
 
       // --- Resubmission identity logic ---
-      // Check if this spare has ever been submitted before
-      const { data: priorActions } = await supabase
+      // Check if an admin has ever acted on this spare (REQUEST_INFO, REJECT, APPROVE)
+      const { data: adminActions } = await supabase
         .from('job_card_spare_actions' as any)
         .select('id')
         .eq('job_card_spare_id', spare.id)
-        .eq('action_type', 'SUBMIT')
+        .in('action_type', ['REQUEST_INFO', 'REJECT', 'APPROVE'])
         .limit(1);
 
-      const hasBeenSubmittedBefore = (priorActions && priorActions.length > 0);
+      const hasAdminActed = (adminActions && adminActions.length > 0);
 
       let isResubmission = false;
       let identityChangedComment: string | null = null;
 
-      if (hasBeenSubmittedBefore) {
+      if (hasAdminActed) {
         // Compare current identity with last-submitted snapshot
         const lastPartId = (spare as any).last_submitted_spare_part_id;
         const lastQty = (spare as any).last_submitted_qty;
