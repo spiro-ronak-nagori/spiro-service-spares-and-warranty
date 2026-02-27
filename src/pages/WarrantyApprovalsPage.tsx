@@ -246,9 +246,11 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
     }
   };
 
+  const handleBack = () => { onBack(); };
+
   return (
     <AppLayout>
-      <PageHeader title="Claim Review" subtitle={item.jc_number} showBack onBack={onBack} />
+      <PageHeader title="Claim Review" subtitle={item.jc_number} showBack backTo="/warranty-approvals" />
       <div className="p-4 space-y-4">
         {/* Vehicle + Odo */}
         <Card>
@@ -412,45 +414,26 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
         open={showRequestInfo}
         onOpenChange={setShowRequestInfo}
         title="Request More Information"
-        description=""
+        description="Add a comment explaining what information is needed from the technician."
         confirmLabel="Send Request"
-        onConfirm={handleRequestInfo}
+        requireReason
+        reasonLabel="Info Request"
+        reasonPlaceholder="What additional information do you need?"
+        onConfirm={(reason) => { setComment(reason || ''); handleRequestInfo(); }}
         isLoading={processing}
-      >
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Add a comment explaining what information is needed from the technician.</p>
-          <Textarea
-            placeholder="What additional information do you need?"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
-        </div>
-      </ConfirmationDialog>
+      />
 
       {/* Reject Dialog */}
       <ConfirmationDialog
         open={showReject}
         onOpenChange={setShowReject}
         title="Reject Claim"
-        description=""
+        description="Optionally provide a reason for rejection."
         confirmLabel="Reject"
         variant="destructive"
-        onConfirm={handleReject}
+        onConfirm={() => handleReject()}
         isLoading={processing}
-      >
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Optional: Add a reason for rejection.</p>
-          <Textarea
-            placeholder="Reason for rejection (optional)"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
-        </div>
-      </ConfirmationDialog>
+      />
     </AppLayout>
   );
 }
