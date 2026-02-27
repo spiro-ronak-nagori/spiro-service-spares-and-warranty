@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Plus, Trash2, Camera, Search, Package } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Camera, Package } from 'lucide-react';
 import { SparePart, ClaimType } from '@/types';
 import { useApplicableSpareParts } from '@/hooks/useSparesFlow';
+import { SearchablePartSelect } from '@/components/job-card/SearchablePartSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
