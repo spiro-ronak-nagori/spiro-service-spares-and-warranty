@@ -25,7 +25,8 @@ interface CompleteWorkDialogProps {
 interface SparesBlocker {
   missingSpares: boolean;
   issuesRequiringSpares: string[];
-  lineBlockers: string[];
+  docBlockers: string[];
+  approvalBlockers: string[];
 }
 
 const MIN_REMARKS_LENGTH = 30;
