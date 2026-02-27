@@ -44,7 +44,6 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
     const w: string[] = [];
 
     try {
-      // If no model, return all active parts with warning
       if (!vehicleModelName) {
         w.push('Vehicle model is missing — showing all available spare parts.');
         const { data } = await supabase
@@ -57,7 +56,6 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         return;
       }
 
-      // Look up model ID
       const { data: modelData } = await supabase
         .from('vehicle_models')
         .select('id')
@@ -76,7 +74,6 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         return;
       }
 
-      // Get applicable part IDs - fetch ALL mappings for this model (both specific color and NULL)
       const { data: appData } = await supabase
         .from('spare_parts_applicability' as any)
         .select('spare_part_id, color_code')
@@ -91,8 +88,6 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         return;
       }
 
-      // Apply precedence: exact color match > NULL (all-colors)
-      // Deduplicate by spare_part_id — prefer specific color match
       const partIdSet = new Set<string>();
       const validColorCodes = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK'];
       const vehicleColor = colorCode && validColorCodes.includes(colorCode) ? colorCode : null;
@@ -101,7 +96,6 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         w.push('Vehicle color not recognized — filtering by model only.');
       }
 
-      // Group mappings by spare_part_id
       const byPart = new Map<string, { specific: boolean; allColors: boolean }>();
       for (const m of allMappings) {
         const entry = byPart.get(m.spare_part_id) || { specific: false, allColors: false };
@@ -110,13 +104,11 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         } else if (vehicleColor && m.color_code === vehicleColor) {
           entry.specific = true;
         }
-        // If color_code is set but doesn't match vehicle color, skip
         if (m.color_code === null || (vehicleColor && m.color_code === vehicleColor)) {
           byPart.set(m.spare_part_id, entry);
         }
       }
 
-      // Include parts that have either a specific match or an all-colors match
       for (const [partId] of byPart) {
         partIdSet.add(partId);
       }
@@ -148,6 +140,19 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
   return { parts, isLoading, warnings };
 }
 
+/**
+ * Extract storage path from a photo_url.
+ * Handles both full URLs and plain paths.
+ */
+function extractStoragePath(photoUrl: string): string {
+  // If it's a full URL, extract the path after the bucket name
+  const marker = '/spare-photos/';
+  const idx = photoUrl.indexOf(marker);
+  if (idx !== -1) return photoUrl.substring(idx + marker.length);
+  // Otherwise assume it's already a path
+  return photoUrl;
+}
+
 export function useJobCardSpares(jobCardId: string | undefined) {
   const [spares, setSpares] = useState<JobCardSpare[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,7 +169,6 @@ export function useJobCardSpares(jobCardId: string | undefined) {
 
       const sparesList = (sparesData || []) as unknown as JobCardSpare[];
 
-      // Fetch photos + part details for each spare
       if (sparesList.length > 0) {
         const spareIds = sparesList.map(s => s.id);
         const partIds = [...new Set(sparesList.map(s => s.spare_part_id))];
@@ -182,6 +186,20 @@ export function useJobCardSpares(jobCardId: string | undefined) {
 
         const photos = (photosRes.data || []) as unknown as JobCardSparePhoto[];
         const partsMap = new Map((partsRes.data || []).map((p: any) => [p.id, p as SparePart]));
+
+        // Generate signed URLs for photos (private bucket)
+        if (photos.length > 0) {
+          const paths = photos.map(p => extractStoragePath(p.photo_url));
+          const { data: signedData } = await supabase.storage
+            .from('spare-photos')
+            .createSignedUrls(paths, 3600);
+
+          if (signedData) {
+            signedData.forEach((s, i) => {
+              if (s.signedUrl) photos[i].photo_url = s.signedUrl;
+            });
+          }
+        }
 
         sparesList.forEach(s => {
           s.photos = photos.filter(p => p.job_card_spare_id === s.id);
@@ -202,4 +220,19 @@ export function useJobCardSpares(jobCardId: string | undefined) {
   }, [fetchSpares]);
 
   return { spares, isLoading, refetch: fetchSpares };
+}
+
+export async function deleteJobCardSpare(spareId: string): Promise<void> {
+  // Delete photos first (FK constraint)
+  await supabase
+    .from('job_card_spare_photos' as any)
+    .delete()
+    .eq('job_card_spare_id', spareId);
+
+  const { error } = await supabase
+    .from('job_card_spares' as any)
+    .delete()
+    .eq('id', spareId);
+
+  if (error) throw error;
 }

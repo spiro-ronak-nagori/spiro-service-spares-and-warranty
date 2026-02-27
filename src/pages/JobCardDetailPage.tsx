@@ -34,9 +34,11 @@ import { ReopenJobCardDialog } from '@/components/job-card/ReopenJobCardDialog';
 import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/DeliveryWithSocDialog';
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
-import { useSparesFeatureFlags, useJobCardSpares } from '@/hooks/useSparesFlow';
+import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
+import { JobCardSpare } from '@/types';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +57,8 @@ export default function JobCardDetailPage() {
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
   const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
+  const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
+  const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -185,6 +189,24 @@ export default function JobCardDetailPage() {
 
   const handleSparesModalSaved = () => {
     refetchSpares();
+  };
+
+  const handleEditSpare = (spare: JobCardSpare) => {
+    setEditingSpare(spare);
+    setShowSparesModal(true);
+  };
+
+  const handleDeleteSpare = async () => {
+    if (!deletingSpareId) return;
+    try {
+      await deleteJobCardSpare(deletingSpareId);
+      toast.success('Spare removed');
+      refetchSpares();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete spare');
+    } finally {
+      setDeletingSpareId(null);
+    }
   };
 
   const handleCompleteWork = async (remarks: string) => {
@@ -394,7 +416,7 @@ export default function JobCardDetailPage() {
           onReopenJobCard={() => setShowReopenDialog(true)}
           sparesEnabled={sparesEnabled}
           sparesCount={spares.length}
-          onAddSpares={() => setShowSparesModal(true)}
+          onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
         />
 
         {/* Vehicle & Customer Info */}
@@ -530,7 +552,9 @@ export default function JobCardDetailPage() {
           <SparesUsedSection
             spares={spares}
             isLoading={sparesLoading}
-            onAddSpares={() => setShowSparesModal(true)}
+            onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
+            onEditSpare={handleEditSpare}
+            onDeleteSpare={(id) => setDeletingSpareId(id)}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
           />
         )}
@@ -653,9 +677,12 @@ export default function JobCardDetailPage() {
           open={showSparesModal}
           onOpenChange={(open) => {
             setShowSparesModal(open);
-            if (!open && sparesModalFromStartWork) {
-              setSparesModalFromStartWork(false);
-              updateStatus('IN_PROGRESS');
+            if (!open) {
+              setEditingSpare(null);
+              if (sparesModalFromStartWork) {
+                setSparesModalFromStartWork(false);
+                updateStatus('IN_PROGRESS');
+              }
             }
           }}
           jobCardId={jobCard.id}
@@ -664,8 +691,20 @@ export default function JobCardDetailPage() {
           vehicleColorCode={(jobCard.vehicle as any)?.color_code}
           warrantyEnabled={warrantyEnabled}
           onSaved={handleSparesModalSaved}
+          editingSpare={editingSpare}
         />
       )}
+
+      {/* Delete spare confirmation */}
+      <ConfirmationDialog
+        open={!!deletingSpareId}
+        onOpenChange={(open) => { if (!open) setDeletingSpareId(null); }}
+        title="Delete Spare"
+        description="Are you sure you want to remove this spare part? This action cannot be undone."
+        onConfirm={handleDeleteSpare}
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </AppLayout>
   );
 }

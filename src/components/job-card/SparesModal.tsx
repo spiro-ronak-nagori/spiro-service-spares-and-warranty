@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -9,11 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Plus, Trash2, Camera, Package } from 'lucide-react';
-import { SparePart, ClaimType } from '@/types';
+import { SparePart, ClaimType, JobCardSpare, JobCardSparePhoto } from '@/types';
 import { useApplicableSpareParts } from '@/hooks/useSparesFlow';
 import { SearchablePartSelect } from '@/components/job-card/SearchablePartSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/compress-image';
 
 interface SpareLineInput {
   spare_part_id: string;
@@ -22,8 +23,9 @@ interface SpareLineInput {
   claim_type: ClaimType;
   serial_number: string;
   comment: string;
-  photos: File[];
-  photoKinds: string[];
+  newPhotos: File[];
+  newPhotoKinds: string[];
+  existingPhotos: JobCardSparePhoto[];
 }
 
 interface SparesModalProps {
@@ -35,6 +37,7 @@ interface SparesModalProps {
   vehicleColorCode: string | null | undefined;
   warrantyEnabled: boolean;
   onSaved: () => void;
+  editingSpare?: JobCardSpare | null;
 }
 
 const emptyLine = (): SpareLineInput => ({
@@ -44,18 +47,46 @@ const emptyLine = (): SpareLineInput => ({
   claim_type: 'USER_PAID',
   serial_number: '',
   comment: '',
-  photos: [],
-  photoKinds: [],
+  newPhotos: [],
+  newPhotoKinds: [],
+  existingPhotos: [],
+});
+
+const editLineFromSpare = (spare: JobCardSpare): SpareLineInput => ({
+  spare_part_id: spare.spare_part_id,
+  part: spare.spare_part || null,
+  qty: spare.qty,
+  claim_type: spare.claim_type,
+  serial_number: spare.serial_number || '',
+  comment: spare.technician_comment || '',
+  newPhotos: [],
+  newPhotoKinds: [],
+  existingPhotos: spare.photos || [],
 });
 
 export function SparesModal({
   open, onOpenChange, jobCardId, profileId,
   vehicleModel, vehicleColorCode, warrantyEnabled, onSaved,
+  editingSpare,
 }: SparesModalProps) {
   const { parts, isLoading: partsLoading, warnings } = useApplicableSpareParts(vehicleModel, vehicleColorCode);
   const [lines, setLines] = useState<SpareLineInput[]>([emptyLine()]);
   const [saving, setSaving] = useState(false);
   const [activeLineIdx, setActiveLineIdx] = useState(0);
+  const isEditMode = !!editingSpare;
+
+  // Reset state when modal opens/closes or editingSpare changes
+  useEffect(() => {
+    if (open) {
+      if (editingSpare) {
+        setLines([editLineFromSpare(editingSpare)]);
+        setActiveLineIdx(0);
+      } else {
+        setLines([emptyLine()]);
+        setActiveLineIdx(0);
+      }
+    }
+  }, [open, editingSpare]);
 
   const updateLine = (idx: number, updates: Partial<SpareLineInput>) => {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
@@ -78,6 +109,64 @@ export function SparesModal({
     if (activeLineIdx >= lines.length - 1) setActiveLineIdx(Math.max(0, lines.length - 2));
   };
 
+  const currentLine = lines[activeLineIdx];
+  const currentPart = currentLine?.part;
+
+  // Photo validation for current line
+  const photoValidation = useMemo(() => {
+    if (!currentLine || !currentPart) return { valid: true, message: '' };
+
+    const existingProofCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
+    const newProofCount = currentLine.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
+    const totalProof = existingProofCount + newProofCount;
+    const requiredProof = currentPart.usage_proof_photos_required_count;
+
+    if (requiredProof > 0 && totalProof < requiredProof) {
+      return { valid: false, message: `Upload ${totalProof}/${requiredProof} required proof photos to continue.` };
+    }
+
+    // Check old-part evidence if warranty/goodwill
+    if (warrantyEnabled && currentLine.claim_type !== 'USER_PAID') {
+      const isWarranty = currentLine.claim_type === 'WARRANTY';
+      const reqOldCount = isWarranty
+        ? currentPart.warranty_old_part_photos_required_count
+        : currentPart.goodwill_old_part_photos_required_count;
+
+      const existingOldCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
+      const newOldCount = currentLine.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
+      const totalOld = existingOldCount + newOldCount;
+
+      if (reqOldCount > 0 && totalOld < reqOldCount) {
+        return { valid: false, message: `Upload ${totalOld}/${reqOldCount} required old-part evidence photos.` };
+      }
+    }
+
+    return { valid: true, message: '' };
+  }, [currentLine, currentPart, warrantyEnabled]);
+
+  // Check all lines for save validity
+  const allLinesValid = useMemo(() => {
+    return lines.every(line => {
+      if (!line.spare_part_id) return true; // Empty line is skippable
+      const part = line.part;
+      if (!part) return true;
+
+      const existProof = line.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
+      const newProof = line.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
+      if (part.usage_proof_photos_required_count > 0 && (existProof + newProof) < part.usage_proof_photos_required_count) return false;
+
+      if (warrantyEnabled && line.claim_type !== 'USER_PAID') {
+        const isW = line.claim_type === 'WARRANTY';
+        const reqOld = isW ? part.warranty_old_part_photos_required_count : part.goodwill_old_part_photos_required_count;
+        const existOld = line.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
+        const newOld = line.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
+        if (reqOld > 0 && (existOld + newOld) < reqOld) return false;
+      }
+
+      return true;
+    });
+  }, [lines, warrantyEnabled]);
+
   const handleSave = async () => {
     const validLines = lines.filter(l => l.spare_part_id);
     if (validLines.length === 0) {
@@ -88,82 +177,106 @@ export function SparesModal({
     setSaving(true);
     try {
       for (const line of validLines) {
-        // Check for duplicate merge (same part + claim type)
-        const { data: existing } = await supabase
-          .from('job_card_spares' as any)
-          .select('id, qty, serial_number')
-          .eq('job_card_id', jobCardId)
-          .eq('spare_part_id', line.spare_part_id)
-          .eq('claim_type', line.claim_type);
-
-        const existingRows = (existing || []) as any[];
         let spareId: string;
 
-        // If serial_required and serial differs, keep separate
-        const shouldMerge = existingRows.length > 0 &&
-          !(line.part?.serial_required && line.serial_number &&
-            existingRows[0].serial_number !== line.serial_number);
-
-        if (shouldMerge && existingRows.length > 0) {
-          const row = existingRows[0];
+        if (isEditMode && editingSpare) {
+          // UPDATE existing spare
           const { error } = await supabase
             .from('job_card_spares' as any)
             .update({
-              qty: row.qty + line.qty,
-              updated_by: profileId,
-              technician_comment: line.comment || row.technician_comment,
-            } as any)
-            .eq('id', row.id);
-          if (error) throw error;
-          spareId = row.id;
-        } else {
-          const { data: inserted, error } = await supabase
-            .from('job_card_spares' as any)
-            .insert({
-              job_card_id: jobCardId,
               spare_part_id: line.spare_part_id,
               qty: line.qty,
               claim_type: line.claim_type,
               serial_number: line.serial_number || null,
               technician_comment: line.comment || null,
-              created_by: profileId,
+              updated_by: profileId,
             } as any)
-            .select('id')
-            .single();
+            .eq('id', editingSpare.id);
           if (error) throw error;
-          spareId = (inserted as any).id;
+          spareId = editingSpare.id;
+        } else {
+          // Check for duplicate merge (same part + claim type)
+          const { data: existing } = await supabase
+            .from('job_card_spares' as any)
+            .select('id, qty, serial_number')
+            .eq('job_card_id', jobCardId)
+            .eq('spare_part_id', line.spare_part_id)
+            .eq('claim_type', line.claim_type);
+
+          const existingRows = (existing || []) as any[];
+
+          const shouldMerge = existingRows.length > 0 &&
+            !(line.part?.serial_required && line.serial_number &&
+              existingRows[0].serial_number !== line.serial_number);
+
+          if (shouldMerge && existingRows.length > 0) {
+            const row = existingRows[0];
+            const { error } = await supabase
+              .from('job_card_spares' as any)
+              .update({
+                qty: row.qty + line.qty,
+                updated_by: profileId,
+                technician_comment: line.comment || row.technician_comment,
+              } as any)
+              .eq('id', row.id);
+            if (error) throw error;
+            spareId = row.id;
+          } else {
+            const { data: inserted, error } = await supabase
+              .from('job_card_spares' as any)
+              .insert({
+                job_card_id: jobCardId,
+                spare_part_id: line.spare_part_id,
+                qty: line.qty,
+                claim_type: line.claim_type,
+                serial_number: line.serial_number || null,
+                technician_comment: line.comment || null,
+                created_by: profileId,
+              } as any)
+              .select('id')
+              .single();
+            if (error) throw error;
+            spareId = (inserted as any).id;
+          }
         }
 
-        // Upload photos
-        for (let pi = 0; pi < line.photos.length; pi++) {
-          const file = line.photos[pi];
-          const kind = line.photoKinds[pi] || 'ADDITIONAL';
-          const path = `${jobCardId}/${spareId}/${Date.now()}_${pi}.jpg`;
+        // Upload new photos
+        for (let pi = 0; pi < line.newPhotos.length; pi++) {
+          const file = line.newPhotos[pi];
+          const kind = line.newPhotoKinds[pi] || 'ADDITIONAL';
+          const fileId = crypto.randomUUID();
+          const path = `job_cards/${jobCardId}/spares/${spareId}/${kind}/${fileId}.jpg`;
+
+          // Compress before upload
+          let compressed: File;
+          try {
+            compressed = await compressImage(file);
+          } catch {
+            compressed = file;
+          }
 
           const { error: uploadErr } = await supabase.storage
             .from('spare-photos')
-            .upload(path, file);
+            .upload(path, compressed);
           if (uploadErr) {
             console.error('Photo upload failed:', uploadErr);
-            continue;
+            toast.error(`Photo upload failed: ${uploadErr.message}`);
+            // Block save if mandatory photos can't upload
+            throw new Error(`Photo upload unavailable. Please contact admin. (${uploadErr.message})`);
           }
-
-          const { data: urlData } = supabase.storage
-            .from('spare-photos')
-            .getPublicUrl(path);
 
           await supabase
             .from('job_card_spare_photos' as any)
             .insert({
               job_card_spare_id: spareId,
-              photo_url: urlData.publicUrl,
+              photo_url: path,
               photo_kind: kind,
               uploaded_by: profileId,
             } as any);
         }
       }
 
-      toast.success(`${validLines.length} spare(s) saved`);
+      toast.success(isEditMode ? 'Spare updated' : `${validLines.length} spare(s) saved`);
       setLines([emptyLine()]);
       onSaved();
       onOpenChange(false);
@@ -175,8 +288,16 @@ export function SparesModal({
     }
   };
 
-  const currentLine = lines[activeLineIdx];
-  const currentPart = currentLine?.part;
+  const handlePhotoCapture = (idx: number, kind: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newPhotos = [...lines[idx].newPhotos, file];
+      const newKinds = [...lines[idx].newPhotoKinds, kind];
+      updateLine(idx, { newPhotos, newPhotoKinds: newKinds });
+    }
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,10 +305,10 @@ export function SparesModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Add Spare Parts
+            {isEditMode ? 'Edit Spare Part' : 'Add Spare Parts'}
           </DialogTitle>
           <DialogDescription>
-            Record parts used for this job card
+            {isEditMode ? 'Update this spare part record' : 'Record parts used for this job card'}
           </DialogDescription>
         </DialogHeader>
 
@@ -202,27 +323,29 @@ export function SparesModal({
           </div>
         )}
 
-        {/* Line tabs */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {lines.map((l, i) => (
-            <Badge
-              key={i}
-              variant={activeLineIdx === i ? 'default' : 'outline'}
-              className="cursor-pointer text-xs"
-              onClick={() => setActiveLineIdx(i)}
-            >
-              {l.part?.part_name ? l.part.part_name.substring(0, 12) : `Part ${i + 1}`}
-            </Badge>
-          ))}
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={addLine}>
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        {/* Line tabs - only show for add mode with multiple lines */}
+        {!isEditMode && (
+          <div className="flex items-center gap-1 flex-wrap">
+            {lines.map((l, i) => (
+              <Badge
+                key={i}
+                variant={activeLineIdx === i ? 'default' : 'outline'}
+                className="cursor-pointer text-xs"
+                onClick={() => setActiveLineIdx(i)}
+              >
+                {l.part?.part_name ? l.part.part_name.substring(0, 12) : `Part ${i + 1}`}
+              </Badge>
+            ))}
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={addLine}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
 
         {currentLine && (
           <div className="space-y-4">
-            {/* Part selector with search */}
-          <div className="space-y-2">
+            {/* Part selector */}
+            <div className="space-y-2">
               <Label>Spare Part *</Label>
               <SearchablePartSelect
                 parts={parts}
@@ -232,7 +355,7 @@ export function SparesModal({
               />
             </div>
 
-            {/* Qty */}
+            {/* Qty + Claim Type */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Quantity *</Label>
@@ -245,8 +368,6 @@ export function SparesModal({
                   className="h-9"
                 />
               </div>
-
-              {/* Claim type */}
               <div className="space-y-1">
                 <Label>Claim Type</Label>
                 {!warrantyEnabled ? (
@@ -269,7 +390,7 @@ export function SparesModal({
               </div>
             </div>
 
-            {/* Conditional: serial_number (unified) */}
+            {/* Serial Number */}
             {currentPart?.serial_required && (
               <div className="space-y-1">
                 <Label>Part Serial Number *</Label>
@@ -294,38 +415,59 @@ export function SparesModal({
               />
             </div>
 
-            {/* Photo capture for NEW_PART_PROOF */}
+            {/* NEW_PART_PROOF photos */}
             {currentPart && currentPart.usage_proof_photos_required_count > 0 && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
                   <Camera className="h-3.5 w-3.5" />
                   New Part Proof Photos ({currentPart.usage_proof_photos_required_count} required)
                 </Label>
-                {(currentPart.usage_proof_photo_prompts as string[]).map((prompt, pi) => (
-                  <div key={pi} className="space-y-1">
-                    <p className="text-xs text-muted-foreground">{prompt}</p>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const newPhotos = [...currentLine.photos];
-                          const newKinds = [...currentLine.photoKinds];
-                          newPhotos.push(file);
-                          newKinds.push('NEW_PART_PROOF');
-                          updateLine(activeLineIdx, { photos: newPhotos, photoKinds: newKinds });
-                        }
-                      }}
-                      className="h-9"
-                    />
+                {/* Existing photos */}
+                {currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').map(photo => (
+                      <div key={photo.id} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
+                        <img src={photo.photo_url} alt="Existing" className="w-full h-full object-cover" />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {/* New photo capture slots */}
+                {(currentPart.usage_proof_photo_prompts as string[]).map((prompt, pi) => {
+                  const existingCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
+                  const newCount = currentLine.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
+                  // Only show unfilled slots
+                  if (existingCount + newCount > pi) return null;
+                  return (
+                    <div key={pi} className="space-y-1">
+                      <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => handlePhotoCapture(activeLineIdx, 'NEW_PART_PROOF', e)}
+                        className="h-9"
+                      />
+                    </div>
+                  );
+                })}
+                {/* Show captured new photos as thumbnails */}
+                {currentLine.newPhotos.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {currentLine.newPhotos.map((file, fi) => {
+                      if (currentLine.newPhotoKinds[fi] !== 'NEW_PART_PROOF') return null;
+                      return (
+                        <div key={fi} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
+                          <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* OLD_PART_EVIDENCE photos - only if warranty flow ON + claim type WARRANTY/GOODWILL */}
+            {/* OLD_PART_EVIDENCE photos */}
             {warrantyEnabled && currentPart && currentLine.claim_type !== 'USER_PAID' && (() => {
               const isWarranty = currentLine.claim_type === 'WARRANTY';
               const count = isWarranty
@@ -343,33 +485,58 @@ export function SparesModal({
                     <Camera className="h-3.5 w-3.5" />
                     Old Part Evidence Photos ({count} required)
                   </Label>
-                  {prompts.map((prompt, pi) => (
-                    <div key={pi} className="space-y-1">
-                      <p className="text-xs text-muted-foreground">{prompt}</p>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const newPhotos = [...currentLine.photos];
-                            const newKinds = [...currentLine.photoKinds];
-                            newPhotos.push(file);
-                            newKinds.push('OLD_PART_EVIDENCE');
-                            updateLine(activeLineIdx, { photos: newPhotos, photoKinds: newKinds });
-                          }
-                        }}
-                        className="h-9"
-                      />
+                  {currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').map(photo => (
+                        <div key={photo.id} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
+                          <img src={photo.photo_url} alt="Existing" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  {prompts.map((prompt, pi) => {
+                    const existingCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
+                    const newCount = currentLine.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
+                    if (existingCount + newCount > pi) return null;
+                    return (
+                      <div key={pi} className="space-y-1">
+                        <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={(e) => handlePhotoCapture(activeLineIdx, 'OLD_PART_EVIDENCE', e)}
+                          className="h-9"
+                        />
+                      </div>
+                    );
+                  })}
+                  {currentLine.newPhotos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {currentLine.newPhotos.map((file, fi) => {
+                        if (currentLine.newPhotoKinds[fi] !== 'OLD_PART_EVIDENCE') return null;
+                        return (
+                          <div key={fi} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
+                            <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
 
-            {/* Remove line */}
-            {lines.length > 1 && (
+            {/* Photo validation message */}
+            {!photoValidation.valid && (
+              <div className="flex items-center gap-2 text-destructive text-xs bg-destructive/10 rounded-md p-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {photoValidation.message}
+              </div>
+            )}
+
+            {/* Remove line (add mode only) */}
+            {!isEditMode && lines.length > 1 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -385,10 +552,10 @@ export function SparesModal({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Skip
+            {isEditMode ? 'Cancel' : 'Skip'}
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Spares'}
+          <Button onClick={handleSave} disabled={saving || !allLinesValid}>
+            {saving ? 'Saving...' : isEditMode ? 'Update Spare' : 'Save Spares'}
           </Button>
         </DialogFooter>
       </DialogContent>
