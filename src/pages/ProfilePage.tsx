@@ -80,12 +80,20 @@ export default function ProfilePage() {
       const countryOnlyAssignments = assignments.filter(a => (!a.workshop_ids || a.workshop_ids.length === 0) && a.country_ids && a.country_ids.length > 0);
       let countryWorkshops: { name: string; country: string }[] = [];
       if (countryOnlyAssignments.length > 0) {
-        const countries = [...new Set(countryOnlyAssignments.flatMap(a => a.country_ids || []))];
-        const { data: ws } = await supabase
-          .from('workshops')
-          .select('name, country')
-          .in('country', countries);
-        countryWorkshops = ws || [];
+        const iso2Codes = [...new Set(countryOnlyAssignments.flatMap(a => a.country_ids || []))];
+        // Resolve ISO2 codes to full country names via countries_master
+        const { data: countryRows } = await supabase
+          .from('countries_master')
+          .select('name')
+          .in('iso2', iso2Codes);
+        const countryNames = (countryRows || []).map(c => c.name);
+        if (countryNames.length > 0) {
+          const { data: ws } = await supabase
+            .from('workshops')
+            .select('name, country')
+            .in('country', countryNames);
+          countryWorkshops = ws || [];
+        }
       }
 
       // For global assignments (both empty), fetch all workshops
