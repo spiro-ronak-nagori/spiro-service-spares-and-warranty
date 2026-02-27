@@ -57,6 +57,20 @@ const TOGGLE_SETTINGS: SettingItem[] = [
     tooltip: 'When disabled, no feedback link is generated when a job card moves to DELIVERED, and no feedback link is included in the delivery SMS.',
     icon: ClipboardList,
   },
+  {
+    key: 'ENABLE_SPARES_FLOW',
+    label: 'Enable Spares Flow',
+    description: 'Controls the spare parts capture during service workflow.',
+    tooltip: 'When enabled, technicians are prompted to record spare parts used when starting work, and work completion validates spares requirements. When disabled, spares UI is hidden.',
+    icon: ListTree,
+  },
+  {
+    key: 'ENABLE_WARRANTY_FLOW',
+    label: 'Enable Warranty Flow',
+    description: 'Controls warranty/goodwill claim types and old-part evidence.',
+    tooltip: 'When enabled, claim types include WARRANTY and GOODWILL with old-part evidence photo requirements. When disabled, all spares default to USER_PAID only.',
+    icon: ListTree,
+  },
 ];
 
 export default function SystemConfigPage() {
