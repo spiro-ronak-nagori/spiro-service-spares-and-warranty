@@ -131,17 +131,29 @@ export function SubmitWarrantySheet({
           } as any);
       }
 
-      // Update spare with approval_state, serial, comment
+      // Determine if auto-approve (no approval needed for this claim type)
+      const needsApproval = spare.claim_type === 'WARRANTY'
+        ? part?.warranty_approval_needed ?? true
+        : part?.goodwill_approval_needed ?? true;
+
       const now = new Date().toISOString();
+      const finalState = needsApproval ? 'SUBMITTED' : 'APPROVED';
+
+      // Update spare with approval_state, serial, comment
+      const updatePayload: any = {
+        approval_state: finalState,
+        submitted_at: now,
+        last_submitted_at: now,
+        old_part_serial_number: oldPartSerial.trim() || null,
+        claim_comment: claimComment.trim() || null,
+      };
+      if (!needsApproval) {
+        updatePayload.decided_at = now;
+      }
+
       const { error } = await supabase
         .from('job_card_spares' as any)
-        .update({
-          approval_state: 'SUBMITTED',
-          submitted_at: now,
-          last_submitted_at: now,
-          old_part_serial_number: oldPartSerial.trim() || null,
-          claim_comment: claimComment.trim() || null,
-        } as any)
+        .update(updatePayload)
         .eq('id', spare.id);
 
       if (error) throw error;
@@ -155,9 +167,23 @@ export function SubmitWarrantySheet({
           comment: claimComment.trim() || null,
           actor_user_id: userData.user.id,
         } as any);
+
+        // If auto-approved, also log APPROVE action
+        if (!needsApproval) {
+          await supabase.from('job_card_spare_actions' as any).insert({
+            job_card_spare_id: spare.id,
+            action_type: 'APPROVE',
+            comment: 'Auto-approved (no approval required)',
+            actor_user_id: userData.user.id,
+          } as any);
+        }
       }
 
-      toast.success(`${CLAIM_LABEL[spare.claim_type]} claim submitted`);
+      toast.success(
+        needsApproval
+          ? `${CLAIM_LABEL[spare.claim_type]} claim submitted`
+          : `${CLAIM_LABEL[spare.claim_type]} claim auto-approved`
+      );
       setNewPhotos([]);
       setOldPartSerial('');
       setClaimComment('');

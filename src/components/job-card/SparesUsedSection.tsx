@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,9 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw } from 'lucide-react';
-import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
+import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw, UserCheck } from 'lucide-react';
+import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState, SpareAction } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SparesUsedSectionProps {
   spares: JobCardSpare[];
@@ -94,6 +96,50 @@ function WarrantyBadge({ spare, warrantyEnabled }: { spare: JobCardSpare; warran
     <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${config.className}`}>
       {config.label}
     </span>
+  );
+}
+
+/** Shows the admin who acted on a spare (APPROVED/REJECTED/NEEDS_INFO) */
+function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
+  const [actorName, setActorName] = useState<string | null>(null);
+
+  const relevantStates = ['APPROVED', 'REJECTED', 'NEEDS_INFO'];
+  const showDecision = relevantStates.includes(spare.approval_state);
+
+  useEffect(() => {
+    if (!showDecision) return;
+    (async () => {
+      const actionMap: Record<string, string> = { APPROVED: 'APPROVE', REJECTED: 'REJECT', NEEDS_INFO: 'REQUEST_INFO' };
+      const actionType = actionMap[spare.approval_state];
+      const { data } = await supabase
+        .from('job_card_spare_actions' as any)
+        .select('actor_user_id, created_at')
+        .eq('job_card_spare_id', spare.id)
+        .eq('action_type', actionType)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const action = (data || [])[0] as any;
+      if (action?.actor_user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', action.actor_user_id)
+          .maybeSingle();
+        if (profile) setActorName(profile.full_name);
+      }
+    })();
+  }, [spare.id, spare.approval_state, showDecision]);
+
+  if (!showDecision || !actorName) return null;
+
+  const labelMap: Record<string, string> = { APPROVED: 'Approved by', REJECTED: 'Rejected by', NEEDS_INFO: 'Info requested by' };
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <UserCheck className="h-3 w-3" />
+      <span>{labelMap[spare.approval_state]} <span className="font-medium">{actorName}</span></span>
+    </div>
   );
 }
 
@@ -231,13 +277,8 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         ));
                       })()}
 
-                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON and approval is needed */}
-                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (() => {
-                        const part = spare.spare_part;
-                        if (!part) return false;
-                        const needsApproval = spare.claim_type === 'WARRANTY' ? part.warranty_approval_needed : part.goodwill_approval_needed;
-                        return needsApproval;
-                      })() && (
+                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON */}
+                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
                         <Button
                           variant="default"
                           size="sm"
@@ -248,6 +289,9 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                           Submit {CLAIM_LABEL[spare.claim_type]}
                         </Button>
                       )}
+
+                      {/* Decision info (admin name for APPROVED/REJECTED/NEEDS_INFO) */}
+                      <SpareDecisionInfo spare={spare} />
 
                       {/* Withdraw & Edit — for SUBMITTED spares */}
                       {canEdit && locked && spare.approval_state === 'SUBMITTED' && onWithdrawSpare && (
