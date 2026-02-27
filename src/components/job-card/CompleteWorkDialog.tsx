@@ -151,57 +151,76 @@ export function CompleteWorkDialog({
         </DrawerHeader>
 
         <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1 min-h-0">
-          {/* Spares Blocker Warning */}
-          {hasSparesBlocker && (
+          {/* Missing Spares Warning — no spares added at all */}
+          {sparesBlocker?.missingSpares && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                 <div className="space-y-2 flex-1">
                   <p className="text-sm font-medium text-destructive">
-                    {sparesBlocker!.missingSpares
-                      ? 'Spares are required for one or more selected issues. Please add spares before completing work.'
-                      : 'Some spare parts have incomplete documentation.'}
+                    Spares are required for one or more selected issues.
                   </p>
-
-                  {sparesBlocker!.issuesRequiringSpares.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-destructive mb-1">Issues requiring spares:</p>
-                      <ul className="space-y-1">
-                        {sparesBlocker!.issuesRequiringSpares.map((name, i) => (
-                          <li key={i} className="text-xs text-destructive/80 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
-                            {name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {sparesBlocker!.lineBlockers.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-destructive mb-1">Missing documentation:</p>
-                      <ul className="space-y-1">
-                        {sparesBlocker!.lineBlockers.map((msg, i) => (
-                          <li key={i} className="text-xs text-destructive/80 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
-                            {msg}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
+                  <div>
+                    <p className="text-xs font-medium text-destructive mb-1">Issues requiring spares:</p>
+                    <ul className="space-y-1">
+                      {sparesBlocker.issuesRequiringSpares.map((name, i) => (
+                        <li key={i} className="text-xs text-destructive/80 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   {onOpenSparesModal && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleAddSparesNow}
-                      className="mt-2 h-11"
-                    >
+                    <Button variant="destructive" size="sm" onClick={handleAddSparesNow} className="mt-2 h-11">
                       <Package className="h-3.5 w-3.5 mr-1.5" />
                       Add Spares Now
                     </Button>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Approval Pending Warning */}
+          {sparesBlocker && sparesBlocker.approvalBlockers.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-medium text-amber-800">
+                    Approval pending
+                  </p>
+                  <ul className="space-y-1">
+                    {sparesBlocker.approvalBlockers.map((msg, i) => (
+                      <li key={i} className="text-xs text-amber-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        {msg}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Incomplete Documentation Warning */}
+          {sparesBlocker && sparesBlocker.docBlockers.length > 0 && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-medium text-destructive">
+                    Some spare parts have incomplete documentation.
+                  </p>
+                  <ul className="space-y-1">
+                    {sparesBlocker.docBlockers.map((msg, i) => (
+                      <li key={i} className="text-xs text-destructive/80 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                        {msg}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
