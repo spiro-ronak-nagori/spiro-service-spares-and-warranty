@@ -827,6 +827,7 @@ interface ActionButtonsProps {
   onReopenJobCard: () => void;
   sparesEnabled?: boolean;
   sparesCount?: number;
+  mandatorySparesRequired?: boolean;
   onAddSpares?: () => void;
 }
 
@@ -840,6 +841,7 @@ function ActionButtons({
   onReopenJobCard,
   sparesEnabled,
   sparesCount = 0,
+  mandatorySparesRequired,
   onAddSpares,
 }: ActionButtonsProps) {
   const status = jobCard.status;
