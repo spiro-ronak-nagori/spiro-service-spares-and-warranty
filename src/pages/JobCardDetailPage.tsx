@@ -183,8 +183,6 @@ export default function JobCardDetailPage() {
 
   const handleSparesModalSaved = () => {
     refetchSpares();
-    // Proceed with Start Work after spares are saved/skipped
-    updateStatus('IN_PROGRESS');
   };
 
   const handleCompleteWork = (remarks: string) => {
