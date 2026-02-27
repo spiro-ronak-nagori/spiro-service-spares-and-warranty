@@ -6,7 +6,9 @@ export interface ApprovalQueueItem {
   spare: JobCardSpare;
   jc_number: string;
   workshop_name: string;
+  workshop_id: string;
   technician_name: string;
+  submitted_by_name: string | null;
   vehicle_reg_no: string;
   vehicle_model: string | null;
   vehicle_color: string | null;
@@ -40,7 +42,12 @@ interface Filters {
   workshopId?: string;
   status?: string;
   search?: string;
+  tatBucket?: TatBucket | 'all';
 }
+
+/** All states we can query */
+const PENDING_STATES = ['SUBMITTED', 'RESUBMITTED'];
+const ALL_STATES = ['SUBMITTED', 'RESUBMITTED', 'NEEDS_INFO', 'APPROVED', 'REJECTED'];
 
 export function useWarrantyApprovalQueue(filters: Filters) {
   const [items, setItems] = useState<ApprovalQueueItem[]>([]);
@@ -49,15 +56,21 @@ export function useWarrantyApprovalQueue(filters: Filters) {
   const fetchQueue = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get spares in SUBMITTED or RESUBMITTED state
+      // Determine which states to query
+      let queryStates: string[];
+      if (!filters.status || filters.status === 'all') {
+        queryStates = ALL_STATES;
+      } else if (filters.status === 'pending') {
+        queryStates = PENDING_STATES;
+      } else {
+        queryStates = [filters.status];
+      }
+
       let sparesQuery = supabase
         .from('job_card_spares' as any)
         .select('*')
-        .in('approval_state', ['SUBMITTED', 'RESUBMITTED']);
-
-      if (filters.status && filters.status !== 'all') {
-        sparesQuery = sparesQuery.eq('approval_state', filters.status);
-      }
+        .in('approval_state', queryStates)
+        .neq('claim_type', 'USER_PAID');
 
       const { data: sparesData } = await sparesQuery;
       const sparesList = (sparesData || []) as unknown as JobCardSpare[];
@@ -67,13 +80,14 @@ export function useWarrantyApprovalQueue(filters: Filters) {
         return;
       }
 
-      // Get unique job card IDs and spare part IDs
       const jcIds = [...new Set(sparesList.map(s => s.job_card_id))];
       const partIds = [...new Set(sparesList.map(s => s.spare_part_id))];
       const spareIds = sparesList.map(s => s.id);
 
-      // Fetch job cards, parts, and photos in parallel
-      const [jcRes, partsRes, photosRes] = await Promise.all([
+      // Collect submitted_by user IDs for name resolution
+      const submitterIds = [...new Set(sparesList.map(s => s.submitted_by).filter(Boolean))] as string[];
+
+      const [jcRes, partsRes, photosRes, submitterRes] = await Promise.all([
         supabase
           .from('job_cards')
           .select(`
@@ -91,11 +105,15 @@ export function useWarrantyApprovalQueue(filters: Filters) {
           .from('job_card_spare_photos' as any)
           .select('*')
           .in('job_card_spare_id', spareIds),
+        submitterIds.length > 0
+          ? supabase.from('profiles').select('user_id, full_name').in('user_id', submitterIds)
+          : Promise.resolve({ data: [] }),
       ]);
 
       const jcMap = new Map((jcRes.data || []).map((jc: any) => [jc.id, jc]));
       const partsMap = new Map((partsRes.data || []).map((p: any) => [p.id, p as SparePart]));
       const photos = (photosRes.data || []) as unknown as JobCardSparePhoto[];
+      const submitterMap = new Map((submitterRes.data || []).map((p: any) => [p.user_id, p.full_name]));
 
       // Generate signed URLs for photos
       if (photos.length > 0) {
@@ -122,12 +140,6 @@ export function useWarrantyApprovalQueue(filters: Filters) {
         if (!jc) continue;
 
         const part = partsMap.get(spare.spare_part_id);
-        // Check if approval is actually needed
-        if (part) {
-          const isWarranty = spare.claim_type === 'WARRANTY';
-          const approvalNeeded = isWarranty ? part.warranty_approval_needed : part.goodwill_approval_needed;
-          if (!approvalNeeded) continue;
-        }
 
         // Apply filters
         if (filters.country && jc.workshop?.country !== filters.country) continue;
@@ -139,20 +151,30 @@ export function useWarrantyApprovalQueue(filters: Filters) {
         const tatMs = now - new Date(spare.last_submitted_at || spare.submitted_at || spare.created_at).getTime();
         const tatMinutes = tatMs / 60000;
 
-        const vehicle = jc.vehicle as any;
+        // TAT bucket filter
+        if (filters.tatBucket && filters.tatBucket !== 'all') {
+          if (getTatBucket(tatMinutes) !== filters.tatBucket) continue;
+        }
 
-        // Search filter
+        const vehicle = jc.vehicle as any;
+        const workshopName = jc.workshop?.name || '';
+        const partName = part?.part_name || '';
+        const partCode = part?.part_code || '';
+
+        // Search filter — JC#, reg no, part name, part code, workshop name
         if (filters.search) {
           const s = filters.search.toLowerCase();
-          const searchable = `${jc.jc_number} ${vehicle?.reg_no || ''}`.toLowerCase();
+          const searchable = `${jc.jc_number} ${vehicle?.reg_no || ''} ${partName} ${partCode} ${workshopName}`.toLowerCase();
           if (!searchable.includes(s)) continue;
         }
 
         result.push({
           spare,
           jc_number: jc.jc_number,
-          workshop_name: jc.workshop?.name || '',
+          workshop_name: workshopName,
+          workshop_id: jc.workshop_id,
           technician_name: (jc.assignee as any)?.full_name || '—',
+          submitted_by_name: spare.submitted_by ? (submitterMap.get(spare.submitted_by) || null) : null,
           vehicle_reg_no: vehicle?.reg_no || '',
           vehicle_model: vehicle?.model || null,
           vehicle_color: vehicle?.color || null,
@@ -163,7 +185,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
         });
       }
 
-      // Sort by TAT descending (longest wait first)
+      // Sort by TAT descending (oldest/longest wait first)
       result.sort((a, b) => b.tat_minutes - a.tat_minutes);
       setItems(result);
     } catch (err) {
@@ -171,13 +193,43 @@ export function useWarrantyApprovalQueue(filters: Filters) {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.country, filters.workshopId, filters.status, filters.search]);
+  }, [filters.country, filters.workshopId, filters.status, filters.search, filters.tatBucket]);
 
   useEffect(() => {
     fetchQueue();
   }, [fetchQueue]);
 
   return { items, isLoading, refetch: fetchQueue };
+}
+
+/** Helper to build denormalized action insert */
+async function buildActionInsert(spareId: string, actionType: string, actorUserId: string, comment?: string | null) {
+  // Look up denormalized fields
+  const { data: spareRow } = await supabase
+    .from('job_card_spares' as any)
+    .select('job_card_id')
+    .eq('id', spareId)
+    .maybeSingle();
+
+  let workshopId: string | null = null;
+  const jobCardId = (spareRow as any)?.job_card_id || null;
+  if (jobCardId) {
+    const { data: jcRow } = await supabase
+      .from('job_cards')
+      .select('workshop_id')
+      .eq('id', jobCardId)
+      .maybeSingle();
+    workshopId = jcRow?.workshop_id || null;
+  }
+
+  return {
+    job_card_spare_id: spareId,
+    job_card_id: jobCardId,
+    workshop_id: workshopId,
+    action_type: actionType,
+    comment: comment || null,
+    actor_user_id: actorUserId,
+  } as any;
 }
 
 export async function approveSpare(spareId: string, actorUserId: string, comment?: string) {
@@ -188,12 +240,8 @@ export async function approveSpare(spareId: string, actorUserId: string, comment
     .eq('id', spareId);
   if (error) throw error;
 
-  await supabase.from('job_card_spare_actions' as any).insert({
-    job_card_spare_id: spareId,
-    action_type: 'APPROVE',
-    comment: comment || null,
-    actor_user_id: actorUserId,
-  } as any);
+  const action = await buildActionInsert(spareId, 'APPROVE', actorUserId, comment);
+  await supabase.from('job_card_spare_actions' as any).insert(action);
 }
 
 export async function rejectSpare(spareId: string, actorUserId: string, comment?: string) {
@@ -204,12 +252,8 @@ export async function rejectSpare(spareId: string, actorUserId: string, comment?
     .eq('id', spareId);
   if (error) throw error;
 
-  await supabase.from('job_card_spare_actions' as any).insert({
-    job_card_spare_id: spareId,
-    action_type: 'REJECT',
-    comment: comment || null,
-    actor_user_id: actorUserId,
-  } as any);
+  const action = await buildActionInsert(spareId, 'REJECT', actorUserId, comment);
+  await supabase.from('job_card_spare_actions' as any).insert(action);
 }
 
 export async function requestMoreInfo(spareId: string, actorUserId: string, comment: string) {
@@ -219,12 +263,8 @@ export async function requestMoreInfo(spareId: string, actorUserId: string, comm
     .eq('id', spareId);
   if (error) throw error;
 
-  await supabase.from('job_card_spare_actions' as any).insert({
-    job_card_spare_id: spareId,
-    action_type: 'REQUEST_INFO',
-    comment,
-    actor_user_id: actorUserId,
-  } as any);
+  const action = await buildActionInsert(spareId, 'REQUEST_INFO', actorUserId, comment);
+  await supabase.from('job_card_spare_actions' as any).insert(action);
 }
 
 export async function respondToNeedsInfo(spareId: string, actorUserId: string, comment: string) {
@@ -235,19 +275,11 @@ export async function respondToNeedsInfo(spareId: string, actorUserId: string, c
     .eq('id', spareId);
   if (error) throw error;
 
+  const techAction = await buildActionInsert(spareId, 'TECH_RESPONSE', actorUserId, comment);
+  const resubAction = await buildActionInsert(spareId, 'RESUBMIT', actorUserId, null);
   await Promise.all([
-    supabase.from('job_card_spare_actions' as any).insert({
-      job_card_spare_id: spareId,
-      action_type: 'TECH_RESPONSE',
-      comment,
-      actor_user_id: actorUserId,
-    } as any),
-    supabase.from('job_card_spare_actions' as any).insert({
-      job_card_spare_id: spareId,
-      action_type: 'RESUBMIT',
-      comment: null,
-      actor_user_id: actorUserId,
-    } as any),
+    supabase.from('job_card_spare_actions' as any).insert(techAction),
+    supabase.from('job_card_spare_actions' as any).insert(resubAction),
   ]);
 }
 
@@ -260,7 +292,6 @@ export async function fetchSpareActions(spareId: string): Promise<SpareAction[]>
 
   const actions = (data || []) as unknown as SpareAction[];
 
-  // Fetch actor names
   if (actions.length > 0) {
     const userIds = [...new Set(actions.map(a => a.actor_user_id))];
     const { data: profiles } = await supabase
@@ -274,4 +305,28 @@ export async function fetchSpareActions(spareId: string): Promise<SpareAction[]>
   }
 
   return actions;
+}
+
+/** Fetch distinct workshops from the approval queue scope (for filter dropdown) */
+export function useAdminScopeWorkshops() {
+  const [workshops, setWorkshops] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      // Warranty admins can see workshops via RLS on job_cards
+      const { data } = await supabase
+        .from('job_cards')
+        .select('workshop:workshops(id, name)')
+        .limit(500);
+      if (data) {
+        const map = new Map<string, string>();
+        data.forEach((row: any) => {
+          if (row.workshop?.id) map.set(row.workshop.id, row.workshop.name);
+        });
+        setWorkshops([...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)));
+      }
+    })();
+  }, []);
+
+  return workshops;
 }

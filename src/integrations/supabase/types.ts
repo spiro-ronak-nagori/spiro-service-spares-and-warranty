@@ -297,7 +297,9 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
+          job_card_id: string | null
           job_card_spare_id: string
+          workshop_id: string | null
         }
         Insert: {
           action_type: Database["public"]["Enums"]["spare_action_type"]
@@ -305,7 +307,9 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          job_card_id?: string | null
           job_card_spare_id: string
+          workshop_id?: string | null
         }
         Update: {
           action_type?: Database["public"]["Enums"]["spare_action_type"]
@@ -313,7 +317,9 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          job_card_id?: string | null
           job_card_spare_id?: string
+          workshop_id?: string | null
         }
         Relationships: [
           {
@@ -389,6 +395,7 @@ export type Database = {
           serial_number: string | null
           spare_part_id: string
           submitted_at: string | null
+          submitted_by: string | null
           technician_comment: string | null
           updated_at: string
           updated_by: string | null
@@ -409,6 +416,7 @@ export type Database = {
           serial_number?: string | null
           spare_part_id: string
           submitted_at?: string | null
+          submitted_by?: string | null
           technician_comment?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -429,6 +437,7 @@ export type Database = {
           serial_number?: string | null
           spare_part_id?: string
           submitted_at?: string | null
+          submitted_by?: string | null
           technician_comment?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1586,6 +1595,7 @@ export type Database = {
         | "TECH_RESPONSE"
         | "RESUBMIT"
         | "EDIT_RESET"
+        | "WITHDRAW"
       spare_photo_kind: "NEW_PART_PROOF" | "OLD_PART_EVIDENCE" | "ADDITIONAL"
       user_role:
         | "technician"
@@ -1753,6 +1763,7 @@ export const Constants = {
         "TECH_RESPONSE",
         "RESUBMIT",
         "EDIT_RESET",
+        "WITHDRAW",
       ],
       spare_photo_kind: ["NEW_PART_PROOF", "OLD_PART_EVIDENCE", "ADDITIONAL"],
       user_role: [

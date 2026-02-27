@@ -146,9 +146,16 @@ export function SubmitWarrantySheet({
         last_submitted_at: now,
         old_part_serial_number: oldPartSerial.trim() || null,
         claim_comment: claimComment.trim() || null,
+        submitted_by: null as string | null,
       };
       if (!needsApproval) {
         updatePayload.decided_at = now;
+      }
+
+      // Set submitted_by to current user
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        updatePayload.submitted_by = userData.user.id;
       }
 
       const { error } = await supabase
@@ -158,11 +165,21 @@ export function SubmitWarrantySheet({
 
       if (error) throw error;
 
+      // Look up denormalized fields for action logging
+      let workshopId: string | null = null;
+      const { data: jcRow } = await supabase
+        .from('job_cards')
+        .select('workshop_id')
+        .eq('id', jobCardId)
+        .maybeSingle();
+      workshopId = jcRow?.workshop_id || null;
+
       // Log SUBMIT action
-      const { data: userData } = await supabase.auth.getUser();
       if (userData?.user) {
         await supabase.from('job_card_spare_actions' as any).insert({
           job_card_spare_id: spare.id,
+          job_card_id: jobCardId,
+          workshop_id: workshopId,
           action_type: 'SUBMIT',
           comment: claimComment.trim() || null,
           actor_user_id: userData.user.id,
@@ -172,6 +189,8 @@ export function SubmitWarrantySheet({
         if (!needsApproval) {
           await supabase.from('job_card_spare_actions' as any).insert({
             job_card_spare_id: spare.id,
+            job_card_id: jobCardId,
+            workshop_id: workshopId,
             action_type: 'APPROVE',
             comment: 'Auto-approved (no approval required)',
             actor_user_id: userData.user.id,
