@@ -160,6 +160,8 @@ export interface SparePart {
   usage_proof_photo_prompts: string[];
   warranty_available: boolean;
   goodwill_available: boolean;
+  warranty_approval_needed: boolean;
+  goodwill_approval_needed: boolean;
   warranty_old_part_photos_required_count: number;
   warranty_old_part_photo_prompts: string[];
   goodwill_old_part_photos_required_count: number;
