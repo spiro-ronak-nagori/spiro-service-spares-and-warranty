@@ -627,6 +627,10 @@ export default function JobCardDetailPage() {
         onOpenChange={setShowCompleteWork}
         jobCard={jobCard}
         onComplete={handleCompleteWork}
+        sparesEnabled={sparesEnabled}
+        spares={spares}
+        warrantyEnabled={warrantyEnabled}
+        onOpenSparesModal={() => setShowSparesModal(true)}
       />
 
       <ReopenJobCardDialog
@@ -646,8 +650,8 @@ export default function JobCardDetailPage() {
           open={showSparesModal}
           onOpenChange={(open) => {
             setShowSparesModal(open);
-            if (!open) {
-              // If modal dismissed without saving, still start work
+            if (!open && jobCard.status === 'INWARDED') {
+              // Only auto-start work when opening from Start Work flow
               updateStatus('IN_PROGRESS');
             }
           }}
