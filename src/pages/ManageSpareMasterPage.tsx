@@ -334,14 +334,6 @@ export default function ManageSpareMasterPage() {
     );
   }
 
-  /* ---------- Section helper for dialog ---------- */
-  const SectionCard = ({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) => (
-    <div className={`rounded-lg border bg-card p-3 space-y-3 ${className}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      {children}
-    </div>
-  );
-
   return (
     <AppLayout>
       <PageHeader
