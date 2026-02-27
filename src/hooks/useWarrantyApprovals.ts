@@ -51,6 +51,7 @@ const ALL_STATES = ['SUBMITTED', 'RESUBMITTED', 'NEEDS_INFO', 'APPROVED', 'REJEC
 
 export function useWarrantyApprovalQueue(filters: Filters) {
   const [items, setItems] = useState<ApprovalQueueItem[]>([]);
+  const [bucketCounts, setBucketCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchQueue = useCallback(async () => {
