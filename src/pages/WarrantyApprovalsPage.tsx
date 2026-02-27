@@ -251,7 +251,7 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
 
   return (
     <AppLayout>
-      <PageHeader title="Claim Review" subtitle={item.jc_number} showBack backTo="/warranty-approvals" />
+      <PageHeader title="Claim Review" subtitle={item.jc_number} showBack onBack={onBack} />
       <div className="p-4 space-y-4">
         {/* Vehicle + Odo */}
         <Card>
