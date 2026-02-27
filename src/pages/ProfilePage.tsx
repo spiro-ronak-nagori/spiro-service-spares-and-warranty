@@ -48,6 +48,84 @@ export default function ProfilePage() {
 
   const canManageTeam = profile?.role === 'workshop_admin' || profile?.role === 'super_admin' || profile?.role === 'country_admin' || profile?.role === 'system_admin';
 
+  // Fetch warranty admin assignments with resolved workshop names
+  const { data: warrantyAssignments } = useQuery({
+    queryKey: ['warranty-admin-assignments-profile', profile?.id],
+    enabled: profile?.role === 'warranty_admin',
+    queryFn: async () => {
+      // Get assignments
+      const { data: assignments, error } = await supabase
+        .from('warranty_admin_assignments')
+        .select('id, country_ids, workshop_ids, active')
+        .eq('admin_user_id', profile!.user_id)
+        .eq('active', true);
+      if (error) throw error;
+      if (!assignments?.length) return [];
+
+      // Collect all workshop IDs and country codes
+      const allWorkshopIds = assignments.flatMap(a => a.workshop_ids || []);
+      const allCountryIds = assignments.flatMap(a => a.country_ids || []);
+
+      // Fetch workshop names for explicit IDs
+      let workshopMap: Record<string, string> = {};
+      if (allWorkshopIds.length > 0) {
+        const { data: ws } = await supabase
+          .from('workshops')
+          .select('id, name')
+          .in('id', allWorkshopIds);
+        ws?.forEach(w => { workshopMap[w.id] = w.name; });
+      }
+
+      // For country-scoped assignments (empty workshop_ids), fetch all workshops in those countries
+      const countryOnlyAssignments = assignments.filter(a => (!a.workshop_ids || a.workshop_ids.length === 0) && a.country_ids && a.country_ids.length > 0);
+      let countryWorkshops: { name: string; country: string }[] = [];
+      if (countryOnlyAssignments.length > 0) {
+        const countries = [...new Set(countryOnlyAssignments.flatMap(a => a.country_ids || []))];
+        const { data: ws } = await supabase
+          .from('workshops')
+          .select('name, country')
+          .in('country', countries);
+        countryWorkshops = ws || [];
+      }
+
+      // For global assignments (both empty), fetch all workshops
+      const globalAssignments = assignments.filter(a => (!a.workshop_ids || a.workshop_ids.length === 0) && (!a.country_ids || a.country_ids.length === 0));
+      let globalWorkshops: { name: string }[] = [];
+      if (globalAssignments.length > 0) {
+        const { data: ws } = await supabase
+          .from('workshops')
+          .select('name');
+        globalWorkshops = ws || [];
+      }
+
+      // Build resolved list
+      const resolvedWorkshops: string[] = [];
+
+      // Add explicitly assigned workshops
+      allWorkshopIds.forEach(id => {
+        if (workshopMap[id] && !resolvedWorkshops.includes(workshopMap[id])) {
+          resolvedWorkshops.push(workshopMap[id]);
+        }
+      });
+
+      // Add country-scoped workshops
+      countryWorkshops.forEach(w => {
+        if (!resolvedWorkshops.includes(w.name)) {
+          resolvedWorkshops.push(w.name);
+        }
+      });
+
+      // Add global workshops
+      globalWorkshops.forEach(w => {
+        if (!resolvedWorkshops.includes(w.name)) {
+          resolvedWorkshops.push(w.name);
+        }
+      });
+
+      return resolvedWorkshops;
+    },
+  });
+
   return (
     <AppLayout>
       <PageHeader 
