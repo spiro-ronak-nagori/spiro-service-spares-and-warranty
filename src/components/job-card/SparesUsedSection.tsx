@@ -113,14 +113,16 @@ function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
       const actionType = actionMap[spare.approval_state];
       const { data } = await supabase
         .from('job_card_spare_actions' as any)
-        .select('actor_user_id, created_at')
+        .select('actor_user_id, comment, created_at')
         .eq('job_card_spare_id', spare.id)
         .eq('action_type', actionType)
         .order('created_at', { ascending: false })
         .limit(1);
 
       const action = (data || [])[0] as any;
-      if (action?.actor_user_id) {
+      if (action?.comment === 'Auto-approved (no approval required)') {
+        setActorName('System');
+      } else if (action?.actor_user_id) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name')
@@ -357,7 +359,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                       {/* Edit / Delete buttons — only for DRAFT spares */}
                       {canEdit && (
                         <div className="flex items-center gap-2 pt-2 border-t">
-                          {locked ? (
+                          {locked && !['APPROVED', 'REJECTED'].includes(spare.approval_state) ? (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -370,7 +372,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                          ) : (
+                          ) : locked ? null : (
                             <>
                               {onEditSpare && (
                                 <Button
