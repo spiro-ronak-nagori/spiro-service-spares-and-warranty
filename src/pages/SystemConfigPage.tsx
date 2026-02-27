@@ -141,14 +141,16 @@ export default function SystemConfigPage() {
     <AppLayout>
       <PageHeader title="System Configuration" showBack backTo="/console" />
       <div className="p-4 space-y-4">
-        {isLoading ? (
+        {isLoading && isSystemAdmin ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}><CardContent className="p-4"><Skeleton className="h-5 w-40 mb-2" /><Skeleton className="h-4 w-64" /></CardContent></Card>
           ))
         ) : (
+          ))
+        ) : (
           <>
-            {/* Toggle Settings */}
-            {TOGGLE_SETTINGS.map((item) => (
+            {/* Toggle Settings - system_admin only */}
+            {isSystemAdmin && TOGGLE_SETTINGS.map((item) => (
               <Card key={item.key}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-4">
