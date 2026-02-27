@@ -232,36 +232,14 @@ export function SparesModal({
         {currentLine && (
           <div className="space-y-4">
             {/* Part selector with search */}
-            <div className="space-y-2">
+          <div className="space-y-2">
               <Label>Spare Part *</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search parts..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              {partsLoading ? (
-                <p className="text-xs text-muted-foreground">Loading parts...</p>
-              ) : (
-                <Select
-                  value={currentLine.spare_part_id}
-                  onValueChange={(val) => selectPart(activeLineIdx, val)}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select a part" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-48">
-                    {filteredParts.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.part_name}{p.part_code ? ` (${p.part_code})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <SearchablePartSelect
+                parts={parts}
+                value={currentLine.spare_part_id}
+                onSelect={(val) => selectPart(activeLineIdx, val)}
+                isLoading={partsLoading}
+              />
             </div>
 
             {/* Qty */}
