@@ -552,7 +552,9 @@ export default function JobCardDetailPage() {
           <SparesUsedSection
             spares={spares}
             isLoading={sparesLoading}
-            onAddSpares={() => setShowSparesModal(true)}
+            onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
+            onEditSpare={handleEditSpare}
+            onDeleteSpare={(id) => setDeletingSpareId(id)}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
           />
         )}
