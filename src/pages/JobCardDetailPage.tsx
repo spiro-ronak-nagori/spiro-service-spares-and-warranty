@@ -185,7 +185,7 @@ export default function JobCardDetailPage() {
     refetchSpares();
   };
 
-  const handleCompleteWork = (remarks: string) => {
+  const handleCompleteWork = async (remarks: string) => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
 
     // Work completion blockers (Phase 1)
