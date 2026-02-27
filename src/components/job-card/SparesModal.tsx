@@ -433,7 +433,7 @@ export function SparesModal({
                   </div>
                 )}
                 {/* New photo capture slots */}
-                {(currentPart.usage_proof_photo_prompts as string[]).map((prompt, pi) => {
+                {(Array.isArray(currentPart.usage_proof_photo_prompts) ? currentPart.usage_proof_photo_prompts as string[] : []).map((prompt, pi) => {
                   const existingCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
                   const newCount = currentLine.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
                   // Only show unfilled slots
@@ -474,8 +474,8 @@ export function SparesModal({
                 ? currentPart.warranty_old_part_photos_required_count
                 : currentPart.goodwill_old_part_photos_required_count;
               const prompts = isWarranty
-                ? currentPart.warranty_old_part_photo_prompts as string[]
-                : currentPart.goodwill_old_part_photo_prompts as string[];
+                ? (Array.isArray(currentPart.warranty_old_part_photo_prompts) ? currentPart.warranty_old_part_photo_prompts as string[] : [])
+                : (Array.isArray(currentPart.goodwill_old_part_photo_prompts) ? currentPart.goodwill_old_part_photo_prompts as string[] : []);
 
               if (count <= 0) return null;
 
