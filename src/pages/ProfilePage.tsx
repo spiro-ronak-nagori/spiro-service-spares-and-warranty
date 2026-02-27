@@ -41,6 +41,7 @@ export default function ProfilePage() {
       case 'super_admin': return 'Super Admin';
       case 'country_admin': return 'Country Admin';
       case 'workshop_admin': return 'Workshop Admin';
+      case 'warranty_admin': return 'Warranty Admin';
       default: return 'Technician';
     }
   };
