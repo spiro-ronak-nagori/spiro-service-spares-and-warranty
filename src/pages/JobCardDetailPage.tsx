@@ -749,6 +749,17 @@ export default function JobCardDetailPage() {
         confirmLabel="Delete"
         variant="destructive"
       />
+
+      {/* Withdraw spare confirmation */}
+      <ConfirmationDialog
+        open={!!withdrawingSpare}
+        onOpenChange={(open) => { if (!open) setWithdrawingSpare(null); }}
+        title="Withdraw submission?"
+        description="This claim is already submitted. Withdrawing will reset the submission so you can edit the part/qty/type. Old-part evidence photos and serial will be cleared. Continue?"
+        onConfirm={handleWithdrawSpare}
+        confirmLabel="Withdraw"
+        variant="destructive"
+      />
     </AppLayout>
   );
 }
