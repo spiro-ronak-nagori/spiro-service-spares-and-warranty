@@ -137,7 +137,66 @@ export interface ServiceCategory {
   parent_code: string | null;
   is_active: boolean;
   sort_order: number;
+  requires_spares: boolean;
   created_at: string;
+}
+
+export type ClaimType = 'USER_PAID' | 'WARRANTY' | 'GOODWILL';
+export type SparePhotoKind = 'NEW_PART_PROOF' | 'OLD_PART_EVIDENCE' | 'ADDITIONAL';
+
+export interface SparePart {
+  id: string;
+  part_name: string;
+  part_code: string | null;
+  active: boolean;
+  max_qty_allowed: number;
+  partno_required: boolean;
+  serial_required: boolean;
+  usage_proof_photos_required_count: number;
+  usage_proof_photo_prompts: string[];
+  warranty_available: boolean;
+  goodwill_available: boolean;
+  warranty_old_part_photos_required_count: number;
+  warranty_old_part_photo_prompts: string[];
+  goodwill_old_part_photos_required_count: number;
+  goodwill_old_part_photo_prompts: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SparePartApplicability {
+  id: string;
+  spare_part_id: string;
+  vehicle_model_id: string;
+  color_code: string | null;
+  created_at: string;
+}
+
+export interface JobCardSpare {
+  id: string;
+  job_card_id: string;
+  spare_part_id: string;
+  qty: number;
+  claim_type: ClaimType;
+  part_number: string | null;
+  serial_number: string | null;
+  technician_comment: string | null;
+  created_by: string;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  spare_part?: SparePart;
+  photos?: JobCardSparePhoto[];
+}
+
+export interface JobCardSparePhoto {
+  id: string;
+  job_card_spare_id: string;
+  photo_url: string;
+  photo_kind: SparePhotoKind;
+  description_prompt: string | null;
+  uploaded_by: string;
+  uploaded_at: string;
 }
 
 export interface OtpCode {
