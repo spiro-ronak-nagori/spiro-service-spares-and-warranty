@@ -16,6 +16,7 @@ interface SparesUsedSectionProps {
   onDeleteSpare?: (spareId: string) => void;
   onSubmitWarranty?: (spare: JobCardSpare) => void;
   canEdit?: boolean;
+  warrantyEnabled?: boolean;
 }
 
 const CLAIM_LABEL: Record<string, string> = {
@@ -71,9 +72,15 @@ function DocsIndicator({ spare }: { spare: JobCardSpare }) {
   return <div className="flex items-center gap-2">{indicators}</div>;
 }
 
-function WarrantyBadge({ spare }: { spare: JobCardSpare }) {
+function WarrantyBadge({ spare, warrantyEnabled }: { spare: JobCardSpare; warrantyEnabled?: boolean }) {
   if (spare.claim_type === 'USER_PAID') return null;
   const displayState = getWarrantyDisplayState(spare);
+
+  // When warranty flow is OFF, hide non-submitted badges (SUBMISSION_PENDING, READY_TO_SUBMIT)
+  // but keep historically submitted badges visible
+  const isSubmittedState = ['SUBMITTED', 'NEEDS_INFO', 'RESUBMITTED', 'APPROVED', 'REJECTED'].includes(displayState);
+  if (!warrantyEnabled && !isSubmittedState) return null;
+
   const config = WARRANTY_STATE_CONFIG[displayState];
   return (
     <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${config.className}`}>
@@ -82,7 +89,7 @@ function WarrantyBadge({ spare }: { spare: JobCardSpare }) {
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, canEdit }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
       <Card>
@@ -153,7 +160,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         >
                           {CLAIM_LABEL[spare.claim_type]}
                         </Badge>
-                        <WarrantyBadge spare={spare} />
+                        <WarrantyBadge spare={spare} warrantyEnabled={warrantyEnabled} />
                         <DocsIndicator spare={spare} />
                       </div>
                     </div>
@@ -207,8 +214,8 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                       ));
                     })()}
 
-                    {/* Submit Warranty CTA */}
-                    {canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+                    {/* Submit Warranty CTA — only when warranty flow is ON */}
+                    {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
                       <Button
                         variant="default"
                         size="sm"

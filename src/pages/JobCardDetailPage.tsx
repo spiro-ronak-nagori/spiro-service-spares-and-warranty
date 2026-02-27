@@ -557,8 +557,9 @@ export default function JobCardDetailPage() {
             onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
             onEditSpare={handleEditSpare}
             onDeleteSpare={(id) => setDeletingSpareId(id)}
-            onSubmitWarranty={(spare) => setWarrantySpare(spare)}
+            onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
+            warrantyEnabled={warrantyEnabled}
           />
         )}
 
