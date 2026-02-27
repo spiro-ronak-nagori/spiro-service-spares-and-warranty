@@ -26,8 +26,8 @@ export interface SpareAction {
 export interface WarrantyAdminAssignment {
   id: string;
   admin_user_id: string;
-  country_id: string | null;
-  workshop_id: string | null;
+  country_ids: string[];
+  workshop_ids: string[];
   active: boolean;
   created_at: string;
   created_by: string;
