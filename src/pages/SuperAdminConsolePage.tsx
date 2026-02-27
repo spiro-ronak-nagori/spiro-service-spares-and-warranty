@@ -91,27 +91,6 @@ export default function SuperAdminConsolePage() {
       path: '/console/system-config',
       visible: isSystemAdmin,
     },
-    {
-      label: 'Manage Spare Parts',
-      description: 'Spare parts master list and vehicle model mappings',
-      icon: Building2,
-      path: '/console/spare-parts',
-      visible: isSuperAdmin || isSystemAdmin,
-    },
-    {
-      label: 'Manage Feedback Form',
-      description: 'Edit feedback questions, types, and ordering',
-      icon: ClipboardList,
-      path: '/console/feedback-editor',
-      visible: isSuperAdmin || isSystemAdmin,
-    },
-    {
-      label: 'Manage Service Categories',
-      description: 'Add, edit, and remove service categories and issues',
-      icon: ListTree,
-      path: '/console/service-categories',
-      visible: isSuperAdmin || isSystemAdmin,
-    },
   ];
 
   const handleExportSheets = async () => {
