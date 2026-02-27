@@ -290,6 +290,104 @@ export type Database = {
           },
         ]
       }
+      job_card_spare_photos: {
+        Row: {
+          description_prompt: string | null
+          id: string
+          job_card_spare_id: string
+          photo_kind: Database["public"]["Enums"]["spare_photo_kind"]
+          photo_url: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          description_prompt?: string | null
+          id?: string
+          job_card_spare_id: string
+          photo_kind: Database["public"]["Enums"]["spare_photo_kind"]
+          photo_url: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          description_prompt?: string | null
+          id?: string
+          job_card_spare_id?: string
+          photo_kind?: Database["public"]["Enums"]["spare_photo_kind"]
+          photo_url?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_card_spare_photos_job_card_spare_id_fkey"
+            columns: ["job_card_spare_id"]
+            isOneToOne: false
+            referencedRelation: "job_card_spares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_card_spares: {
+        Row: {
+          claim_type: Database["public"]["Enums"]["claim_type"]
+          created_at: string
+          created_by: string
+          id: string
+          job_card_id: string
+          part_number: string | null
+          qty: number
+          serial_number: string | null
+          spare_part_id: string
+          technician_comment: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          claim_type?: Database["public"]["Enums"]["claim_type"]
+          created_at?: string
+          created_by: string
+          id?: string
+          job_card_id: string
+          part_number?: string | null
+          qty?: number
+          serial_number?: string | null
+          spare_part_id: string
+          technician_comment?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          claim_type?: Database["public"]["Enums"]["claim_type"]
+          created_at?: string
+          created_by?: string
+          id?: string
+          job_card_id?: string
+          part_number?: string | null
+          qty?: number
+          serial_number?: string | null
+          spare_part_id?: string
+          technician_comment?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_card_spares_job_card_id_fkey"
+            columns: ["job_card_id"]
+            isOneToOne: false
+            referencedRelation: "job_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_card_spares_spare_part_id_fkey"
+            columns: ["spare_part_id"]
+            isOneToOne: false
+            referencedRelation: "spare_parts_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_cards: {
         Row: {
           assigned_to: string | null
@@ -755,6 +853,7 @@ export type Database = {
           is_active: boolean
           name: string
           parent_code: string | null
+          requires_spares: boolean
           sort_order: number | null
         }
         Insert: {
@@ -764,6 +863,7 @@ export type Database = {
           is_active?: boolean
           name: string
           parent_code?: string | null
+          requires_spares?: boolean
           sort_order?: number | null
         }
         Update: {
@@ -773,6 +873,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           parent_code?: string | null
+          requires_spares?: boolean
           sort_order?: number | null
         }
         Relationships: []
@@ -905,6 +1006,105 @@ export type Database = {
           },
         ]
       }
+      spare_parts_applicability: {
+        Row: {
+          color_code: string | null
+          created_at: string
+          id: string
+          spare_part_id: string
+          vehicle_model_id: string
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string
+          id?: string
+          spare_part_id: string
+          vehicle_model_id: string
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string
+          id?: string
+          spare_part_id?: string
+          vehicle_model_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spare_parts_applicability_spare_part_id_fkey"
+            columns: ["spare_part_id"]
+            isOneToOne: false
+            referencedRelation: "spare_parts_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spare_parts_applicability_vehicle_model_id_fkey"
+            columns: ["vehicle_model_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spare_parts_master: {
+        Row: {
+          active: boolean
+          created_at: string
+          goodwill_available: boolean
+          goodwill_old_part_photo_prompts: Json
+          goodwill_old_part_photos_required_count: number
+          id: string
+          max_qty_allowed: number
+          part_code: string | null
+          part_name: string
+          partno_required: boolean
+          serial_required: boolean
+          updated_at: string
+          usage_proof_photo_prompts: Json
+          usage_proof_photos_required_count: number
+          warranty_available: boolean
+          warranty_old_part_photo_prompts: Json
+          warranty_old_part_photos_required_count: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          goodwill_available?: boolean
+          goodwill_old_part_photo_prompts?: Json
+          goodwill_old_part_photos_required_count?: number
+          id?: string
+          max_qty_allowed?: number
+          part_code?: string | null
+          part_name: string
+          partno_required?: boolean
+          serial_required?: boolean
+          updated_at?: string
+          usage_proof_photo_prompts?: Json
+          usage_proof_photos_required_count?: number
+          warranty_available?: boolean
+          warranty_old_part_photo_prompts?: Json
+          warranty_old_part_photos_required_count?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          goodwill_available?: boolean
+          goodwill_old_part_photo_prompts?: Json
+          goodwill_old_part_photos_required_count?: number
+          id?: string
+          max_qty_allowed?: number
+          part_code?: string | null
+          part_name?: string
+          partno_required?: boolean
+          serial_required?: boolean
+          updated_at?: string
+          usage_proof_photo_prompts?: Json
+          usage_proof_photos_required_count?: number
+          warranty_available?: boolean
+          warranty_old_part_photo_prompts?: Json
+          warranty_old_part_photos_required_count?: number
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           key: string
@@ -1030,6 +1230,7 @@ export type Database = {
       vehicles: {
         Row: {
           color: string | null
+          color_code: string | null
           created_at: string
           id: string
           last_service_date: string | null
@@ -1044,6 +1245,7 @@ export type Database = {
         }
         Insert: {
           color?: string | null
+          color_code?: string | null
           created_at?: string
           id?: string
           last_service_date?: string | null
@@ -1058,6 +1260,7 @@ export type Database = {
         }
         Update: {
           color?: string | null
+          color_code?: string | null
           created_at?: string
           id?: string
           last_service_date?: string | null
@@ -1249,6 +1452,7 @@ export type Database = {
       }
     }
     Enums: {
+      claim_type: "USER_PAID" | "WARRANTY" | "GOODWILL"
       feedback_question_type: "SCALE_1_5" | "NPS_0_10" | "TEXT"
       feedback_request_status: "PENDING" | "SUBMITTED" | "EXPIRED"
       job_card_status:
@@ -1260,6 +1464,7 @@ export type Database = {
         | "CLOSED"
         | "REOPENED"
         | "COMPLETED"
+      spare_photo_kind: "NEW_PART_PROOF" | "OLD_PART_EVIDENCE" | "ADDITIONAL"
       user_role:
         | "technician"
         | "workshop_admin"
@@ -1396,6 +1601,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      claim_type: ["USER_PAID", "WARRANTY", "GOODWILL"],
       feedback_question_type: ["SCALE_1_5", "NPS_0_10", "TEXT"],
       feedback_request_status: ["PENDING", "SUBMITTED", "EXPIRED"],
       job_card_status: [
@@ -1408,6 +1614,7 @@ export const Constants = {
         "REOPENED",
         "COMPLETED",
       ],
+      spare_photo_kind: ["NEW_PART_PROOF", "OLD_PART_EVIDENCE", "ADDITIONAL"],
       user_role: [
         "technician",
         "workshop_admin",
