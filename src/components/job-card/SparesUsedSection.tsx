@@ -99,6 +99,50 @@ function WarrantyBadge({ spare, warrantyEnabled }: { spare: JobCardSpare; warran
   );
 }
 
+/** Shows the admin who acted on a spare (APPROVED/REJECTED/NEEDS_INFO) */
+function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
+  const [actorName, setActorName] = useState<string | null>(null);
+
+  const relevantStates = ['APPROVED', 'REJECTED', 'NEEDS_INFO'];
+  const showDecision = relevantStates.includes(spare.approval_state);
+
+  useEffect(() => {
+    if (!showDecision) return;
+    (async () => {
+      const actionMap: Record<string, string> = { APPROVED: 'APPROVE', REJECTED: 'REJECT', NEEDS_INFO: 'REQUEST_INFO' };
+      const actionType = actionMap[spare.approval_state];
+      const { data } = await supabase
+        .from('job_card_spare_actions' as any)
+        .select('actor_user_id, created_at')
+        .eq('job_card_spare_id', spare.id)
+        .eq('action_type', actionType)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const action = (data || [])[0] as any;
+      if (action?.actor_user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', action.actor_user_id)
+          .maybeSingle();
+        if (profile) setActorName(profile.full_name);
+      }
+    })();
+  }, [spare.id, spare.approval_state, showDecision]);
+
+  if (!showDecision || !actorName) return null;
+
+  const labelMap: Record<string, string> = { APPROVED: 'Approved by', REJECTED: 'Rejected by', NEEDS_INFO: 'Info requested by' };
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <UserCheck className="h-3 w-3" />
+      <span>{labelMap[spare.approval_state]} <span className="font-medium">{actorName}</span></span>
+    </div>
+  );
+}
+
 export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
