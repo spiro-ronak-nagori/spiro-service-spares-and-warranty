@@ -176,7 +176,7 @@ export default function JobCardDetailPage() {
   const handleStartWork = () => {
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
       if (sparesEnabled) {
-        // Show spares modal first, then proceed
+        setSparesModalFromStartWork(true);
         setShowSparesModal(true);
       } else {
         updateStatus('IN_PROGRESS');
