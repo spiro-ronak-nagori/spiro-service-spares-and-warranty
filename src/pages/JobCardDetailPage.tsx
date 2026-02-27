@@ -35,7 +35,7 @@ import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/De
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
 import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
-import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare } from '@/hooks/useSparesFlow';
+import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';

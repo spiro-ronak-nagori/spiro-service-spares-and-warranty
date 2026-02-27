@@ -236,3 +236,32 @@ export async function deleteJobCardSpare(spareId: string): Promise<void> {
 
   if (error) throw error;
 }
+
+/**
+ * Withdraw a submitted spare claim back to DRAFT.
+ * Resets approval fields, clears old-part serial, deletes OLD_PART_EVIDENCE photos.
+ */
+export async function withdrawSpare(spareId: string, actorProfileId: string): Promise<void> {
+  // 1. Delete OLD_PART_EVIDENCE photos for this spare
+  await supabase
+    .from('job_card_spare_photos' as any)
+    .delete()
+    .eq('job_card_spare_id', spareId)
+    .eq('photo_kind', 'OLD_PART_EVIDENCE');
+
+  // 2. Reset the spare line to DRAFT
+  const { error } = await supabase
+    .from('job_card_spares' as any)
+    .update({
+      approval_state: 'DRAFT',
+      submitted_at: null,
+      last_submitted_at: null,
+      decided_at: null,
+      old_part_serial_number: null,
+      claim_comment: null,
+      updated_by: actorProfileId,
+    } as any)
+    .eq('id', spareId);
+
+  if (error) throw error;
+}
