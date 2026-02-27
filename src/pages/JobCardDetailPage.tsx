@@ -172,8 +172,19 @@ export default function JobCardDetailPage() {
 
   const handleStartWork = () => {
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
-      updateStatus('IN_PROGRESS');
+      if (sparesEnabled) {
+        // Show spares modal first, then proceed
+        setShowSparesModal(true);
+      } else {
+        updateStatus('IN_PROGRESS');
+      }
     }
+  };
+
+  const handleSparesModalSaved = () => {
+    refetchSpares();
+    // Proceed with Start Work after spares are saved/skipped
+    updateStatus('IN_PROGRESS');
   };
 
   const handleCompleteWork = (remarks: string) => {
