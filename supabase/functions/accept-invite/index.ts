@@ -274,6 +274,39 @@ serve(async (req) => {
       .update(inviteUpdate)
       .eq("id", invite.id);
 
+    // 7. Auto-create warranty_admin_assignments if scope was stored on the invite
+    if (invite.role === "warranty_admin") {
+      // Resolve auth user id for assignment
+      let assignUserId: string | null = null;
+
+      if (existingProfile) {
+        assignUserId = existingProfile.user_id;
+      } else {
+        // Look up the profile we just upserted
+        const { data: newProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id")
+          .eq("email", authEmail)
+          .maybeSingle();
+        assignUserId = newProfile?.user_id || null;
+      }
+
+      if (assignUserId) {
+        const countryIds = invite.assignment_country_ids || [];
+        const workshopIds = invite.assignment_workshop_ids || [];
+
+        await supabaseAdmin
+          .from("warranty_admin_assignments")
+          .insert({
+            admin_user_id: assignUserId,
+            country_ids: countryIds,
+            workshop_ids: workshopIds,
+            active: true,
+            created_by: invite.invited_by,
+          });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

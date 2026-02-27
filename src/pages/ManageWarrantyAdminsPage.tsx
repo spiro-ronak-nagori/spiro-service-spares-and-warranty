@@ -14,18 +14,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose,
 } from '@/components/ui/drawer';
-import { ShieldCheck, Plus, Trash2, Globe, Building2, Loader2, AlertCircle, Search, X, UserPlus } from 'lucide-react';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ShieldCheck, Plus, Trash2, Globe, Building2, Loader2, AlertCircle, Search, X, UserPlus, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { UserProfile, Workshop } from '@/types';
+import { Workshop } from '@/types';
 import { useCountries } from '@/hooks/useCountries';
 
 interface AdminWithAssignments {
   user_id: string;
+  profile_id: string;
   full_name: string;
   email: string | null;
   phone: string | null;
   status: string;
+  is_invite: boolean;
+  invite_id?: string;
   assignments: AssignmentRow[];
+  // stored scope from invite (not yet active)
+  pending_country_ids?: string[];
+  pending_workshop_ids?: string[];
 }
 
 interface AssignmentRow {
@@ -35,7 +45,6 @@ interface AssignmentRow {
   workshop_ids: string[];
   active: boolean;
   created_at: string;
-  // enriched
   country_names?: string[];
   workshop_names?: string[];
 }
@@ -45,27 +54,32 @@ export default function ManageWarrantyAdminsPage() {
   const { countries, buildE164Phone, getCallingCode } = useCountries();
   const [admins, setAdmins] = useState<AdminWithAssignments[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [workshopsList, setWorkshopsList] = useState<Workshop[]>([]);
 
-  // Invite drawer
-  const [showInvite, setShowInvite] = useState(false);
+  // Single drawer state
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit-assignment'>('create');
+  const [editingAdmin, setEditingAdmin] = useState<AdminWithAssignments | null>(null);
+
+  // Form fields
   const [invName, setInvName] = useState('');
   const [invEmail, setInvEmail] = useState('');
   const [invPhone, setInvPhone] = useState('');
   const [invPhoneCountry, setInvPhoneCountry] = useState('');
   const [invError, setInvError] = useState('');
-  const [inviting, setInviting] = useState(false);
 
-  // Assignment drawer
-  const [showAssign, setShowAssign] = useState(false);
-  const [selectedAdminId, setSelectedAdminId] = useState('');
+  // Scope fields (shared between create & edit-assignment)
   const [allCountries, setAllCountries] = useState(false);
   const [selCountries, setSelCountries] = useState<string[]>([]);
   const [allWorkshops, setAllWorkshops] = useState(false);
   const [selWorkshops, setSelWorkshops] = useState<string[]>([]);
-  const [workshopsList, setWorkshopsList] = useState<Workshop[]>([]);
   const [countrySearch, setCountrySearch] = useState('');
   const [workshopSearch, setWorkshopSearch] = useState('');
+
   const [saving, setSaving] = useState(false);
+
+  // Remove confirmation
+  const [removeTarget, setRemoveTarget] = useState<{ type: 'admin' | 'assignment'; id: string; name: string } | null>(null);
 
   const isSystemAdmin = profile?.role === 'system_admin';
   const isSuperAdmin = profile?.role === 'super_admin';
@@ -84,7 +98,6 @@ export default function ManageWarrantyAdminsPage() {
   const fetchAll = async () => {
     setIsLoading(true);
     try {
-      // Fetch warranty admin profiles + pending invites
       const [profilesRes, invitesRes, assignmentsRes, workshopsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('role', 'warranty_admin').neq('status', 'REMOVED'),
         supabase.from('user_invites').select('*').eq('role', 'warranty_admin' as any).eq('status', 'PENDING'),
@@ -92,46 +105,48 @@ export default function ManageWarrantyAdminsPage() {
         supabase.from('workshops').select('id, name, country').order('name'),
       ]);
 
-      const profiles = (profilesRes.data || []) as unknown as UserProfile[];
+      const profiles = (profilesRes.data || []) as any[];
       const invites = (invitesRes.data || []) as any[];
       const assignments = (assignmentsRes.data || []) as unknown as AssignmentRow[];
       setWorkshopsList((workshopsRes.data || []) as unknown as Workshop[]);
 
-      // Build workshop name map
       const wsMap = new Map((workshopsRes.data || []).map((w: any) => [w.id, w.name]));
-      // Build country name map from useCountries
       const countryMap = new Map(countries.map(c => [c.iso2, c.name]));
 
-      // Enrich assignments
       assignments.forEach(a => {
         a.country_names = (a.country_ids || []).map(id => countryMap.get(id) || id);
         a.workshop_names = (a.workshop_ids || []).map(id => wsMap.get(id) || id);
       });
 
-      // Build admin list
       const adminMap = new Map<string, AdminWithAssignments>();
 
       for (const p of profiles) {
         adminMap.set(p.user_id, {
           user_id: p.user_id,
+          profile_id: p.id,
           full_name: p.full_name,
           email: p.email,
           phone: p.phone,
           status: p.status,
+          is_invite: false,
           assignments: assignments.filter(a => a.admin_user_id === p.user_id),
         });
       }
 
-      // Add pending invites as "INVITED" admins
       for (const inv of invites) {
         if (!Array.from(adminMap.values()).some(a => a.email === inv.email)) {
           adminMap.set(`invite-${inv.id}`, {
             user_id: `invite-${inv.id}`,
+            profile_id: '',
             full_name: inv.full_name,
             email: inv.email,
             phone: inv.phone,
             status: 'INVITED',
+            is_invite: true,
+            invite_id: inv.id,
             assignments: [],
+            pending_country_ids: inv.assignment_country_ids || [],
+            pending_workshop_ids: inv.assignment_workshop_ids || [],
           });
         }
       }
@@ -144,59 +159,25 @@ export default function ManageWarrantyAdminsPage() {
     }
   };
 
-  // --- Invite flow ---
-  const resetInvite = () => {
+  // --- Open create drawer ---
+  const openCreateDrawer = () => {
+    setDrawerMode('create');
+    setEditingAdmin(null);
     setInvName(''); setInvEmail(''); setInvPhone(''); setInvError('');
     setInvPhoneCountry(countries.length > 0 ? countries[0].name : '');
+    resetScope();
+    setShowDrawer(true);
   };
 
-  const handleInvite = async () => {
-    if (!profile) return;
-    setInvError('');
-    if (!invName.trim()) { toast.error('Name is required'); return; }
-    if (!invEmail.trim()) { toast.error('Email is required'); return; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(invEmail)) { toast.error('Please enter a valid email'); return; }
-
-    setInviting(true);
-    try {
-      const normalizedEmail = invEmail.toLowerCase().trim();
-      const e164Phone = invPhone.trim() ? buildE164Phone(invPhoneCountry, invPhone) : null;
-
-      // Dedupe
-      const dedupeBody: Record<string, any> = { dedupe_only: true, email: normalizedEmail };
-      if (e164Phone) dedupeBody.phone = e164Phone;
-      const { data: checkResult } = await supabase.functions.invoke('check-invite', { body: dedupeBody });
-      if (checkResult?.error) { setInvError(checkResult.error); setInviting(false); return; }
-
-      const insertData: Record<string, any> = {
-        full_name: invName.trim(),
-        role: 'warranty_admin' as any,
-        workshop_id: null,
-        country: null,
-        invited_by: profile.id,
-        email: normalizedEmail,
-        phone: e164Phone,
-      };
-
-      const { error } = await supabase.from('user_invites').insert(insertData as any);
-      if (error) throw error;
-
-      toast.success(`Warranty Admin invite sent to ${invName.trim()}`);
-      resetInvite();
-      setShowInvite(false);
-      fetchAll();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create invite');
-    } finally {
-      setInviting(false);
-    }
+  // --- Open edit-assignment drawer for existing admin ---
+  const openAssignDrawer = (admin: AdminWithAssignments) => {
+    setDrawerMode('edit-assignment');
+    setEditingAdmin(admin);
+    resetScope();
+    setShowDrawer(true);
   };
 
-  // --- Assignment flow ---
-  const openAssignDrawer = async () => {
-    setShowAssign(true);
-    setSelectedAdminId('');
+  const resetScope = () => {
     setAllCountries(false);
     setSelCountries([]);
     setAllWorkshops(false);
@@ -205,11 +186,7 @@ export default function ManageWarrantyAdminsPage() {
     setWorkshopSearch('');
   };
 
-  const activeAdmins = useMemo(
-    () => admins.filter(a => a.status === 'ACTIVE'),
-    [admins]
-  );
-
+  // --- Filtered lists ---
   const filteredCountries = useMemo(() => {
     if (!countrySearch) return countries;
     const q = countrySearch.toLowerCase();
@@ -218,7 +195,6 @@ export default function ManageWarrantyAdminsPage() {
 
   const filteredWorkshops = useMemo(() => {
     let ws = workshopsList;
-    // Filter by selected countries if any
     if (!allCountries && selCountries.length > 0) {
       const countryNames = selCountries.map(iso => countries.find(c => c.iso2 === iso)?.name).filter(Boolean);
       ws = ws.filter(w => w.country && countryNames.includes(w.country));
@@ -231,19 +207,64 @@ export default function ManageWarrantyAdminsPage() {
   }, [workshopsList, allCountries, selCountries, workshopSearch, countries]);
 
   const toggleCountry = (iso2: string) => {
-    setSelCountries(prev =>
-      prev.includes(iso2) ? prev.filter(c => c !== iso2) : [...prev, iso2]
-    );
+    setSelCountries(prev => prev.includes(iso2) ? prev.filter(c => c !== iso2) : [...prev, iso2]);
   };
 
   const toggleWorkshop = (id: string) => {
-    setSelWorkshops(prev =>
-      prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]
-    );
+    setSelWorkshops(prev => prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]);
   };
 
+  // --- Submit: Create new warranty admin (invite + scope) ---
+  const handleCreate = async () => {
+    if (!profile) return;
+    setInvError('');
+    if (!invName.trim()) { toast.error('Name is required'); return; }
+    if (!invEmail.trim()) { toast.error('Email is required'); return; }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(invEmail)) { toast.error('Please enter a valid email'); return; }
+
+    setSaving(true);
+    try {
+      const normalizedEmail = invEmail.toLowerCase().trim();
+      const e164Phone = invPhone.trim() ? buildE164Phone(invPhoneCountry, invPhone) : null;
+
+      // Dedupe
+      const dedupeBody: Record<string, any> = { dedupe_only: true, email: normalizedEmail };
+      if (e164Phone) dedupeBody.phone = e164Phone;
+      const { data: checkResult } = await supabase.functions.invoke('check-invite', { body: dedupeBody });
+      if (checkResult?.error) { setInvError(checkResult.error); setSaving(false); return; }
+
+      const countryIds = allCountries ? [] : selCountries;
+      const workshopIds = allWorkshops ? [] : selWorkshops;
+
+      const insertData: Record<string, any> = {
+        full_name: invName.trim(),
+        role: 'warranty_admin' as any,
+        workshop_id: null,
+        country: null,
+        invited_by: profile.id,
+        email: normalizedEmail,
+        phone: e164Phone,
+        assignment_country_ids: countryIds,
+        assignment_workshop_ids: workshopIds,
+      };
+
+      const { error } = await supabase.from('user_invites').insert(insertData as any);
+      if (error) throw error;
+
+      toast.success(`Warranty Admin invite created for ${invName.trim()}`);
+      setShowDrawer(false);
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create invite');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // --- Submit: Add assignment to existing active admin ---
   const handleSaveAssignment = async () => {
-    if (!selectedAdminId || !profile) return;
+    if (!editingAdmin || !profile) return;
     setSaving(true);
     try {
       const countryIds = allCountries ? [] : selCountries;
@@ -252,7 +273,7 @@ export default function ManageWarrantyAdminsPage() {
       const { error } = await supabase
         .from('warranty_admin_assignments' as any)
         .insert({
-          admin_user_id: selectedAdminId,
+          admin_user_id: editingAdmin.user_id,
           country_ids: countryIds,
           workshop_ids: workshopIds,
           active: true,
@@ -261,7 +282,7 @@ export default function ManageWarrantyAdminsPage() {
 
       if (error) throw error;
       toast.success('Assignment created');
-      setShowAssign(false);
+      setShowDrawer(false);
       fetchAll();
     } catch (err: any) {
       toast.error(err.message || 'Failed to create assignment');
@@ -270,12 +291,10 @@ export default function ManageWarrantyAdminsPage() {
     }
   };
 
-  const handleDeactivate = async (assignmentId: string) => {
+  // --- Remove assignment ---
+  const handleDeactivateAssignment = async (assignmentId: string) => {
     try {
-      await supabase
-        .from('warranty_admin_assignments' as any)
-        .update({ active: false } as any)
-        .eq('id', assignmentId);
+      await supabase.from('warranty_admin_assignments' as any).update({ active: false } as any).eq('id', assignmentId);
       toast.success('Assignment removed');
       fetchAll();
     } catch (err: any) {
@@ -283,15 +302,33 @@ export default function ManageWarrantyAdminsPage() {
     }
   };
 
-  const getScopeLabel = (a: AssignmentRow) => {
-    const noCountries = !a.country_ids?.length;
-    const noWorkshops = !a.workshop_ids?.length;
-    if (noCountries && noWorkshops) return 'All Workshops (Global)';
+  // --- Remove admin (set status REMOVED or cancel invite) ---
+  const handleRemoveAdmin = async (admin: AdminWithAssignments) => {
+    try {
+      if (admin.is_invite && admin.invite_id) {
+        await supabase.from('user_invites').update({ status: 'CANCELLED' } as any).eq('id', admin.invite_id);
+      } else {
+        await supabase.from('profiles').update({ status: 'REMOVED' as any, is_active: false }).eq('user_id', admin.user_id);
+        // Deactivate all assignments
+        await supabase.from('warranty_admin_assignments' as any).update({ active: false } as any).eq('admin_user_id', admin.user_id);
+      }
+      toast.success(`${admin.full_name} removed`);
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove');
+    }
+  };
+
+  const getPendingScopeLabel = (admin: AdminWithAssignments) => {
+    const noC = !admin.pending_country_ids?.length;
+    const noW = !admin.pending_workshop_ids?.length;
+    if (noC && noW) return 'All Workshops (Global)';
     const parts: string[] = [];
-    if (a.country_names?.length) parts.push(`Countries: ${a.country_names.join(', ')}`);
-    if (a.workshop_names?.length) parts.push(`Workshops: ${a.workshop_names.join(', ')}`);
-    if (a.country_ids?.length && noWorkshops) parts.push('(All workshops in selected countries)');
-    return parts.join(' · ');
+    const countryMap = new Map(countries.map(c => [c.iso2, c.name]));
+    const wsMap = new Map(workshopsList.map(w => [w.id, w.name]));
+    if (admin.pending_country_ids?.length) parts.push(admin.pending_country_ids.map(id => countryMap.get(id) || id).join(', '));
+    if (admin.pending_workshop_ids?.length) parts.push(admin.pending_workshop_ids.map(id => wsMap.get(id) || id).join(', '));
+    return parts.join(' · ') || 'All workshops in selected countries';
   };
 
   if (!hasAccess) {
@@ -307,21 +344,17 @@ export default function ManageWarrantyAdminsPage() {
 
   return (
     <AppLayout>
-      <PageHeader title="Warranty Admins" showBack />
-      <div className="p-4 space-y-4">
-        {/* CTAs */}
-        <div className="flex gap-2 justify-end flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => { resetInvite(); setShowInvite(true); }}>
-            <UserPlus className="h-3.5 w-3.5 mr-1" />
-            Create Warranty Admin
+      <PageHeader
+        title="Warranty Admins"
+        showBack
+        rightAction={
+          <Button size="sm" onClick={openCreateDrawer}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add
           </Button>
-          <Button size="sm" onClick={openAssignDrawer}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            New Assignment
-          </Button>
-        </div>
-
-        {/* Admin list */}
+        }
+      />
+      <div className="p-4 space-y-3">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-24 w-full" />
@@ -331,163 +364,165 @@ export default function ManageWarrantyAdminsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <ShieldCheck className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No warranty admins yet. Create one to get started.</p>
+              <p className="text-sm text-muted-foreground">No warranty admins yet. Add one to get started.</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {admins.map(admin => (
-              <Card key={admin.user_id}>
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 shrink-0">
-                      <ShieldCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{admin.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{admin.email || admin.phone || '—'}</p>
-                    </div>
-                    <Badge variant={admin.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-[10px] shrink-0">
-                      {admin.status}
-                    </Badge>
+          admins.map(admin => (
+            <Card key={admin.user_id}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{admin.full_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{admin.email || admin.phone || '—'}</p>
+                  </div>
+                  <Badge variant={admin.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-[10px] shrink-0">
+                    {admin.status}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {admin.status === 'ACTIVE' && (
+                        <DropdownMenuItem onClick={() => openAssignDrawer(admin)}>
+                          <Plus className="h-3.5 w-3.5 mr-2" />
+                          Add Assignment
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => setRemoveTarget({ type: 'admin', id: admin.user_id, name: admin.full_name })}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        {admin.is_invite ? 'Cancel Invite' : 'Remove Admin'}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
 
-                  {admin.assignments.length === 0 ? (
-                    <p className="text-xs text-muted-foreground pl-12 italic">No scope assigned</p>
-                  ) : (
-                    <div className="pl-12 space-y-1.5">
-                      {admin.assignments.map(a => (
-                        <div key={a.id} className="flex items-start gap-2 text-xs">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap gap-1">
-                              {!a.country_ids?.length && !a.workshop_ids?.length ? (
-                                <Badge variant="secondary" className="text-[10px]">
-                                  <Globe className="h-2.5 w-2.5 mr-0.5" />
-                                  All Workshops (Global)
-                                </Badge>
-                              ) : (
-                                <>
-                                  {(a.country_names || []).map(cn => (
-                                    <Badge key={cn} variant="outline" className="text-[10px]">
-                                      <Globe className="h-2.5 w-2.5 mr-0.5" />{cn}
-                                    </Badge>
-                                  ))}
-                                  {(a.workshop_names || []).map(wn => (
-                                    <Badge key={wn} variant="outline" className="text-[10px]">
-                                      <Building2 className="h-2.5 w-2.5 mr-0.5" />{wn}
-                                    </Badge>
-                                  ))}
-                                  {a.country_ids?.length > 0 && !a.workshop_ids?.length && (
-                                    <span className="text-muted-foreground italic">All workshops in countries</span>
-                                  )}
-                                </>
-                              )}
-                            </div>
+                {/* Show assignments or pending scope */}
+                {admin.is_invite ? (
+                  <p className="text-xs text-muted-foreground pl-12 italic">
+                    Pending scope: {getPendingScopeLabel(admin)}
+                  </p>
+                ) : admin.assignments.length === 0 ? (
+                  <p className="text-xs text-muted-foreground pl-12 italic">No scope assigned</p>
+                ) : (
+                  <div className="pl-12 space-y-1.5">
+                    {admin.assignments.map(a => (
+                      <div key={a.id} className="flex items-start gap-2 text-xs">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap gap-1">
+                            {!a.country_ids?.length && !a.workshop_ids?.length ? (
+                              <Badge variant="secondary" className="text-[10px]">
+                                <Globe className="h-2.5 w-2.5 mr-0.5" />All Workshops (Global)
+                              </Badge>
+                            ) : (
+                              <>
+                                {(a.country_names || []).map(cn => (
+                                  <Badge key={cn} variant="outline" className="text-[10px]">
+                                    <Globe className="h-2.5 w-2.5 mr-0.5" />{cn}
+                                  </Badge>
+                                ))}
+                                {(a.workshop_names || []).map(wn => (
+                                  <Badge key={wn} variant="outline" className="text-[10px]">
+                                    <Building2 className="h-2.5 w-2.5 mr-0.5" />{wn}
+                                  </Badge>
+                                ))}
+                                {a.country_ids?.length > 0 && !a.workshop_ids?.length && (
+                                  <span className="text-muted-foreground italic">All workshops in countries</span>
+                                )}
+                              </>
+                            )}
                           </div>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive shrink-0" onClick={() => handleDeactivate(a.id)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="h-6 w-6 p-0 text-destructive shrink-0"
+                          onClick={() => setRemoveTarget({ type: 'assignment', id: a.id, name: 'this assignment' })}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))
         )}
       </div>
 
-      {/* Create Warranty Admin Drawer */}
-      <Drawer open={showInvite} onOpenChange={setShowInvite}>
+      {/* Single Drawer for Create or Add Assignment */}
+      <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
         <DrawerContent className="max-h-[85vh] flex flex-col">
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              Create Warranty Admin
+              {drawerMode === 'create' ? (
+                <><UserPlus className="h-5 w-5" />Add Warranty Admin</>
+              ) : (
+                <><Plus className="h-5 w-5" />Add Assignment for {editingAdmin?.full_name}</>
+              )}
             </DrawerTitle>
             <DrawerDescription>
-              Invite a new Warranty Admin. They will activate via the New User flow.
+              {drawerMode === 'create'
+                ? 'Create a new Warranty Admin with their scope assignment.'
+                : 'Add a new scope assignment for this admin.'}
             </DrawerDescription>
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto px-4 space-y-4 min-h-0">
-            <div className="space-y-1.5">
-              <Label>Full Name <span className="text-destructive">*</span></Label>
-              <Input placeholder="Enter full name" value={invName} onChange={e => setInvName(e.target.value)} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email <span className="text-destructive">*</span></Label>
-              <Input type="email" placeholder="admin@example.com" value={invEmail} onChange={e => { setInvEmail(e.target.value); setInvError(''); }} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Phone (optional)</Label>
-              <div className="flex gap-2">
-                <div className="w-[140px] shrink-0">
-                  <Select value={invPhoneCountry} onValueChange={setInvPhoneCountry}>
-                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {countries.map(c => (
-                        <SelectItem key={c.name} value={c.name}>{c.name} ({c.calling_code})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {/* Admin details — only for create mode */}
+            {drawerMode === 'create' && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>Full Name <span className="text-destructive">*</span></Label>
+                  <Input placeholder="Enter full name" value={invName} onChange={e => setInvName(e.target.value)} className="h-11" />
                 </div>
-                <Input
-                  type="text" inputMode="numeric" placeholder="712345678"
-                  value={invPhone}
-                  onChange={e => { setInvPhone(e.target.value.replace(/\D/g, '').slice(0, 9)); setInvError(''); }}
-                  maxLength={9} className="h-11"
-                />
-              </div>
-            </div>
-            {invError && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />{invError}
-              </p>
+                <div className="space-y-1.5">
+                  <Label>Email <span className="text-destructive">*</span></Label>
+                  <Input type="email" placeholder="admin@example.com" value={invEmail} onChange={e => { setInvEmail(e.target.value); setInvError(''); }} className="h-11" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone (optional)</Label>
+                  <div className="flex gap-2">
+                    <div className="w-[140px] shrink-0">
+                      <Select value={invPhoneCountry} onValueChange={setInvPhoneCountry}>
+                        <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {countries.map(c => (
+                            <SelectItem key={c.name} value={c.name}>{c.name} ({c.calling_code})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      type="text" inputMode="numeric" placeholder="712345678"
+                      value={invPhone}
+                      onChange={e => { setInvPhone(e.target.value.replace(/\D/g, '').slice(0, 9)); setInvError(''); }}
+                      maxLength={9} className="h-11"
+                    />
+                  </div>
+                </div>
+                {invError && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />{invError}
+                  </p>
+                )}
+
+                <div className="border-t pt-4">
+                  <p className="text-sm font-medium mb-2">Scope Assignment</p>
+                </div>
+              </>
             )}
-            <p className="text-xs text-muted-foreground">
-              The warranty admin will have no workshop assignment. Scope is set via assignments below.
-            </p>
-          </div>
 
-          <DrawerFooter className="pb-safe">
-            <Button onClick={handleInvite} disabled={inviting} className="h-11">
-              {inviting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating...</> : 'Send Invite'}
-            </Button>
-            <DrawerClose asChild>
-              <Button variant="outline" className="h-11">Cancel</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      {/* New Assignment Drawer */}
-      <Drawer open={showAssign} onOpenChange={setShowAssign}>
-        <DrawerContent className="max-h-[85vh] flex flex-col">
-          <DrawerHeader>
-            <DrawerTitle>New Assignment</DrawerTitle>
-            <DrawerDescription>Assign a warranty admin to countries and/or workshops.</DrawerDescription>
-          </DrawerHeader>
-
-          <div className="flex-1 overflow-y-auto px-4 space-y-4 min-h-0">
-            {/* Admin selector */}
-            <div className="space-y-1.5">
-              <Label>Warranty Admin <span className="text-destructive">*</span></Label>
-              <Select value={selectedAdminId} onValueChange={setSelectedAdminId}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select admin..." /></SelectTrigger>
-                <SelectContent>
-                  {activeAdmins.map(a => (
-                    <SelectItem key={a.user_id} value={a.user_id}>{a.full_name} ({a.email || a.phone})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {activeAdmins.length === 0 && (
-                <p className="text-xs text-muted-foreground">No active warranty admins. Create one first.</p>
-              )}
-            </div>
-
-            {/* Countries */}
+            {/* Countries multi-select */}
             <div className="space-y-1.5">
               <Label>Countries</Label>
               <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
@@ -527,7 +562,7 @@ export default function ManageWarrantyAdminsPage() {
               )}
             </div>
 
-            {/* Workshops */}
+            {/* Workshops multi-select */}
             <div className="space-y-1.5">
               <Label>Workshops</Label>
               <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
@@ -574,17 +609,17 @@ export default function ManageWarrantyAdminsPage() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Empty countries = all countries. Empty workshops = all workshops in selected countries (or globally if no countries selected).
+              Empty countries = all countries. Empty workshops = all workshops in selected countries (or globally).
             </p>
           </div>
 
           <DrawerFooter className="pb-safe">
             <Button
-              onClick={handleSaveAssignment}
-              disabled={!selectedAdminId || saving}
+              onClick={drawerMode === 'create' ? handleCreate : handleSaveAssignment}
+              disabled={saving}
               className="h-11"
             >
-              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : 'Save Assignment'}
+              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : (drawerMode === 'create' ? 'Create & Assign' : 'Save Assignment')}
             </Button>
             <DrawerClose asChild>
               <Button variant="outline" className="h-11">Cancel</Button>
@@ -592,6 +627,26 @@ export default function ManageWarrantyAdminsPage() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Confirmation dialog */}
+      <ConfirmationDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}
+        title={removeTarget?.type === 'admin' ? 'Remove Warranty Admin' : 'Remove Assignment'}
+        description={`Are you sure you want to remove ${removeTarget?.name}? This action cannot be undone.`}
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={async () => {
+          if (!removeTarget) return;
+          if (removeTarget.type === 'assignment') {
+            await handleDeactivateAssignment(removeTarget.id);
+          } else {
+            const admin = admins.find(a => a.user_id === removeTarget.id);
+            if (admin) await handleRemoveAdmin(admin);
+          }
+          setRemoveTarget(null);
+        }}
+      />
     </AppLayout>
   );
 }
