@@ -80,8 +80,9 @@ export default function SystemConfigPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
-  // Only system_admin can access the config toggles page
   const isSystemAdmin = profile?.role === 'system_admin';
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const hasAccess = isSystemAdmin || isSuperAdmin;
 
   useEffect(() => {
     if (isSystemAdmin) fetchSettings();
@@ -125,12 +126,12 @@ export default function SystemConfigPage() {
     }
   };
 
-  if (!isSystemAdmin) {
+  if (!hasAccess) {
     return (
       <AppLayout>
         <PageHeader title="Access Denied" showBack backTo="/console" />
         <div className="p-4">
-          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">System Admin access required.</p></CardContent></Card>
+          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Access required.</p></CardContent></Card>
         </div>
       </AppLayout>
     );
@@ -140,14 +141,14 @@ export default function SystemConfigPage() {
     <AppLayout>
       <PageHeader title="System Configuration" showBack backTo="/console" />
       <div className="p-4 space-y-4">
-        {isLoading ? (
+        {isLoading && isSystemAdmin ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}><CardContent className="p-4"><Skeleton className="h-5 w-40 mb-2" /><Skeleton className="h-4 w-64" /></CardContent></Card>
           ))
         ) : (
           <>
-            {/* Toggle Settings */}
-            {TOGGLE_SETTINGS.map((item) => (
+            {/* Toggle Settings - system_admin only */}
+            {isSystemAdmin && TOGGLE_SETTINGS.map((item) => (
               <Card key={item.key}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-4">
@@ -204,16 +205,18 @@ export default function SystemConfigPage() {
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/spare-parts')}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <Package className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium">Manage Spare Parts</h3>
-                  <p className="text-xs text-muted-foreground">Spare parts master list and vehicle model mappings</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
+            {isSystemAdmin && (
+              <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/spare-parts')}>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium">Manage Spare Parts</h3>
+                    <p className="text-xs text-muted-foreground">Spare parts master list and vehicle model mappings</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>
