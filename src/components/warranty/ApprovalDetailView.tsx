@@ -338,22 +338,13 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
   );
 }
 
-function ActionBadge({ type }: { type: string }) {
-  const config: Record<string, { icon: typeof CheckCircle2; className: string; label: string }> = {
-    SUBMIT: { icon: Package, className: 'text-blue-600', label: 'Submitted' },
-    APPROVE: { icon: CheckCircle2, className: 'text-green-600', label: 'Approved' },
-    REJECT: { icon: XCircle, className: 'text-red-600', label: 'Rejected' },
-    REQUEST_INFO: { icon: MessageSquare, className: 'text-orange-600', label: 'Info Requested' },
-    TECH_RESPONSE: { icon: MessageSquare, className: 'text-blue-600', label: 'Tech Response' },
-    RESUBMIT: { icon: Package, className: 'text-blue-600', label: 'Resubmitted' },
-    EDIT_RESET: { icon: AlertCircle, className: 'text-amber-600', label: 'Edit Reset' },
-    WITHDRAW: { icon: AlertCircle, className: 'text-amber-600', label: 'Withdrawn' },
-  };
-  const c = config[type] || { icon: AlertCircle, className: 'text-muted-foreground', label: type };
-  const Icon = c.icon;
-  return (
-    <div className={`shrink-0 mt-0.5 ${c.className}`} title={c.label}>
-      <Icon className="h-3.5 w-3.5" />
-    </div>
-  );
-}
+const ACTION_CONFIG: Record<string, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  SUBMIT: { icon: Send, className: 'text-blue-600 bg-blue-100', label: 'Submitted' },
+  APPROVE: { icon: CheckCircle2, className: 'text-white bg-green-600', label: 'Approved' },
+  REJECT: { icon: XCircle, className: 'text-white bg-red-600', label: 'Rejected' },
+  REQUEST_INFO: { icon: MessageSquare, className: 'text-orange-700 bg-orange-100', label: 'Info Requested' },
+  TECH_RESPONSE: { icon: MessageSquare, className: 'text-blue-700 bg-blue-100', label: 'Tech Response' },
+  RESUBMIT: { icon: Package, className: 'text-blue-600 bg-blue-100', label: 'Resubmitted' },
+  EDIT_RESET: { icon: AlertCircle, className: 'text-amber-700 bg-amber-100', label: 'Edit Reset' },
+  WITHDRAW: { icon: AlertCircle, className: 'text-amber-700 bg-amber-100', label: 'Withdrawn' },
+};
