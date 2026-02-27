@@ -409,24 +409,30 @@ export function SparesModal({
                   </div>
                 )}
                 {/* New photo capture slots */}
-                {(Array.isArray(currentPart.usage_proof_photo_prompts) ? currentPart.usage_proof_photo_prompts as string[] : []).map((prompt, pi) => {
+                {(() => {
+                  const prompts = Array.isArray(currentPart.usage_proof_photo_prompts) ? currentPart.usage_proof_photo_prompts as string[] : [];
+                  const requiredCount = currentPart.usage_proof_photos_required_count;
+                  // Build slot labels: use prompts if available, otherwise generic labels
+                  const slots = Array.from({ length: requiredCount }, (_, i) => prompts[i] || `Proof photo ${i + 1}`);
                   const existingCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
                   const newCount = currentLine.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
-                  // Only show unfilled slots
-                  if (existingCount + newCount > pi) return null;
-                  return (
-                    <div key={pi} className="space-y-1">
-                      <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={(e) => handlePhotoCapture(activeLineIdx, 'NEW_PART_PROOF', e)}
-                        className="h-9"
-                      />
-                    </div>
-                  );
-                })}
+                  const filled = existingCount + newCount;
+                  return slots.map((prompt, pi) => {
+                    if (filled > pi) return null;
+                    return (
+                      <div key={pi} className="space-y-1">
+                        <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={(e) => handlePhotoCapture(activeLineIdx, 'NEW_PART_PROOF', e)}
+                          className="h-9"
+                        />
+                      </div>
+                    );
+                  });
+                })()}
                 {/* Show captured new photos as thumbnails */}
                 {currentLine.newPhotos.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
