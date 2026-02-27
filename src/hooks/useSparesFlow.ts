@@ -82,7 +82,7 @@ export function useApplicableSpareParts(vehicleModelName: string | null | undefi
         .select('spare_part_id, color_code')
         .eq('vehicle_model_id', modelData.id);
 
-      const allMappings = (appData || []) as { spare_part_id: string; color_code: string | null }[];
+      const allMappings = (appData || []) as unknown as { spare_part_id: string; color_code: string | null }[];
 
       if (allMappings.length === 0) {
         w.push('No spare parts mapped for this vehicle configuration.');
