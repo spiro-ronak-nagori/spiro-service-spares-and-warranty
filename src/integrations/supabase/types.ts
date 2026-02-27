@@ -1227,6 +1227,8 @@ export type Database = {
       user_invites: {
         Row: {
           accepted_at: string | null
+          assignment_country_ids: string[] | null
+          assignment_workshop_ids: string[] | null
           country: string | null
           created_at: string
           email: string | null
@@ -1240,6 +1242,8 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          assignment_country_ids?: string[] | null
+          assignment_workshop_ids?: string[] | null
           country?: string | null
           created_at?: string
           email?: string | null
@@ -1253,6 +1257,8 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          assignment_country_ids?: string[] | null
+          assignment_workshop_ids?: string[] | null
           country?: string | null
           created_at?: string
           email?: string | null
