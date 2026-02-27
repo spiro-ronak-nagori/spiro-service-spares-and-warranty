@@ -481,6 +481,7 @@ export default function JobCardDetailPage() {
           onReopenJobCard={() => setShowReopenDialog(true)}
           sparesEnabled={sparesEnabled}
           sparesCount={spares.length}
+          mandatorySparesRequired={mandatorySparesRequired}
           onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
         />
 
