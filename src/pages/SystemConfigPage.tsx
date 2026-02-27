@@ -205,16 +205,18 @@ export default function SystemConfigPage() {
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/spare-parts')}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <Package className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium">Manage Spare Parts</h3>
-                  <p className="text-xs text-muted-foreground">Spare parts master list and vehicle model mappings</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
+            {isSystemAdmin && (
+              <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/spare-parts')}>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium">Manage Spare Parts</h3>
+                    <p className="text-xs text-muted-foreground">Spare parts master list and vehicle model mappings</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>
