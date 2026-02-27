@@ -22,6 +22,7 @@ interface SparesUsedSectionProps {
   onSubmitWarranty?: (spare: JobCardSpare) => void;
   onWithdrawSpare?: (spare: JobCardSpare) => void;
   onRespondNeedsInfo?: (spare: JobCardSpare) => void;
+  onConvertToUserPaid?: (spare: JobCardSpare) => void;
   canEdit?: boolean;
   warrantyEnabled?: boolean;
 }
@@ -151,7 +152,7 @@ function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
       <Card>
@@ -375,10 +376,37 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         </div>
                       )}
 
+                      {/* REJECTED: show Withdraw & Edit + Convert to User Paid */}
+                      {canEdit && spare.approval_state === 'REJECTED' && (
+                        <div className="space-y-2">
+                          {onWithdrawSpare && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 text-xs w-full"
+                              onClick={(e) => { e.stopPropagation(); onWithdrawSpare(spare); }}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Withdraw & Edit
+                            </Button>
+                          )}
+                          {onConvertToUserPaid && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs w-full"
+                              onClick={(e) => { e.stopPropagation(); onConvertToUserPaid(spare); }}
+                            >
+                              Convert to User Paid
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
                       {/* Edit / Delete buttons — only for DRAFT spares */}
                       {canEdit && (
                         <div className="flex items-center gap-2 pt-2 border-t">
-                          {locked && !['APPROVED', 'REJECTED'].includes(spare.approval_state) ? (
+                          {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) ? (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>

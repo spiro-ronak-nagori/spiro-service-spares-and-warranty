@@ -36,7 +36,7 @@ import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
 import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
-import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare } from '@/hooks/useSparesFlow';
+import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';
@@ -236,6 +236,17 @@ export default function JobCardDetailPage() {
       toast.error(err.message || 'Failed to withdraw');
     } finally {
       setWithdrawingSpare(null);
+    }
+  };
+
+  const handleConvertToUserPaid = async (spare: JobCardSpare) => {
+    if (!profile) return;
+    try {
+      await convertToUserPaid(spare.id, profile.id);
+      toast.success('Converted to User Paid');
+      refetchSpares();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to convert');
     }
   };
 
@@ -588,6 +599,7 @@ export default function JobCardDetailPage() {
             onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
             onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
             onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
+            onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
             warrantyEnabled={warrantyEnabled}
           />
