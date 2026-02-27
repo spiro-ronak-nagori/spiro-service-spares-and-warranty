@@ -69,7 +69,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
           className={`text-xs cursor-pointer border-0 ${tatFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
           onClick={() => setTatFilter('all')}
         >
-          All: {items.length}
+          All: {totalCount}
         </Badge>
         {(['<4h', '4-12h', '12-24h', '>24h'] as const).map(bucket => (
           <Badge
@@ -78,7 +78,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
             className={`text-xs cursor-pointer border-0 ${tatFilter === bucket ? 'ring-2 ring-primary' : ''} ${TAT_COLORS[bucket]}`}
             onClick={() => setTatFilter(tatFilter === bucket ? 'all' : bucket)}
           >
-            {bucket}: {buckets[bucket] || 0}
+            {bucket}: {bucketCounts[bucket] || 0}
           </Badge>
         ))}
       </div>
