@@ -143,6 +143,10 @@ export interface ServiceCategory {
 
 export type ClaimType = 'USER_PAID' | 'WARRANTY' | 'GOODWILL';
 export type SparePhotoKind = 'NEW_PART_PROOF' | 'OLD_PART_EVIDENCE' | 'ADDITIONAL';
+export type ApprovalState = 'DRAFT' | 'SUBMITTED' | 'NEEDS_INFO' | 'RESUBMITTED' | 'APPROVED' | 'REJECTED';
+
+/** Computed UI state for warranty/goodwill lines */
+export type WarrantyDisplayState = 'SUBMISSION_PENDING' | 'READY_TO_SUBMIT' | 'SUBMITTED' | 'NEEDS_INFO' | 'RESUBMITTED' | 'APPROVED' | 'REJECTED';
 
 export interface SparePart {
   id: string;
@@ -181,6 +185,10 @@ export interface JobCardSpare {
   part_number: string | null;
   serial_number: string | null;
   technician_comment: string | null;
+  approval_state: ApprovalState;
+  submitted_at: string | null;
+  last_submitted_at: string | null;
+  decided_at: string | null;
   created_by: string;
   updated_by: string | null;
   created_at: string;
@@ -195,8 +203,29 @@ export interface JobCardSparePhoto {
   photo_url: string;
   photo_kind: SparePhotoKind;
   description_prompt: string | null;
+  is_required: boolean;
+  slot_index: number | null;
+  prompt: string | null;
   uploaded_by: string;
   uploaded_at: string;
+}
+
+/** Compute display state for a warranty/goodwill spare line */
+export function getWarrantyDisplayState(spare: JobCardSpare): WarrantyDisplayState {
+  if (spare.claim_type === 'USER_PAID') return 'SUBMISSION_PENDING'; // shouldn't be called
+  if (spare.approval_state === 'SUBMITTED') return 'SUBMITTED';
+  if (spare.approval_state === 'NEEDS_INFO') return 'NEEDS_INFO';
+  if (spare.approval_state === 'RESUBMITTED') return 'RESUBMITTED';
+  if (spare.approval_state === 'APPROVED') return 'APPROVED';
+  if (spare.approval_state === 'REJECTED') return 'REJECTED';
+  // DRAFT: check if old-part evidence is complete
+  const part = spare.spare_part;
+  if (!part) return 'SUBMISSION_PENDING';
+  const isWarranty = spare.claim_type === 'WARRANTY';
+  const reqCount = isWarranty ? part.warranty_old_part_photos_required_count : part.goodwill_old_part_photos_required_count;
+  if (reqCount <= 0) return 'READY_TO_SUBMIT';
+  const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
+  return oldPhotos >= reqCount ? 'READY_TO_SUBMIT' : 'SUBMISSION_PENDING';
 }
 
 export interface OtpCode {

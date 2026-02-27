@@ -34,6 +34,7 @@ import { ReopenJobCardDialog } from '@/components/job-card/ReopenJobCardDialog';
 import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/DeliveryWithSocDialog';
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
+import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
@@ -59,6 +60,7 @@ export default function JobCardDetailPage() {
   const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
   const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
+  const [warrantySpare, setWarrantySpare] = useState<JobCardSpare | null>(null);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -555,6 +557,7 @@ export default function JobCardDetailPage() {
             onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
             onEditSpare={handleEditSpare}
             onDeleteSpare={(id) => setDeletingSpareId(id)}
+            onSubmitWarranty={(spare) => setWarrantySpare(spare)}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
           />
         )}
@@ -692,6 +695,18 @@ export default function JobCardDetailPage() {
           warrantyEnabled={warrantyEnabled}
           onSaved={handleSparesModalSaved}
           editingSpare={editingSpare}
+        />
+      )}
+
+      {/* Submit Warranty Sheet */}
+      {warrantySpare && (
+        <SubmitWarrantySheet
+          open={!!warrantySpare}
+          onOpenChange={(open) => { if (!open) setWarrantySpare(null); }}
+          spare={warrantySpare}
+          jobCardId={jobCard.id}
+          profileId={profile?.id || ''}
+          onSubmitted={() => { setWarrantySpare(null); refetchSpares(); }}
         />
       )}
 

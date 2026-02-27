@@ -112,7 +112,7 @@ export function SparesModal({
   const currentLine = lines[activeLineIdx];
   const currentPart = currentLine?.part;
 
-  // Photo validation for current line
+  // Photo validation for current line — OLD_PART_EVIDENCE does NOT block saving
   const photoValidation = useMemo(() => {
     if (!currentLine || !currentPart) return { valid: true, message: '' };
 
@@ -125,29 +125,13 @@ export function SparesModal({
       return { valid: false, message: `Upload ${totalProof}/${requiredProof} required proof photos to continue.` };
     }
 
-    // Check old-part evidence if warranty/goodwill
-    if (warrantyEnabled && currentLine.claim_type !== 'USER_PAID') {
-      const isWarranty = currentLine.claim_type === 'WARRANTY';
-      const reqOldCount = isWarranty
-        ? currentPart.warranty_old_part_photos_required_count
-        : currentPart.goodwill_old_part_photos_required_count;
-
-      const existingOldCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-      const newOldCount = currentLine.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
-      const totalOld = existingOldCount + newOldCount;
-
-      if (reqOldCount > 0 && totalOld < reqOldCount) {
-        return { valid: false, message: `Upload ${totalOld}/${reqOldCount} required old-part evidence photos.` };
-      }
-    }
-
     return { valid: true, message: '' };
-  }, [currentLine, currentPart, warrantyEnabled]);
+  }, [currentLine, currentPart]);
 
-  // Check all lines for save validity
+  // Check all lines for save validity — only NEW_PART_PROOF + serial block save
   const allLinesValid = useMemo(() => {
     return lines.every(line => {
-      if (!line.spare_part_id) return true; // Empty line is skippable
+      if (!line.spare_part_id) return true;
       const part = line.part;
       if (!part) return true;
 
@@ -155,17 +139,9 @@ export function SparesModal({
       const newProof = line.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
       if (part.usage_proof_photos_required_count > 0 && (existProof + newProof) < part.usage_proof_photos_required_count) return false;
 
-      if (warrantyEnabled && line.claim_type !== 'USER_PAID') {
-        const isW = line.claim_type === 'WARRANTY';
-        const reqOld = isW ? part.warranty_old_part_photos_required_count : part.goodwill_old_part_photos_required_count;
-        const existOld = line.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-        const newOld = line.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
-        if (reqOld > 0 && (existOld + newOld) < reqOld) return false;
-      }
-
       return true;
     });
-  }, [lines, warrantyEnabled]);
+  }, [lines]);
 
   const handleSave = async () => {
     const validLines = lines.filter(l => l.spare_part_id);
@@ -467,62 +443,19 @@ export function SparesModal({
               </div>
             )}
 
-            {/* OLD_PART_EVIDENCE photos */}
+            {/* Note: Old-part evidence photos are captured via the Submit Warranty sheet */}
             {warrantyEnabled && currentPart && currentLine.claim_type !== 'USER_PAID' && (() => {
               const isWarranty = currentLine.claim_type === 'WARRANTY';
               const count = isWarranty
                 ? currentPart.warranty_old_part_photos_required_count
                 : currentPart.goodwill_old_part_photos_required_count;
-              const prompts = isWarranty
-                ? (Array.isArray(currentPart.warranty_old_part_photo_prompts) ? currentPart.warranty_old_part_photo_prompts as string[] : [])
-                : (Array.isArray(currentPart.goodwill_old_part_photo_prompts) ? currentPart.goodwill_old_part_photo_prompts as string[] : []);
-
               if (count <= 0) return null;
-
               return (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5">
-                    <Camera className="h-3.5 w-3.5" />
-                    Old Part Evidence Photos ({count} required)
-                  </Label>
-                  {currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').map(photo => (
-                        <div key={photo.id} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
-                          <img src={photo.photo_url} alt="Existing" className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {prompts.map((prompt, pi) => {
-                    const existingCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-                    const newCount = currentLine.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
-                    if (existingCount + newCount > pi) return null;
-                    return (
-                      <div key={pi} className="space-y-1">
-                        <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          onChange={(e) => handlePhotoCapture(activeLineIdx, 'OLD_PART_EVIDENCE', e)}
-                          className="h-9"
-                        />
-                      </div>
-                    );
-                  })}
-                  {currentLine.newPhotos.length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {currentLine.newPhotos.map((file, fi) => {
-                        if (currentLine.newPhotoKinds[fi] !== 'OLD_PART_EVIDENCE') return null;
-                        return (
-                          <div key={fi} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
-                            <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 text-xs bg-muted rounded-md p-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    {count} old-part evidence photo{count > 1 ? 's' : ''} required — upload when submitting the {isWarranty ? 'warranty' : 'goodwill'} claim.
+                  </span>
                 </div>
               );
             })()}
