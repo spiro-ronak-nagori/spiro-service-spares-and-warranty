@@ -386,6 +386,7 @@ export default function ManageSpareMasterPage() {
                       </div>
                       <div className="flex gap-2 mt-1 flex-wrap">
                         {part.serial_required && <Badge variant="outline" className="text-[10px]">Serial# Req</Badge>}
+                        {part.old_part_srno_required && <Badge variant="outline" className="text-[10px]">Old Serial# Req</Badge>}
                         {part.usage_proof_photos_required_count > 0 && (
                           <Badge variant="outline" className="text-[10px]">
                             {part.usage_proof_photos_required_count} Proof Photo{part.usage_proof_photos_required_count > 1 ? 's' : ''}
