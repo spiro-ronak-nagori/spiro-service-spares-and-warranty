@@ -702,7 +702,7 @@ export default function JobCardDetailPage() {
         title="Delete Spare"
         description="Are you sure you want to remove this spare part? This action cannot be undone."
         onConfirm={handleDeleteSpare}
-        confirmText="Delete"
+        confirmLabel="Delete"
         variant="destructive"
       />
     </AppLayout>
