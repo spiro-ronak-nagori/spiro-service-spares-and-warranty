@@ -104,6 +104,19 @@ export function CompleteWorkDialog({
           if (reqCount > 0 && oldPhotos.length < reqCount) {
             blocker.lineBlockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
           }
+
+          // Phase 2: Check approval-required lines for blocking states
+          const isWarranty = spare.claim_type === 'WARRANTY';
+          const approvalNeeded = isWarranty ? part.warranty_approval_needed : part.goodwill_approval_needed;
+          if (approvalNeeded) {
+            if (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') {
+              blocker.lineBlockers.push(`${part.part_name}: ${spare.claim_type} claim pending admin approval`);
+            } else if (spare.approval_state === 'NEEDS_INFO') {
+              blocker.lineBlockers.push(`${part.part_name}: Admin requested more info — respond before completing`);
+            } else if (spare.approval_state === 'REJECTED') {
+              blocker.lineBlockers.push(`${part.part_name}: ${spare.claim_type} claim rejected — withdraw & edit, change to User Paid, or remove`);
+            }
+          }
         }
       }
     } catch (err) {

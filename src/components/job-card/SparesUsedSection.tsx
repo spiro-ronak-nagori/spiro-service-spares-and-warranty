@@ -19,6 +19,7 @@ interface SparesUsedSectionProps {
   onDeleteSpare?: (spareId: string) => void;
   onSubmitWarranty?: (spare: JobCardSpare) => void;
   onWithdrawSpare?: (spare: JobCardSpare) => void;
+  onRespondNeedsInfo?: (spare: JobCardSpare) => void;
   canEdit?: boolean;
   warrantyEnabled?: boolean;
 }
@@ -96,7 +97,7 @@ function WarrantyBadge({ spare, warrantyEnabled }: { spare: JobCardSpare; warran
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
       <Card>
@@ -254,6 +255,24 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                           <RotateCcw className="h-3 w-3 mr-1" />
                           Withdraw & Edit
                         </Button>
+                      )}
+
+                      {/* NEEDS_INFO: show admin comment + respond CTA */}
+                      {canEdit && spare.approval_state === 'NEEDS_INFO' && onRespondNeedsInfo && (
+                        <div className="space-y-2">
+                          <div className="bg-orange-50 border border-orange-200 rounded-md p-2 text-xs">
+                            <span className="font-medium text-orange-800">Admin requested more info</span>
+                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 text-xs w-full"
+                            onClick={(e) => { e.stopPropagation(); onRespondNeedsInfo(spare); }}
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Respond
+                          </Button>
+                        </div>
                       )}
 
                       {/* Edit / Delete buttons — only for DRAFT spares */}
