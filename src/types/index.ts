@@ -164,6 +164,7 @@ export interface SparePart {
   warranty_old_part_photo_prompts: string[];
   goodwill_old_part_photos_required_count: number;
   goodwill_old_part_photo_prompts: string[];
+  old_part_srno_required: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -185,6 +186,8 @@ export interface JobCardSpare {
   part_number: string | null;
   serial_number: string | null;
   technician_comment: string | null;
+  old_part_serial_number: string | null;
+  claim_comment: string | null;
   approval_state: ApprovalState;
   submitted_at: string | null;
   last_submitted_at: string | null;
@@ -223,9 +226,13 @@ export function getWarrantyDisplayState(spare: JobCardSpare): WarrantyDisplaySta
   if (!part) return 'SUBMISSION_PENDING';
   const isWarranty = spare.claim_type === 'WARRANTY';
   const reqCount = isWarranty ? part.warranty_old_part_photos_required_count : part.goodwill_old_part_photos_required_count;
-  if (reqCount <= 0) return 'READY_TO_SUBMIT';
-  const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-  return oldPhotos >= reqCount ? 'READY_TO_SUBMIT' : 'SUBMISSION_PENDING';
+  // Photos check (only if required)
+  if (reqCount > 0) {
+    const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
+    if (oldPhotos < reqCount) return 'SUBMISSION_PENDING';
+  }
+  // Old-part serial check (only if required) — not pre-filled, so always ready to submit from list view
+  return 'READY_TO_SUBMIT';
 }
 
 export interface OtpCode {
