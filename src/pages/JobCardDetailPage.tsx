@@ -81,6 +81,29 @@ export default function JobCardDetailPage() {
     }
   }, [id]);
 
+  // Check if any selected issues require spares (child rows with requires_spares = true)
+  useEffect(() => {
+    const checkMandatorySpares = async () => {
+      if (!jobCard || !sparesEnabled || jobCard.issue_categories.length === 0) {
+        setMandatorySparesRequired(false);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('service_categories')
+          .select('code')
+          .in('code', jobCard.issue_categories)
+          .eq('requires_spares', true)
+          .not('parent_code', 'is', null)
+          .limit(1);
+        setMandatorySparesRequired((data?.length ?? 0) > 0);
+      } catch {
+        setMandatorySparesRequired(false);
+      }
+    };
+    checkMandatorySpares();
+  }, [jobCard?.issue_categories, sparesEnabled]);
+
   const fetchJobCard = async () => {
     if (!id) return;
     
