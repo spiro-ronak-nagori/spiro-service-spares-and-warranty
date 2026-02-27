@@ -1076,6 +1076,7 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          goodwill_approval_needed: boolean
           goodwill_available: boolean
           goodwill_old_part_photo_prompts: Json
           goodwill_old_part_photos_required_count: number
@@ -1089,6 +1090,7 @@ export type Database = {
           updated_at: string
           usage_proof_photo_prompts: Json
           usage_proof_photos_required_count: number
+          warranty_approval_needed: boolean
           warranty_available: boolean
           warranty_old_part_photo_prompts: Json
           warranty_old_part_photos_required_count: number
@@ -1096,6 +1098,7 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          goodwill_approval_needed?: boolean
           goodwill_available?: boolean
           goodwill_old_part_photo_prompts?: Json
           goodwill_old_part_photos_required_count?: number
@@ -1109,6 +1112,7 @@ export type Database = {
           updated_at?: string
           usage_proof_photo_prompts?: Json
           usage_proof_photos_required_count?: number
+          warranty_approval_needed?: boolean
           warranty_available?: boolean
           warranty_old_part_photo_prompts?: Json
           warranty_old_part_photos_required_count?: number
@@ -1116,6 +1120,7 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          goodwill_approval_needed?: boolean
           goodwill_available?: boolean
           goodwill_old_part_photo_prompts?: Json
           goodwill_old_part_photos_required_count?: number
@@ -1129,6 +1134,7 @@ export type Database = {
           updated_at?: string
           usage_proof_photo_prompts?: Json
           usage_proof_photos_required_count?: number
+          warranty_approval_needed?: boolean
           warranty_available?: boolean
           warranty_old_part_photo_prompts?: Json
           warranty_old_part_photos_required_count?: number

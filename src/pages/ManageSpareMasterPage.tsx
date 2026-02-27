@@ -14,10 +14,10 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody,
 } from '@/components/ui/dialog';
 import {
-  Package, Plus, ChevronDown, Pencil, Link2, Trash2,
+  Package, Plus, ChevronDown, Pencil, Link2, Trash2, Shield, ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SparePart, SparePartApplicability } from '@/types';
@@ -53,6 +53,8 @@ export default function ManageSpareMasterPage() {
     usage_proof_photo_prompts: [] as string[],
     warranty_available: true,
     goodwill_available: true,
+    warranty_approval_needed: true,
+    goodwill_approval_needed: true,
     warranty_old_part_photos_required_count: 1,
     warranty_old_part_photo_prompts: ['Old part close-up'] as string[],
     goodwill_old_part_photos_required_count: 1,
@@ -90,6 +92,7 @@ export default function ManageSpareMasterPage() {
       max_qty_allowed: 50, usage_proof_photos_required_count: 0,
       usage_proof_photo_prompts: [],
       warranty_available: true, goodwill_available: true,
+      warranty_approval_needed: true, goodwill_approval_needed: true,
       warranty_old_part_photos_required_count: 1,
       warranty_old_part_photo_prompts: ['Old part close-up'],
       goodwill_old_part_photos_required_count: 1,
@@ -100,15 +103,9 @@ export default function ManageSpareMasterPage() {
 
   const openEditDialog = (part: SparePart) => {
     setEditingPart(part);
-    const prompts = Array.isArray(part.usage_proof_photo_prompts)
-      ? part.usage_proof_photo_prompts
-      : [];
-    const warrantyPrompts = Array.isArray(part.warranty_old_part_photo_prompts)
-      ? part.warranty_old_part_photo_prompts
-      : ['Old part close-up'];
-    const goodwillPrompts = Array.isArray(part.goodwill_old_part_photo_prompts)
-      ? part.goodwill_old_part_photo_prompts
-      : ['Old part close-up'];
+    const prompts = Array.isArray(part.usage_proof_photo_prompts) ? part.usage_proof_photo_prompts : [];
+    const warrantyPrompts = Array.isArray(part.warranty_old_part_photo_prompts) ? part.warranty_old_part_photo_prompts : ['Old part close-up'];
+    const goodwillPrompts = Array.isArray(part.goodwill_old_part_photo_prompts) ? part.goodwill_old_part_photo_prompts : ['Old part close-up'];
     setForm({
       part_name: part.part_name,
       part_code: part.part_code || '',
@@ -120,6 +117,8 @@ export default function ManageSpareMasterPage() {
       usage_proof_photo_prompts: prompts,
       warranty_available: part.warranty_available,
       goodwill_available: part.goodwill_available,
+      warranty_approval_needed: (part as any).warranty_approval_needed ?? true,
+      goodwill_approval_needed: (part as any).goodwill_approval_needed ?? true,
       warranty_old_part_photos_required_count: part.warranty_old_part_photos_required_count,
       warranty_old_part_photo_prompts: warrantyPrompts,
       goodwill_old_part_photos_required_count: part.goodwill_old_part_photos_required_count,
@@ -207,6 +206,8 @@ export default function ManageSpareMasterPage() {
         usage_proof_photo_prompts: JSON.stringify(finalPrompts),
         warranty_available: form.warranty_available,
         goodwill_available: form.goodwill_available,
+        warranty_approval_needed: form.warranty_approval_needed,
+        goodwill_approval_needed: form.goodwill_approval_needed,
         warranty_old_part_photos_required_count: form.warranty_old_part_photos_required_count,
         warranty_old_part_photo_prompts: JSON.stringify(finalWarrantyPrompts),
         goodwill_old_part_photos_required_count: form.goodwill_old_part_photos_required_count,
@@ -256,7 +257,6 @@ export default function ManageSpareMasterPage() {
     if (!appModelId) { toast.error('Select a model'); return; }
     const colorCode = appColor === 'ALL' ? null : appColor;
 
-    // Check for exact duplicate
     const existing = applicability.filter(
       a => a.spare_part_id === appPartId && a.vehicle_model_id === appModelId
     );
@@ -269,7 +269,6 @@ export default function ManageSpareMasterPage() {
       return;
     }
 
-    // Warnings for overlapping mappings
     const hasAllColors = existing.some(a => a.color_code === null);
     const hasSpecific = existing.some(a => a.color_code !== null);
 
@@ -335,6 +334,14 @@ export default function ManageSpareMasterPage() {
     );
   }
 
+  /* ---------- Section helper for dialog ---------- */
+  const SectionCard = ({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) => (
+    <div className={`rounded-lg border bg-card p-3 space-y-3 ${className}`}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      {children}
+    </div>
+  );
+
   return (
     <AppLayout>
       <PageHeader
@@ -361,6 +368,7 @@ export default function ManageSpareMasterPage() {
         ) : (
           parts.map(part => {
             const partApps = getPartApplicability(part.id);
+            const p = part as any;
             return (
               <Collapsible
                 key={part.id}
@@ -384,7 +392,7 @@ export default function ManageSpareMasterPage() {
                           <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedPart === part.id ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
-                      <div className="flex gap-2 mt-1 flex-wrap">
+                      <div className="flex gap-1.5 mt-1 flex-wrap">
                         {part.serial_required && <Badge variant="outline" className="text-[10px]">Serial# Req</Badge>}
                         {part.old_part_srno_required && <Badge variant="outline" className="text-[10px]">Old Serial# Req</Badge>}
                         {part.usage_proof_photos_required_count > 0 && (
@@ -392,8 +400,16 @@ export default function ManageSpareMasterPage() {
                             {part.usage_proof_photos_required_count} Proof Photo{part.usage_proof_photos_required_count > 1 ? 's' : ''}
                           </Badge>
                         )}
-                        {part.warranty_available && <Badge variant="outline" className="text-[10px]">Warranty</Badge>}
-                        {part.goodwill_available && <Badge variant="outline" className="text-[10px]">Goodwill</Badge>}
+                        {part.warranty_available && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Warranty{p.warranty_approval_needed === false ? '' : ' + Approval'}
+                          </Badge>
+                        )}
+                        {part.goodwill_available && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Goodwill{p.goodwill_approval_needed === false ? '' : ' + Approval'}
+                          </Badge>
+                        )}
                       </div>
                     </CollapsibleTrigger>
 
@@ -445,71 +461,81 @@ export default function ManageSpareMasterPage() {
         )}
       </div>
 
-      {/* Add/Edit Part Dialog */}
+      {/* Add/Edit Part Dialog — Sectioned Layout */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingPart ? 'Edit Part' : 'Add Spare Part'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1">
-              <Label>Part Name *</Label>
-              <Input value={form.part_name} onChange={e => setForm(f => ({ ...f, part_name: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Part Code</Label>
-              <Input value={form.part_code} onChange={e => setForm(f => ({ ...f, part_code: e.target.value }))} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+          <DialogBody className="space-y-4 py-2">
+            {/* ── GENERAL ── */}
+            <SectionCard title="General">
               <div className="space-y-1">
-                <Label>Max Qty</Label>
-                <Input type="number" min={1} value={form.max_qty_allowed} onChange={e => setForm(f => ({ ...f, max_qty_allowed: parseInt(e.target.value) || 50 }))} />
+                <Label>Part Name *</Label>
+                <Input value={form.part_name} onChange={e => setForm(f => ({ ...f, part_name: e.target.value }))} />
               </div>
               <div className="space-y-1">
-                <Label>Count of new part photos</Label>
-                <Input type="number" min={0} value={form.usage_proof_photos_required_count} onChange={e => handleProofCountChange(parseInt(e.target.value) || 0)} />
+                <Label>Part Code</Label>
+                <Input value={form.part_code} onChange={e => setForm(f => ({ ...f, part_code: e.target.value }))} />
               </div>
-            </div>
-
-            {/* Proof photo prompts */}
-            {form.usage_proof_photos_required_count > 0 && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">New Part Proof Photo Prompts</Label>
-                {Array.from({ length: form.usage_proof_photos_required_count }).map((_, idx) => (
-                  <Input
-                    key={idx}
-                    placeholder={`Prompt for photo ${idx + 1}`}
-                    value={form.usage_proof_photo_prompts[idx] || ''}
-                    onChange={e => updatePrompt(idx, e.target.value)}
-                    className="h-8 text-sm"
-                  />
-                ))}
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {editingPart && (
-                <div className="flex items-center justify-between">
-                  <Label>Active</Label>
-                  <Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Max Qty</Label>
+                  <Input type="number" min={1} value={form.max_qty_allowed} onChange={e => setForm(f => ({ ...f, max_qty_allowed: parseInt(e.target.value) || 50 }))} />
                 </div>
-              )}
+                {editingPart && (
+                  <div className="flex items-center gap-2 self-end pb-1">
+                    <Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />
+                    <Label className="text-sm">Active</Label>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
+            {/* ── USAGE / EVIDENCE ── */}
+            <SectionCard title="Usage & Evidence">
               <div className="flex items-center justify-between">
-                <Label>Part Serial Number Required</Label>
+                <Label className="text-sm">Part Serial Number Required</Label>
                 <Switch checked={form.serial_required} onCheckedChange={v => setForm(f => ({ ...f, serial_required: v }))} />
               </div>
+              <div className="space-y-1">
+                <Label className="text-sm">New Part Proof Photos (count)</Label>
+                <Input type="number" min={0} value={form.usage_proof_photos_required_count} onChange={e => handleProofCountChange(parseInt(e.target.value) || 0)} className="h-8" />
+              </div>
+              {form.usage_proof_photos_required_count > 0 && (
+                <div className="space-y-1.5 pl-3 border-l-2 border-muted">
+                  <Label className="text-xs text-muted-foreground">Photo Prompts</Label>
+                  {Array.from({ length: form.usage_proof_photos_required_count }).map((_, idx) => (
+                    <Input
+                      key={idx}
+                      placeholder={`Prompt for photo ${idx + 1}`}
+                      value={form.usage_proof_photo_prompts[idx] || ''}
+                      onChange={e => updatePrompt(idx, e.target.value)}
+                      className="h-7 text-xs"
+                    />
+                  ))}
+                </div>
+              )}
+            </SectionCard>
 
-
+            {/* ── WARRANTY ── */}
+            <SectionCard title="Warranty">
               <div className="flex items-center justify-between">
-                <Label>Warranty Available</Label>
+                <Label className="text-sm font-medium">Warranty Available</Label>
                 <Switch checked={form.warranty_available} onCheckedChange={v => setForm(f => ({ ...f, warranty_available: v }))} />
               </div>
-
-              {/* Warranty Old Part Photos */}
               {form.warranty_available && (
-                <div className="space-y-2 pl-4 border-l-2 border-muted">
+                <div className="space-y-3 pl-3 border-l-2 border-muted">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Approval Needed</Label>
+                    <Switch checked={form.warranty_approval_needed} onCheckedChange={v => setForm(f => ({ ...f, warranty_approval_needed: v }))} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Old Part Serial Number Required</Label>
+                    <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
+                  </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Warranty Old Part Photos (count)</Label>
+                    <Label className="text-xs">Old Part Photos (count)</Label>
                     <Input
                       type="number" min={0} max={10}
                       value={form.warranty_old_part_photos_required_count}
@@ -519,7 +545,7 @@ export default function ManageSpareMasterPage() {
                   </div>
                   {form.warranty_old_part_photos_required_count > 0 && (
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">Warranty Old Part Photo Prompts</Label>
+                      <Label className="text-[11px] text-muted-foreground">Photo Prompts</Label>
                       {Array.from({ length: form.warranty_old_part_photos_required_count }).map((_, idx) => (
                         <Input
                           key={idx}
@@ -533,17 +559,26 @@ export default function ManageSpareMasterPage() {
                   )}
                 </div>
               )}
+            </SectionCard>
 
+            {/* ── GOODWILL ── */}
+            <SectionCard title="Goodwill">
               <div className="flex items-center justify-between">
-                <Label>Goodwill Available</Label>
+                <Label className="text-sm font-medium">Goodwill Available</Label>
                 <Switch checked={form.goodwill_available} onCheckedChange={v => setForm(f => ({ ...f, goodwill_available: v }))} />
               </div>
-
-              {/* Goodwill Old Part Photos */}
               {form.goodwill_available && (
-                <div className="space-y-2 pl-4 border-l-2 border-muted">
+                <div className="space-y-3 pl-3 border-l-2 border-muted">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Approval Needed</Label>
+                    <Switch checked={form.goodwill_approval_needed} onCheckedChange={v => setForm(f => ({ ...f, goodwill_approval_needed: v }))} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Old Part Serial Number Required</Label>
+                    <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
+                  </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Goodwill Old Part Photos (count)</Label>
+                    <Label className="text-xs">Old Part Photos (count)</Label>
                     <Input
                       type="number" min={0} max={10}
                       value={form.goodwill_old_part_photos_required_count}
@@ -553,7 +588,7 @@ export default function ManageSpareMasterPage() {
                   </div>
                   {form.goodwill_old_part_photos_required_count > 0 && (
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">Goodwill Old Part Photo Prompts</Label>
+                      <Label className="text-[11px] text-muted-foreground">Photo Prompts</Label>
                       {Array.from({ length: form.goodwill_old_part_photos_required_count }).map((_, idx) => (
                         <Input
                           key={idx}
@@ -567,16 +602,8 @@ export default function ManageSpareMasterPage() {
                   )}
                 </div>
               )}
-
-              {/* Old Part Serial — only relevant when warranty or goodwill is on */}
-              {(form.warranty_available || form.goodwill_available) && (
-                <div className="flex items-center justify-between pl-4 border-l-2 border-muted">
-                  <Label className="text-xs">Old Part Serial Number Required</Label>
-                  <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
-                </div>
-              )}
-            </div>
-          </div>
+            </SectionCard>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
             <Button onClick={handleSavePart}>Save</Button>
