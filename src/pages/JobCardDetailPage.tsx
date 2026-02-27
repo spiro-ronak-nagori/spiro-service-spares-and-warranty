@@ -31,6 +31,9 @@ import { OtpVerificationDialog } from '@/components/job-card/OtpVerificationDial
 import { CompleteWorkDialog } from '@/components/job-card/CompleteWorkDialog';
 import { ReopenJobCardDialog } from '@/components/job-card/ReopenJobCardDialog';
 import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/DeliveryWithSocDialog';
+import { SparesModal } from '@/components/job-card/SparesModal';
+import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
+import { useSparesFeatureFlags, useJobCardSpares } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 
@@ -45,6 +48,11 @@ export default function JobCardDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  
+  // Spares
+  const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
+  const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
+  const [showSparesModal, setShowSparesModal] = useState(false);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -164,15 +172,71 @@ export default function JobCardDetailPage() {
 
   const handleStartWork = () => {
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
-      updateStatus('IN_PROGRESS');
+      if (sparesEnabled) {
+        // Show spares modal first, then proceed
+        setShowSparesModal(true);
+      } else {
+        updateStatus('IN_PROGRESS');
+      }
     }
   };
 
+  const handleSparesModalSaved = () => {
+    refetchSpares();
+  };
+
   const handleCompleteWork = (remarks: string) => {
-    if (jobCard && canTransitionTo(jobCard.status, 'READY')) {
-      updateStatus('READY', { completion_remarks: remarks });
-      sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
+    if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
+
+    // Work completion blockers (Phase 1)
+    if (sparesEnabled) {
+      const blockers: string[] = [];
+
+      // Check if any service/issue category requires spares
+      const allCats = [...jobCard.service_categories, ...jobCard.issue_categories];
+      // We need to check requires_spares - fetch from cache or check spares count
+      if (spares.length === 0) {
+        // Simple check: if spares flow is on and no spares added, warn but don't hard-block
+        // unless we know a category requires it (we'll do a soft check here)
+      }
+
+      // Check each spare line for missing required fields/photos
+      for (const spare of spares) {
+        const part = spare.spare_part;
+        if (!part) continue;
+        if (part.partno_required && !spare.part_number) {
+          blockers.push(`${part.part_name}: Part number is required`);
+        }
+        if (part.serial_required && !spare.serial_number) {
+          blockers.push(`${part.part_name}: Serial number is required`);
+        }
+        const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
+        if (part.usage_proof_photos_required_count > 0 && proofPhotos.length < part.usage_proof_photos_required_count) {
+          blockers.push(`${part.part_name}: ${part.usage_proof_photos_required_count} proof photo(s) required, ${proofPhotos.length} uploaded`);
+        }
+        // Old part evidence check (warranty flow)
+        if (warrantyEnabled && spare.claim_type !== 'USER_PAID') {
+          const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
+          const reqCount = spare.claim_type === 'WARRANTY'
+            ? part.warranty_old_part_photos_required_count
+            : part.goodwill_old_part_photos_required_count;
+          if (reqCount > 0 && oldPhotos.length < reqCount) {
+            blockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
+          }
+        }
+      }
+
+      if (blockers.length > 0) {
+        toast.error('Cannot complete work', {
+          description: blockers.join('\n'),
+          duration: 8000,
+        });
+        return;
+      }
     }
+
+    updateStatus('READY', { completion_remarks: remarks });
+    sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
     setShowCompleteWork(false);
   };
 
@@ -503,6 +567,11 @@ export default function JobCardDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Spares Used Section */}
+        {sparesEnabled && (
+          <SparesUsedSection spares={spares} isLoading={sparesLoading} />
+        )}
+
         {/* Timeline */}
         <Card>
           <CardHeader 
@@ -611,6 +680,25 @@ export default function JobCardDetailPage() {
         onOpenChange={setShowDeliveryConfirm}
         onProceed={handleOutgoingSocProceed}
       />
+
+      {jobCard && sparesEnabled && (
+        <SparesModal
+          open={showSparesModal}
+          onOpenChange={(open) => {
+            setShowSparesModal(open);
+            if (!open) {
+              // If modal dismissed without saving, still start work
+              updateStatus('IN_PROGRESS');
+            }
+          }}
+          jobCardId={jobCard.id}
+          profileId={profile?.id || ''}
+          vehicleModel={jobCard.vehicle?.model}
+          vehicleColorCode={(jobCard.vehicle as any)?.color_code}
+          warrantyEnabled={warrantyEnabled}
+          onSaved={handleSparesModalSaved}
+        />
+      )}
     </AppLayout>
   );
 }

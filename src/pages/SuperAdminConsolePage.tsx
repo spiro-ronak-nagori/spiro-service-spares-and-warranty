@@ -86,10 +86,17 @@ export default function SuperAdminConsolePage() {
     },
     {
       label: 'System Configuration',
-      description: 'Feature flag toggles (SMS, OCR, Feedback)',
+      description: 'Feature flag toggles (SMS, OCR, Feedback, Spares)',
       icon: Settings,
       path: '/console/system-config',
       visible: isSystemAdmin,
+    },
+    {
+      label: 'Manage Spare Parts',
+      description: 'Spare parts master list and vehicle model mappings',
+      icon: Building2,
+      path: '/console/spare-parts',
+      visible: isSuperAdmin || isSystemAdmin,
     },
     {
       label: 'Manage Feedback Form',

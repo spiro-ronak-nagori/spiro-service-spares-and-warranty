@@ -22,6 +22,7 @@ import ManageServiceCategoriesPage from "./pages/ManageServiceCategoriesPage";
 import FeedbackEditorPage from "./pages/FeedbackEditorPage";
 import ManageTeamPage from "./pages/ManageTeamPage";
 import ManageSuperAdminsPage from "./pages/ManageSuperAdminsPage";
+import ManageSpareMasterPage from "./pages/ManageSpareMasterPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import ShortLinkRedirect from "./pages/ShortLinkRedirect";
 import NotFound from "./pages/NotFound";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/console/system-config" element={<ProtectedRoute><SystemConfigPage /></ProtectedRoute>} />
             <Route path="/console/service-categories" element={<ProtectedRoute><ManageServiceCategoriesPage /></ProtectedRoute>} />
             <Route path="/console/feedback-editor" element={<ProtectedRoute><FeedbackEditorPage /></ProtectedRoute>} />
+            <Route path="/console/spare-parts" element={<ProtectedRoute><ManageSpareMasterPage /></ProtectedRoute>} />
             <Route path="/console/super-admins" element={<ProtectedRoute><ManageSuperAdminsPage /></ProtectedRoute>} />
             <Route path="/manage-team" element={<ProtectedRoute><ManageTeamPage /></ProtectedRoute>} />
             
