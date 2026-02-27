@@ -344,21 +344,34 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         </Button>
                       )}
 
-                      {/* NEEDS_INFO: show admin comment + respond CTA */}
-                      {canEdit && spare.approval_state === 'NEEDS_INFO' && onRespondNeedsInfo && (
+                      {/* NEEDS_INFO: show admin comment + respond & withdraw CTAs */}
+                      {canEdit && spare.approval_state === 'NEEDS_INFO' && (
                         <div className="space-y-2">
                           <div className="bg-orange-50 border border-orange-200 rounded-md p-2 text-xs">
                             <span className="font-medium text-orange-800">Admin requested more info</span>
                           </div>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="h-8 text-xs w-full"
-                            onClick={(e) => { e.stopPropagation(); onRespondNeedsInfo(spare); }}
-                          >
-                            <Send className="h-3 w-3 mr-1" />
-                            Respond
-                          </Button>
+                          {onRespondNeedsInfo && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 text-xs w-full"
+                              onClick={(e) => { e.stopPropagation(); onRespondNeedsInfo(spare); }}
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Respond
+                            </Button>
+                          )}
+                          {onWithdrawSpare && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs w-full"
+                              onClick={(e) => { e.stopPropagation(); onWithdrawSpare(spare); }}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Withdraw & Edit
+                            </Button>
+                          )}
                         </div>
                       )}
 
