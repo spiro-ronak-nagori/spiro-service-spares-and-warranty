@@ -226,9 +226,13 @@ export function getWarrantyDisplayState(spare: JobCardSpare): WarrantyDisplaySta
   if (!part) return 'SUBMISSION_PENDING';
   const isWarranty = spare.claim_type === 'WARRANTY';
   const reqCount = isWarranty ? part.warranty_old_part_photos_required_count : part.goodwill_old_part_photos_required_count;
-  if (reqCount <= 0) return 'READY_TO_SUBMIT';
-  const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-  return oldPhotos >= reqCount ? 'READY_TO_SUBMIT' : 'SUBMISSION_PENDING';
+  // Photos check (only if required)
+  if (reqCount > 0) {
+    const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
+    if (oldPhotos < reqCount) return 'SUBMISSION_PENDING';
+  }
+  // Old-part serial check (only if required) — not pre-filled, so always ready to submit from list view
+  return 'READY_TO_SUBMIT';
 }
 
 export interface OtpCode {
