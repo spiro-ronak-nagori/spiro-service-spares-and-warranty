@@ -126,12 +126,12 @@ export default function SystemConfigPage() {
     }
   };
 
-  if (!isSystemAdmin) {
+  if (!hasAccess) {
     return (
       <AppLayout>
         <PageHeader title="Access Denied" showBack backTo="/console" />
         <div className="p-4">
-          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">System Admin access required.</p></CardContent></Card>
+          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Access required.</p></CardContent></Card>
         </div>
       </AppLayout>
     );
