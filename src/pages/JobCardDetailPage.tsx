@@ -706,6 +706,7 @@ export default function JobCardDetailPage() {
           spare={warrantySpare}
           jobCardId={jobCard.id}
           profileId={profile?.id || ''}
+          jobCard={jobCard}
           onSubmitted={() => { setWarrantySpare(null); refetchSpares(); }}
         />
       )}
