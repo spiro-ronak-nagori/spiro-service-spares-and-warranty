@@ -290,6 +290,41 @@ export type Database = {
           },
         ]
       }
+      job_card_spare_actions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["spare_action_type"]
+          actor_user_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          job_card_spare_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["spare_action_type"]
+          actor_user_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          job_card_spare_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["spare_action_type"]
+          actor_user_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          job_card_spare_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_card_spare_actions_job_card_spare_id_fkey"
+            columns: ["job_card_spare_id"]
+            isOneToOne: false
+            referencedRelation: "job_card_spares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_card_spare_photos: {
         Row: {
           description_prompt: string | null
@@ -1344,6 +1379,44 @@ export type Database = {
         }
         Relationships: []
       }
+      warranty_admin_assignments: {
+        Row: {
+          active: boolean
+          admin_user_id: string
+          country_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          workshop_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          admin_user_id: string
+          country_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          workshop_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          admin_user_id?: string
+          country_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          workshop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranty_admin_assignments_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshops: {
         Row: {
           city: string | null
@@ -1507,6 +1580,14 @@ export type Database = {
         | "CLOSED"
         | "REOPENED"
         | "COMPLETED"
+      spare_action_type:
+        | "SUBMIT"
+        | "APPROVE"
+        | "REJECT"
+        | "REQUEST_INFO"
+        | "TECH_RESPONSE"
+        | "RESUBMIT"
+        | "EDIT_RESET"
       spare_photo_kind: "NEW_PART_PROOF" | "OLD_PART_EVIDENCE" | "ADDITIONAL"
       user_role:
         | "technician"
@@ -1665,6 +1746,15 @@ export const Constants = {
         "CLOSED",
         "REOPENED",
         "COMPLETED",
+      ],
+      spare_action_type: [
+        "SUBMIT",
+        "APPROVE",
+        "REJECT",
+        "REQUEST_INFO",
+        "TECH_RESPONSE",
+        "RESUBMIT",
+        "EDIT_RESET",
       ],
       spare_photo_kind: ["NEW_PART_PROOF", "OLD_PART_EVIDENCE", "ADDITIONAL"],
       user_role: [
