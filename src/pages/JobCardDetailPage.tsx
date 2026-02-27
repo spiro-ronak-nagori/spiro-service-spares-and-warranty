@@ -682,6 +682,25 @@ export default function JobCardDetailPage() {
         onOpenChange={setShowDeliveryConfirm}
         onProceed={handleOutgoingSocProceed}
       />
+
+      {jobCard && sparesEnabled && (
+        <SparesModal
+          open={showSparesModal}
+          onOpenChange={(open) => {
+            setShowSparesModal(open);
+            if (!open) {
+              // If modal dismissed without saving, still start work
+              updateStatus('IN_PROGRESS');
+            }
+          }}
+          jobCardId={jobCard.id}
+          profileId={profile?.id || ''}
+          vehicleModel={jobCard.vehicle?.model}
+          vehicleColorCode={(jobCard.vehicle as any)?.color_code}
+          warrantyEnabled={warrantyEnabled}
+          onSaved={handleSparesModalSaved}
+        />
+      )}
     </AppLayout>
   );
 }
