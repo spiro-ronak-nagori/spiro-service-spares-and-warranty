@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -57,7 +52,6 @@ export function CompleteWorkDialog({
   const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.lineBlockers.length > 0);
   const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker;
 
-  // Check spares blockers when dialog opens
   useEffect(() => {
     if (open && sparesEnabled) {
       checkSparesBlockers();
@@ -71,7 +65,6 @@ export function CompleteWorkDialog({
     const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], lineBlockers: [] };
 
     try {
-      // Check if any selected issue requires spares
       if (spares.length === 0 && jobCard.issue_categories.length > 0) {
         const { data: issueRows } = await supabase
           .from('service_categories')
@@ -85,7 +78,6 @@ export function CompleteWorkDialog({
         }
       }
 
-      // Check each spare line for missing required fields/photos
       for (const spare of spares) {
         const part = spare.spare_part;
         if (!part) continue;
@@ -105,7 +97,6 @@ export function CompleteWorkDialog({
             blocker.lineBlockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
           }
 
-          // Phase 2: Check approval-required lines for blocking states
           const isWarranty = spare.claim_type === 'WARRANTY';
           const approvalNeeded = isWarranty ? part.warranty_approval_needed : part.goodwill_approval_needed;
           if (approvalNeeded) {
@@ -157,16 +148,16 @@ export function CompleteWorkDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Complete Work</DialogTitle>
-          <DialogDescription>
+    <Drawer open={open} onOpenChange={handleClose}>
+      <DrawerContent className="max-h-[92vh]">
+        <DrawerHeader>
+          <DrawerTitle>Complete Work</DrawerTitle>
+          <DrawerDescription>
             Confirm all issues are resolved and add completion remarks
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1 min-h-0">
           {/* Spares Blocker Warning */}
           {hasSparesBlocker && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
@@ -212,7 +203,7 @@ export function CompleteWorkDialog({
                       variant="destructive"
                       size="sm"
                       onClick={handleAddSparesNow}
-                      className="mt-2"
+                      className="mt-2 h-11"
                     >
                       <Package className="h-3.5 w-3.5 mr-1.5" />
                       Add Spares Now
@@ -229,16 +220,16 @@ export function CompleteWorkDialog({
               <Label>Confirm completed work</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {allIssues.map((item, i) => (
-                  <div 
+                  <div
                     key={i}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted min-h-[44px]"
                   >
                     <Checkbox
                       id={`item-${i}`}
                       checked={checkedItems.has(item)}
                       onCheckedChange={() => handleToggle(item)}
                     />
-                    <label 
+                    <label
                       htmlFor={`item-${i}`}
                       className="text-sm cursor-pointer flex-1"
                     >
@@ -280,15 +271,15 @@ export function CompleteWorkDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
+        <DrawerFooter className="safe-bottom">
+          <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12">
             Complete Work
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button variant="outline" onClick={handleClose} className="h-12">
+            Cancel
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

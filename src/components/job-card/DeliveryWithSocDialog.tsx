@@ -1,16 +1,11 @@
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Battery, Loader2 } from 'lucide-react';
+import { Battery } from 'lucide-react';
 import { SocPhotoCapture } from '@/components/job-card/SocPhotoCapture';
 import { SocValidationResult } from '@/hooks/useSocValidation';
 import { useSystemSetting } from '@/hooks/useSystemSetting';
@@ -82,7 +77,10 @@ export function DeliveryWithSocDialog({
       mismatchReason: socMismatchReason,
       mismatchComment: socMismatchComment,
     });
-    // Reset state
+    resetState();
+  };
+
+  const resetState = () => {
     setSocValue('');
     setSocFile(null);
     setSocValidation(null);
@@ -92,26 +90,21 @@ export function DeliveryWithSocDialog({
   };
 
   const handleClose = () => {
-    setSocValue('');
-    setSocFile(null);
-    setSocValidation(null);
-    setSocMismatchConfirmed(false);
-    setSocMismatchReason(undefined);
-    setSocMismatchComment(undefined);
+    resetState();
     onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Delivery Verification</DialogTitle>
-          <DialogDescription>
+    <Drawer open={open} onOpenChange={handleClose}>
+      <DrawerContent className="max-h-[92vh]">
+        <DrawerHeader>
+          <DrawerTitle>Delivery Verification</DrawerTitle>
+          <DrawerDescription>
             Capture the outgoing SOC before proceeding to OTP verification.
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="px-4 pb-4 space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Outgoing SOC value */}
           <div className="space-y-2">
             <Label htmlFor="out-soc-value" className="flex items-center gap-2">
@@ -132,10 +125,11 @@ export function DeliveryWithSocDialog({
                   setSocValue(v);
                 }
               }}
+              className="h-11"
             />
           </div>
 
-          {/* SOC Photo Capture — reuses existing component */}
+          {/* SOC Photo Capture */}
           <SocPhotoCapture
             enteredSoc={socValue ? parseInt(socValue) : -1}
             onValidationComplete={handleSocValidation}
@@ -144,15 +138,15 @@ export function DeliveryWithSocDialog({
           />
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleProceed} disabled={!isSocValid()}>
+        <DrawerFooter className="safe-bottom">
+          <Button onClick={handleProceed} disabled={!isSocValid()} className="h-12">
             Proceed to OTP
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button variant="outline" onClick={handleClose} className="h-12">
+            Cancel
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

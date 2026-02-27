@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -113,16 +108,16 @@ export function ReopenJobCardDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Reopen Job Card</DialogTitle>
-          <DialogDescription>
+    <Drawer open={open} onOpenChange={handleClose}>
+      <DrawerContent className="max-h-[92vh]">
+        <DrawerHeader>
+          <DrawerTitle>Reopen Job Card</DrawerTitle>
+          <DrawerDescription>
             Select the service types, issues, and provide a reason for reopening
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1 min-h-0">
           {/* Service Categories */}
           <div className="space-y-3">
             <Label>
@@ -138,7 +133,7 @@ export function ReopenJobCardDialog({
                   const l2Items = getL2Categories(l1.code);
                   return (
                     <div key={l1.id} className="space-y-2">
-                      <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted">
+                      <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted min-h-[44px]">
                         <Checkbox
                           id={`reopen-l1-${l1.code}`}
                           checked={selectedL1.has(l1.code)}
@@ -156,7 +151,7 @@ export function ReopenJobCardDialog({
                           {l2Items.map((l2) => (
                             <div
                               key={l2.id}
-                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted"
+                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted min-h-[44px]"
                             >
                               <Checkbox
                                 id={`reopen-l2-${l2.code}`}
@@ -209,15 +204,15 @@ export function ReopenJobCardDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
+        <DrawerFooter className="safe-bottom">
+          <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12">
             Submit
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button variant="outline" onClick={handleClose} className="h-12">
+            Cancel
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
