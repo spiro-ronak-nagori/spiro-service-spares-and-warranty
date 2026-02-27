@@ -219,7 +219,31 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && (
+        {/* Warranty Admin Assigned Workshops */}
+        {profile?.role === 'warranty_admin' && warrantyAssignments && warrantyAssignments.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                  <Building2 className="h-5 w-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Assigned Workshops</CardTitle>
+                  <CardDescription>{warrantyAssignments.length} workshop{warrantyAssignments.length !== 1 ? 's' : ''}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2">
+                {warrantyAssignments.map((name) => (
+                  <Badge key={name} variant="secondary">{name}</Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && profile?.role !== 'warranty_admin' && (
           <Card>
             <CardContent className="py-8 text-center">
               <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
