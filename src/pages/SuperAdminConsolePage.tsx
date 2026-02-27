@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, Globe, Settings, ChevronRight, ShieldCheck, ClipboardList, ListTree, Loader2, Sheet, CheckCircle2, XCircle } from 'lucide-react';
+import { Building2, Globe, Settings, ChevronRight, ShieldCheck, Loader2, Sheet, CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -90,27 +90,6 @@ export default function SuperAdminConsolePage() {
       icon: Settings,
       path: '/console/system-config',
       visible: isSystemAdmin,
-    },
-    {
-      label: 'Manage Spare Parts',
-      description: 'Spare parts master list and vehicle model mappings',
-      icon: Building2,
-      path: '/console/spare-parts',
-      visible: isSuperAdmin || isSystemAdmin,
-    },
-    {
-      label: 'Manage Feedback Form',
-      description: 'Edit feedback questions, types, and ordering',
-      icon: ClipboardList,
-      path: '/console/feedback-editor',
-      visible: isSuperAdmin || isSystemAdmin,
-    },
-    {
-      label: 'Manage Service Categories',
-      description: 'Add, edit, and remove service categories and issues',
-      icon: ListTree,
-      path: '/console/service-categories',
-      visible: isSuperAdmin || isSystemAdmin,
     },
   ];
 
