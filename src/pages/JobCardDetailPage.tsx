@@ -58,6 +58,7 @@ export default function JobCardDetailPage() {
   const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
+  const [mandatorySparesRequired, setMandatorySparesRequired] = useState(false);
   const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
   const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
@@ -79,6 +80,29 @@ export default function JobCardDetailPage() {
       fetchAuditTrail();
     }
   }, [id]);
+
+  // Check if any selected issues require spares (child rows with requires_spares = true)
+  useEffect(() => {
+    const checkMandatorySpares = async () => {
+      if (!jobCard || !sparesEnabled || jobCard.issue_categories.length === 0) {
+        setMandatorySparesRequired(false);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('service_categories')
+          .select('code')
+          .in('code', jobCard.issue_categories)
+          .eq('requires_spares', true)
+          .not('parent_code', 'is', null)
+          .limit(1);
+        setMandatorySparesRequired((data?.length ?? 0) > 0);
+      } catch {
+        setMandatorySparesRequired(false);
+      }
+    };
+    checkMandatorySpares();
+  }, [jobCard?.issue_categories, sparesEnabled]);
 
   const fetchJobCard = async () => {
     if (!id) return;
@@ -457,6 +481,7 @@ export default function JobCardDetailPage() {
           onReopenJobCard={() => setShowReopenDialog(true)}
           sparesEnabled={sparesEnabled}
           sparesCount={spares.length}
+          mandatorySparesRequired={mandatorySparesRequired}
           onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
         />
 
@@ -802,6 +827,7 @@ interface ActionButtonsProps {
   onReopenJobCard: () => void;
   sparesEnabled?: boolean;
   sparesCount?: number;
+  mandatorySparesRequired?: boolean;
   onAddSpares?: () => void;
 }
 
@@ -815,6 +841,7 @@ function ActionButtons({
   onReopenJobCard,
   sparesEnabled,
   sparesCount = 0,
+  mandatorySparesRequired,
   onAddSpares,
 }: ActionButtonsProps) {
   const status = jobCard.status;
@@ -846,11 +873,11 @@ function ActionButtons({
   if (status === 'IN_PROGRESS') {
     return (
       <div className="space-y-3">
-        {sparesEnabled && sparesCount === 0 && onAddSpares && (
+        {sparesEnabled && mandatorySparesRequired && sparesCount === 0 && onAddSpares && (
           <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
             <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
             <p className="text-sm text-destructive flex-1">
-              Action required: Add spares to complete this job card.
+              Spares required for selected issues. Please add spares to complete work.
             </p>
             <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={onAddSpares}>
               <Package className="h-3.5 w-3.5 mr-1" />
