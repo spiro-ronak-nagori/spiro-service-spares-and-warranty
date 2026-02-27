@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Button } from '@/components/ui/button';
