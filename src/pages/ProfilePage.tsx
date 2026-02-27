@@ -10,6 +10,8 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { LogOut, Building2, Phone, Mail, Shield, Edit, Users, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ProfilePage() {
   const { profile, workshop, signOut } = useAuth();
@@ -28,6 +30,7 @@ export default function ProfilePage() {
       case 'super_admin': return 'destructive';
       case 'country_admin': return 'default';
       case 'workshop_admin': return 'default';
+      case 'warranty_admin': return 'default';
       default: return 'secondary';
     }
   };
@@ -38,11 +41,90 @@ export default function ProfilePage() {
       case 'super_admin': return 'Super Admin';
       case 'country_admin': return 'Country Admin';
       case 'workshop_admin': return 'Workshop Admin';
+      case 'warranty_admin': return 'Warranty Admin';
       default: return 'Technician';
     }
   };
 
   const canManageTeam = profile?.role === 'workshop_admin' || profile?.role === 'super_admin' || profile?.role === 'country_admin' || profile?.role === 'system_admin';
+
+  // Fetch warranty admin assignments with resolved workshop names
+  const { data: warrantyAssignments } = useQuery({
+    queryKey: ['warranty-admin-assignments-profile', profile?.id],
+    enabled: profile?.role === 'warranty_admin',
+    queryFn: async () => {
+      // Get assignments
+      const { data: assignments, error } = await supabase
+        .from('warranty_admin_assignments')
+        .select('id, country_ids, workshop_ids, active')
+        .eq('admin_user_id', profile!.user_id)
+        .eq('active', true);
+      if (error) throw error;
+      if (!assignments?.length) return [];
+
+      // Collect all workshop IDs and country codes
+      const allWorkshopIds = assignments.flatMap(a => a.workshop_ids || []);
+      const allCountryIds = assignments.flatMap(a => a.country_ids || []);
+
+      // Fetch workshop names for explicit IDs
+      let workshopMap: Record<string, string> = {};
+      if (allWorkshopIds.length > 0) {
+        const { data: ws } = await supabase
+          .from('workshops')
+          .select('id, name')
+          .in('id', allWorkshopIds);
+        ws?.forEach(w => { workshopMap[w.id] = w.name; });
+      }
+
+      // For country-scoped assignments (empty workshop_ids), fetch all workshops in those countries
+      const countryOnlyAssignments = assignments.filter(a => (!a.workshop_ids || a.workshop_ids.length === 0) && a.country_ids && a.country_ids.length > 0);
+      let countryWorkshops: { name: string; country: string }[] = [];
+      if (countryOnlyAssignments.length > 0) {
+        const countries = [...new Set(countryOnlyAssignments.flatMap(a => a.country_ids || []))];
+        const { data: ws } = await supabase
+          .from('workshops')
+          .select('name, country')
+          .in('country', countries);
+        countryWorkshops = ws || [];
+      }
+
+      // For global assignments (both empty), fetch all workshops
+      const globalAssignments = assignments.filter(a => (!a.workshop_ids || a.workshop_ids.length === 0) && (!a.country_ids || a.country_ids.length === 0));
+      let globalWorkshops: { name: string }[] = [];
+      if (globalAssignments.length > 0) {
+        const { data: ws } = await supabase
+          .from('workshops')
+          .select('name');
+        globalWorkshops = ws || [];
+      }
+
+      // Build resolved list
+      const resolvedWorkshops: string[] = [];
+
+      // Add explicitly assigned workshops
+      allWorkshopIds.forEach(id => {
+        if (workshopMap[id] && !resolvedWorkshops.includes(workshopMap[id])) {
+          resolvedWorkshops.push(workshopMap[id]);
+        }
+      });
+
+      // Add country-scoped workshops
+      countryWorkshops.forEach(w => {
+        if (!resolvedWorkshops.includes(w.name)) {
+          resolvedWorkshops.push(w.name);
+        }
+      });
+
+      // Add global workshops
+      globalWorkshops.forEach(w => {
+        if (!resolvedWorkshops.includes(w.name)) {
+          resolvedWorkshops.push(w.name);
+        }
+      });
+
+      return resolvedWorkshops;
+    },
+  });
 
   return (
     <AppLayout>
@@ -137,7 +219,31 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && (
+        {/* Warranty Admin Assigned Workshops */}
+        {profile?.role === 'warranty_admin' && warrantyAssignments && warrantyAssignments.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                  <Building2 className="h-5 w-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Assigned Workshops</CardTitle>
+                  <CardDescription>{warrantyAssignments.length} workshop{warrantyAssignments.length !== 1 ? 's' : ''}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2">
+                {warrantyAssignments.map((name) => (
+                  <Badge key={name} variant="secondary">{name}</Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && profile?.role !== 'warranty_admin' && (
           <Card>
             <CardContent className="py-8 text-center">
               <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
