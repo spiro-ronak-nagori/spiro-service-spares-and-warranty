@@ -47,6 +47,7 @@ export default function ManageSpareMasterPage() {
     part_code: '',
     active: true,
     serial_required: false,
+    old_part_srno_required: false,
     max_qty_allowed: 50,
     usage_proof_photos_required_count: 0,
     usage_proof_photo_prompts: [] as string[],
@@ -85,6 +86,7 @@ export default function ManageSpareMasterPage() {
     setEditingPart(null);
     setForm({
       part_name: '', part_code: '', active: true, serial_required: false,
+      old_part_srno_required: false,
       max_qty_allowed: 50, usage_proof_photos_required_count: 0,
       usage_proof_photo_prompts: [],
       warranty_available: true, goodwill_available: true,
@@ -112,6 +114,7 @@ export default function ManageSpareMasterPage() {
       part_code: part.part_code || '',
       active: part.active,
       serial_required: part.serial_required,
+      old_part_srno_required: part.old_part_srno_required ?? false,
       max_qty_allowed: part.max_qty_allowed,
       usage_proof_photos_required_count: part.usage_proof_photos_required_count,
       usage_proof_photo_prompts: prompts,
@@ -198,6 +201,7 @@ export default function ManageSpareMasterPage() {
         part_code: form.part_code.trim() || null,
         active: form.active,
         serial_required: form.serial_required,
+        old_part_srno_required: form.old_part_srno_required,
         max_qty_allowed: form.max_qty_allowed,
         usage_proof_photos_required_count: form.usage_proof_photos_required_count,
         usage_proof_photo_prompts: JSON.stringify(finalPrompts),
@@ -492,6 +496,10 @@ export default function ManageSpareMasterPage() {
               <div className="flex items-center justify-between">
                 <Label>Part Serial Number Required</Label>
                 <Switch checked={form.serial_required} onCheckedChange={v => setForm(f => ({ ...f, serial_required: v }))} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Old Part Serial Number Required</Label>
+                <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
               </div>
               <div className="flex items-center justify-between">
                 <Label>Warranty Available</Label>
