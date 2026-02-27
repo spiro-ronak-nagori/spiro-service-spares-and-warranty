@@ -133,7 +133,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
       }
 
       const now = Date.now();
-      const result: ApprovalQueueItem[] = [];
+      const preFilterResult: ApprovalQueueItem[] = [];
 
       for (const spare of sparesList) {
         const jc = jcMap.get(spare.job_card_id);
@@ -141,7 +141,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
 
         const part = partsMap.get(spare.spare_part_id);
 
-        // Apply filters
+        // Apply non-TAT filters
         if (filters.country && jc.workshop?.country !== filters.country) continue;
         if (filters.workshopId && jc.workshop_id !== filters.workshopId) continue;
 
@@ -150,11 +150,6 @@ export function useWarrantyApprovalQueue(filters: Filters) {
 
         const tatMs = now - new Date(spare.last_submitted_at || spare.submitted_at || spare.created_at).getTime();
         const tatMinutes = tatMs / 60000;
-
-        // TAT bucket filter
-        if (filters.tatBucket && filters.tatBucket !== 'all') {
-          if (getTatBucket(tatMinutes) !== filters.tatBucket) continue;
-        }
 
         const vehicle = jc.vehicle as any;
         const workshopName = jc.workshop?.name || '';
@@ -168,7 +163,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
           if (!searchable.includes(s)) continue;
         }
 
-        result.push({
+        preFilterResult.push({
           spare,
           jc_number: jc.jc_number,
           workshop_name: workshopName,
@@ -184,6 +179,19 @@ export function useWarrantyApprovalQueue(filters: Filters) {
           tat_minutes: tatMinutes,
         });
       }
+
+      // Compute bucket counts BEFORE TAT filtering
+      const counts: Record<string, number> = {};
+      for (const item of preFilterResult) {
+        const bucket = getTatBucket(item.tat_minutes);
+        counts[bucket] = (counts[bucket] || 0) + 1;
+      }
+      setBucketCounts(counts);
+
+      // Now apply TAT bucket filter
+      const result = filters.tatBucket && filters.tatBucket !== 'all'
+        ? preFilterResult.filter(item => getTatBucket(item.tat_minutes) === filters.tatBucket)
+        : preFilterResult;
 
       // Sort by TAT descending (oldest/longest wait first)
       result.sort((a, b) => b.tat_minutes - a.tat_minutes);
