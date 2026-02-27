@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -30,6 +30,8 @@ const TAB_STATUSES: Record<TabValue, JobCardStatus[]> = {
 export default function JobCardListPage() {
   const navigate = useNavigate();
   const { workshop, profile } = useAuth();
+
+
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
   const isElevatedAdmin = isSuperAdmin || isCountryAdmin;
@@ -187,6 +189,11 @@ export default function JobCardListPage() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  // Warranty admins land on the approvals page instead
+  if (profile?.role === 'warranty_admin') {
+    return <Navigate to="/warranty-approvals" replace />;
+  }
 
   return (
     <AppLayout>
