@@ -873,11 +873,11 @@ function ActionButtons({
   if (status === 'IN_PROGRESS') {
     return (
       <div className="space-y-3">
-        {sparesEnabled && sparesCount === 0 && onAddSpares && (
+        {sparesEnabled && mandatorySparesRequired && sparesCount === 0 && onAddSpares && (
           <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
             <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
             <p className="text-sm text-destructive flex-1">
-              Action required: Add spares to complete this job card.
+              Spares required for selected issues. Please add spares to complete work.
             </p>
             <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={onAddSpares}>
               <Package className="h-3.5 w-3.5 mr-1" />
