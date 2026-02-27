@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Package
 } from 'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
