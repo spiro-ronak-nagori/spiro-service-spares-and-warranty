@@ -152,7 +152,7 @@ function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
       <Card>
