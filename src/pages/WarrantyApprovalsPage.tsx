@@ -228,14 +228,15 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
     }
   };
 
-  const handleRequestInfo = async () => {
-    if (!comment.trim()) {
+  const handleRequestInfoSubmit = async (reason?: string) => {
+    const text = (reason || comment || '').trim();
+    if (!text) {
       toast.error('Comment is required when requesting info');
       return;
     }
     setProcessing(true);
     try {
-      await requestMoreInfo(spare.id, actorUserId, comment.trim());
+      await requestMoreInfo(spare.id, actorUserId, text);
       toast.success('Info requested from technician');
       setShowRequestInfo(false);
       onBack();
@@ -419,7 +420,7 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
         requireReason
         reasonLabel="Info Request"
         reasonPlaceholder="What additional information do you need?"
-        onConfirm={(reason) => { setComment(reason || ''); handleRequestInfo(); }}
+        onConfirm={(reason) => handleRequestInfoSubmit(reason)}
         isLoading={processing}
       />
 

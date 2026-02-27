@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { FileText, PlusCircle, BarChart3, User, Settings2 } from 'lucide-react';
+import { FileText, PlusCircle, BarChart3, User, Settings2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,6 +11,13 @@ export function BottomNavigation() {
 
   const navItems = (() => {
     const items: { to: string; icon: typeof FileText; label: string }[] = [];
+
+    // Warranty admin gets a dedicated nav
+    if (role === 'warranty_admin') {
+      items.push({ to: '/warranty-approvals', icon: ShieldCheck, label: 'Approvals' });
+      items.push({ to: '/profile', icon: User, label: 'Profile' });
+      return items;
+    }
 
     if (role === 'super_admin' || role === 'country_admin' || role === 'system_admin') {
       items.push({ to: '/console', icon: Settings2, label: 'Console' });
