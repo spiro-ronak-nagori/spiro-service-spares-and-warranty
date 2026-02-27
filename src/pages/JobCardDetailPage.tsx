@@ -204,9 +204,6 @@ export default function JobCardDetailPage() {
       for (const spare of spares) {
         const part = spare.spare_part;
         if (!part) continue;
-        if (part.partno_required && !spare.part_number) {
-          blockers.push(`${part.part_name}: Part number is required`);
-        }
         if (part.serial_required && !spare.serial_number) {
           blockers.push(`${part.part_name}: Serial number is required`);
         }
