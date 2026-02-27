@@ -175,6 +175,50 @@ export function SparesModal({
         let spareId: string;
 
         if (isEditMode && editingSpare) {
+          // --- Auto-generate edit diff if identity changed from last submission ---
+          const lastPartId = (editingSpare as any).last_submitted_spare_part_id;
+          const lastQty = (editingSpare as any).last_submitted_qty;
+          const lastClaimType = (editingSpare as any).last_submitted_claim_type;
+          const hasSnapshot = lastPartId || lastQty || lastClaimType;
+
+          if (hasSnapshot) {
+            const diffs: string[] = [];
+            if (lastPartId && lastPartId !== line.spare_part_id) {
+              const oldPartName = editingSpare.spare_part?.part_code || lastPartId;
+              const newPartName = line.part?.part_code || line.spare_part_id;
+              diffs.push(`part: ${oldPartName} → ${newPartName}`);
+            }
+            if (lastQty != null && lastQty !== line.qty) {
+              diffs.push(`qty: ${lastQty} → ${line.qty}`);
+            }
+            if (lastClaimType && lastClaimType !== line.claim_type) {
+              diffs.push(`claim type: ${lastClaimType} → ${line.claim_type}`);
+            }
+
+            if (diffs.length > 0) {
+              // Log EDIT_RESET with diff
+              let workshopId: string | null = null;
+              const { data: jcRow } = await supabase
+                .from('job_cards')
+                .select('workshop_id')
+                .eq('id', jobCardId)
+                .maybeSingle();
+              workshopId = jcRow?.workshop_id || null;
+
+              const { data: userData } = await supabase.auth.getUser();
+              if (userData?.user) {
+                await supabase.from('job_card_spare_actions' as any).insert({
+                  job_card_spare_id: editingSpare.id,
+                  job_card_id: jobCardId,
+                  workshop_id: workshopId,
+                  action_type: 'EDIT_RESET',
+                  comment: `Changed ${diffs.join('; ')}`,
+                  actor_user_id: userData.user.id,
+                } as any);
+              }
+            }
+          }
+
           const { error } = await supabase
             .from('job_card_spares' as any)
             .update({
