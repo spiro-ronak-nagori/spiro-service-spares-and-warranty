@@ -27,7 +27,6 @@ import FeedbackPage from "./pages/FeedbackPage";
 import ShortLinkRedirect from "./pages/ShortLinkRedirect";
 import WarrantyApprovalsPage from "./pages/WarrantyApprovalsPage";
 import NotFound from "./pages/NotFound";
-import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
