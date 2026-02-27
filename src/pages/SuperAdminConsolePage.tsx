@@ -86,10 +86,10 @@ export default function SuperAdminConsolePage() {
     },
     {
       label: 'Warranty Admin Assignments',
-      description: 'Assign warranty admins to workshops or countries',
+      description: 'Manage warranty admins and their scope assignments',
       icon: ShieldCheck,
       path: '/console/warranty-admins',
-      visible: isSystemAdmin,
+      visible: isSystemAdmin || isSuperAdmin,
     },
     {
       label: 'System Configuration',

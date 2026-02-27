@@ -6,9 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VALID_ROLES = ["technician", "workshop_admin", "country_admin", "super_admin", "system_admin"];
+const VALID_ROLES = ["technician", "workshop_admin", "country_admin", "super_admin", "system_admin", "warranty_admin"];
 // Roles that require system_admin to assign
 const SYSTEM_ADMIN_ONLY_ROLES = ["super_admin", "system_admin"];
+// Roles that require at least super_admin
+const ELEVATED_ROLES = ["warranty_admin", "country_admin"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[1-9]\d{1,14}$/;
