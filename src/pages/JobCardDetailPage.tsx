@@ -654,8 +654,8 @@ export default function JobCardDetailPage() {
           open={showSparesModal}
           onOpenChange={(open) => {
             setShowSparesModal(open);
-            if (!open && jobCard.status === 'INWARDED') {
-              // Only auto-start work when opening from Start Work flow
+            if (!open && sparesModalFromStartWork) {
+              setSparesModalFromStartWork(false);
               updateStatus('IN_PROGRESS');
             }
           }}
