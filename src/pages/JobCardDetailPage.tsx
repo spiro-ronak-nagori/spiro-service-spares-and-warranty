@@ -677,9 +677,12 @@ export default function JobCardDetailPage() {
           open={showSparesModal}
           onOpenChange={(open) => {
             setShowSparesModal(open);
-            if (!open && sparesModalFromStartWork) {
-              setSparesModalFromStartWork(false);
-              updateStatus('IN_PROGRESS');
+            if (!open) {
+              setEditingSpare(null);
+              if (sparesModalFromStartWork) {
+                setSparesModalFromStartWork(false);
+                updateStatus('IN_PROGRESS');
+              }
             }
           }}
           jobCardId={jobCard.id}
@@ -688,8 +691,20 @@ export default function JobCardDetailPage() {
           vehicleColorCode={(jobCard.vehicle as any)?.color_code}
           warrantyEnabled={warrantyEnabled}
           onSaved={handleSparesModalSaved}
+          editingSpare={editingSpare}
         />
       )}
+
+      {/* Delete spare confirmation */}
+      <ConfirmationDialog
+        open={!!deletingSpareId}
+        onOpenChange={(open) => { if (!open) setDeletingSpareId(null); }}
+        title="Delete Spare"
+        description="Are you sure you want to remove this spare part? This action cannot be undone."
+        onConfirm={handleDeleteSpare}
+        confirmText="Delete"
+        variant="destructive"
+      />
     </AppLayout>
   );
 }
