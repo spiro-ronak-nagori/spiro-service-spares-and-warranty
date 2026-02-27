@@ -49,6 +49,11 @@ export default function JobCardDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   
+  // Spares
+  const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
+  const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
+  const [showSparesModal, setShowSparesModal] = useState(false);
+  
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
   const [showDeliveryOtp, setShowDeliveryOtp] = useState(false);
