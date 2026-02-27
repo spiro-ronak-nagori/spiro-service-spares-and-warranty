@@ -30,6 +30,12 @@ const TAB_STATUSES: Record<TabValue, JobCardStatus[]> = {
 export default function JobCardListPage() {
   const navigate = useNavigate();
   const { workshop, profile } = useAuth();
+
+  // Warranty admins land on the approvals page instead
+  if (profile?.role === 'warranty_admin') {
+    return <Navigate to="/warranty-approvals" replace />;
+  }
+
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
   const isElevatedAdmin = isSuperAdmin || isCountryAdmin;
