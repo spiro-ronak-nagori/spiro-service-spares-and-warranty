@@ -340,6 +340,7 @@ export type Database = {
       job_card_spares: {
         Row: {
           approval_state: Database["public"]["Enums"]["approval_state"]
+          claim_comment: string | null
           claim_type: Database["public"]["Enums"]["claim_type"]
           created_at: string
           created_by: string
@@ -347,6 +348,7 @@ export type Database = {
           id: string
           job_card_id: string
           last_submitted_at: string | null
+          old_part_serial_number: string | null
           part_number: string | null
           qty: number
           serial_number: string | null
@@ -358,6 +360,7 @@ export type Database = {
         }
         Insert: {
           approval_state?: Database["public"]["Enums"]["approval_state"]
+          claim_comment?: string | null
           claim_type?: Database["public"]["Enums"]["claim_type"]
           created_at?: string
           created_by: string
@@ -365,6 +368,7 @@ export type Database = {
           id?: string
           job_card_id: string
           last_submitted_at?: string | null
+          old_part_serial_number?: string | null
           part_number?: string | null
           qty?: number
           serial_number?: string | null
@@ -376,6 +380,7 @@ export type Database = {
         }
         Update: {
           approval_state?: Database["public"]["Enums"]["approval_state"]
+          claim_comment?: string | null
           claim_type?: Database["public"]["Enums"]["claim_type"]
           created_at?: string
           created_by?: string
@@ -383,6 +388,7 @@ export type Database = {
           id?: string
           job_card_id?: string
           last_submitted_at?: string | null
+          old_part_serial_number?: string | null
           part_number?: string | null
           qty?: number
           serial_number?: string | null
@@ -1075,6 +1081,7 @@ export type Database = {
           goodwill_old_part_photos_required_count: number
           id: string
           max_qty_allowed: number
+          old_part_srno_required: boolean
           part_code: string | null
           part_name: string
           partno_required: boolean
@@ -1094,6 +1101,7 @@ export type Database = {
           goodwill_old_part_photos_required_count?: number
           id?: string
           max_qty_allowed?: number
+          old_part_srno_required?: boolean
           part_code?: string | null
           part_name: string
           partno_required?: boolean
@@ -1113,6 +1121,7 @@ export type Database = {
           goodwill_old_part_photos_required_count?: number
           id?: string
           max_qty_allowed?: number
+          old_part_srno_required?: boolean
           part_code?: string | null
           part_name?: string
           partno_required?: boolean
