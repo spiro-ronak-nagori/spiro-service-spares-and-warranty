@@ -9,7 +9,29 @@ export type JobCardStatus =
   | 'REOPENED'
   | 'COMPLETED';
 
-export type UserRole = 'technician' | 'workshop_admin' | 'country_admin' | 'super_admin' | 'system_admin';
+export type UserRole = 'technician' | 'workshop_admin' | 'country_admin' | 'super_admin' | 'system_admin' | 'warranty_admin';
+
+export type SpareActionType = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'TECH_RESPONSE' | 'RESUBMIT' | 'EDIT_RESET';
+
+export interface SpareAction {
+  id: string;
+  job_card_spare_id: string;
+  action_type: SpareActionType;
+  comment: string | null;
+  actor_user_id: string;
+  created_at: string;
+  actor?: { full_name: string };
+}
+
+export interface WarrantyAdminAssignment {
+  id: string;
+  admin_user_id: string;
+  country_id: string | null;
+  workshop_id: string | null;
+  active: boolean;
+  created_at: string;
+  created_by: string;
+}
 
 export type UserStatus = 'INVITED' | 'ACTIVE' | 'REMOVED';
 
