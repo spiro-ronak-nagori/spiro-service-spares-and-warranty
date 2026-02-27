@@ -50,7 +50,7 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
 
   const spare = item.spare;
   const part = spare.spare_part;
-  const isTerminal = ['APPROVED', 'REJECTED'].includes(spare.approval_state);
+  const isTerminal = ['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state);
 
   const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
   const newPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
