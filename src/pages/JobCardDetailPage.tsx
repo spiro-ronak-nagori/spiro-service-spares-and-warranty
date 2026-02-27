@@ -416,7 +416,7 @@ export default function JobCardDetailPage() {
           onReopenJobCard={() => setShowReopenDialog(true)}
           sparesEnabled={sparesEnabled}
           sparesCount={spares.length}
-          onAddSpares={() => setShowSparesModal(true)}
+          onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
         />
 
         {/* Vehicle & Customer Info */}
