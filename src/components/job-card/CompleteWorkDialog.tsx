@@ -145,9 +145,11 @@ export function CompleteWorkDialog({
       <DrawerContent className="max-h-[92vh]">
         <DrawerHeader>
           <DrawerTitle>Complete Work</DrawerTitle>
-          <DrawerDescription>
-            Confirm all issues are resolved and add completion remarks
-          </DrawerDescription>
+          {!hasSparesBlocker && (
+            <DrawerDescription>
+              Confirm all issues are resolved and add completion remarks
+            </DrawerDescription>
+          )}
         </DrawerHeader>
 
         <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1 min-h-0">
@@ -226,8 +228,8 @@ export function CompleteWorkDialog({
             </div>
           )}
 
-          {/* Issues Checklist */}
-          {allIssues.length > 0 && (
+          {/* Issues Checklist — hidden when blockers exist */}
+          {!hasSparesBlocker && allIssues.length > 0 && (
             <div className="space-y-3">
               <Label>Confirm completed work</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -256,31 +258,33 @@ export function CompleteWorkDialog({
             </div>
           )}
 
-          {/* Remarks */}
-          <div className="space-y-2">
-            <Label htmlFor="remarks">
-              Completion Remarks <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="remarks"
-              placeholder="Describe the work completed, parts replaced, observations..."
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
-            <div className="flex items-center justify-between text-xs">
-              <span className={remarks.length < MIN_REMARKS_LENGTH ? 'text-destructive' : 'text-muted-foreground'}>
-                {remarks.length}/{MIN_REMARKS_LENGTH} minimum characters
-              </span>
-              {!isRemarksValid && remarks.length > 0 && (
-                <span className="flex items-center gap-1 text-destructive">
-                  <AlertCircle className="h-3 w-3" />
-                  Too short
+          {/* Remarks — hidden when blockers exist */}
+          {!hasSparesBlocker && (
+            <div className="space-y-2">
+              <Label htmlFor="remarks">
+                Completion Remarks <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="remarks"
+                placeholder="Describe the work completed, parts replaced, observations..."
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <div className="flex items-center justify-between text-xs">
+                <span className={remarks.length < MIN_REMARKS_LENGTH ? 'text-destructive' : 'text-muted-foreground'}>
+                  {remarks.length}/{MIN_REMARKS_LENGTH} minimum characters
                 </span>
-              )}
+                {!isRemarksValid && remarks.length > 0 && (
+                  <span className="flex items-center gap-1 text-destructive">
+                    <AlertCircle className="h-3 w-3" />
+                    Too short
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <DrawerFooter className="safe-bottom">
