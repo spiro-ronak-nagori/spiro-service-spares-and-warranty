@@ -52,6 +52,10 @@ export default function ManageSpareMasterPage() {
     usage_proof_photo_prompts: [] as string[],
     warranty_available: true,
     goodwill_available: true,
+    warranty_old_part_photos_required_count: 1,
+    warranty_old_part_photo_prompts: ['Old part close-up'] as string[],
+    goodwill_old_part_photos_required_count: 1,
+    goodwill_old_part_photo_prompts: ['Old part close-up'] as string[],
   });
 
   // Applicability dialog
@@ -84,6 +88,10 @@ export default function ManageSpareMasterPage() {
       max_qty_allowed: 50, usage_proof_photos_required_count: 0,
       usage_proof_photo_prompts: [],
       warranty_available: true, goodwill_available: true,
+      warranty_old_part_photos_required_count: 1,
+      warranty_old_part_photo_prompts: ['Old part close-up'],
+      goodwill_old_part_photos_required_count: 1,
+      goodwill_old_part_photo_prompts: ['Old part close-up'],
     });
     setShowDialog(true);
   };
@@ -93,6 +101,12 @@ export default function ManageSpareMasterPage() {
     const prompts = Array.isArray(part.usage_proof_photo_prompts)
       ? part.usage_proof_photo_prompts
       : [];
+    const warrantyPrompts = Array.isArray(part.warranty_old_part_photo_prompts)
+      ? part.warranty_old_part_photo_prompts
+      : ['Old part close-up'];
+    const goodwillPrompts = Array.isArray(part.goodwill_old_part_photo_prompts)
+      ? part.goodwill_old_part_photo_prompts
+      : ['Old part close-up'];
     setForm({
       part_name: part.part_name,
       part_code: part.part_code || '',
@@ -103,6 +117,10 @@ export default function ManageSpareMasterPage() {
       usage_proof_photo_prompts: prompts,
       warranty_available: part.warranty_available,
       goodwill_available: part.goodwill_available,
+      warranty_old_part_photos_required_count: part.warranty_old_part_photos_required_count,
+      warranty_old_part_photo_prompts: warrantyPrompts,
+      goodwill_old_part_photos_required_count: part.goodwill_old_part_photos_required_count,
+      goodwill_old_part_photo_prompts: goodwillPrompts,
     });
     setShowDialog(true);
   };
@@ -126,12 +144,53 @@ export default function ManageSpareMasterPage() {
     });
   };
 
+  const handleWarrantyPhotoCountChange = (count: number) => {
+    const prompts = [...form.warranty_old_part_photo_prompts];
+    while (prompts.length < count) prompts.push('');
+    setForm(f => ({
+      ...f,
+      warranty_old_part_photos_required_count: count,
+      warranty_old_part_photo_prompts: prompts.slice(0, Math.max(count, prompts.length)),
+    }));
+  };
+
+  const updateWarrantyPrompt = (idx: number, value: string) => {
+    setForm(f => {
+      const prompts = [...f.warranty_old_part_photo_prompts];
+      prompts[idx] = value;
+      return { ...f, warranty_old_part_photo_prompts: prompts };
+    });
+  };
+
+  const handleGoodwillPhotoCountChange = (count: number) => {
+    const prompts = [...form.goodwill_old_part_photo_prompts];
+    while (prompts.length < count) prompts.push('');
+    setForm(f => ({
+      ...f,
+      goodwill_old_part_photos_required_count: count,
+      goodwill_old_part_photo_prompts: prompts.slice(0, Math.max(count, prompts.length)),
+    }));
+  };
+
+  const updateGoodwillPrompt = (idx: number, value: string) => {
+    setForm(f => {
+      const prompts = [...f.goodwill_old_part_photo_prompts];
+      prompts[idx] = value;
+      return { ...f, goodwill_old_part_photo_prompts: prompts };
+    });
+  };
+
   const handleSavePart = async () => {
     if (!form.part_name.trim()) { toast.error('Part name is required'); return; }
-    // Trim prompts to match count, filter empties for storage
     const finalPrompts = form.usage_proof_photo_prompts
       .slice(0, form.usage_proof_photos_required_count)
-      .map(p => p.trim() || `Photo ${form.usage_proof_photo_prompts.indexOf(p) + 1}`);
+      .map((p, i) => p.trim() || `Photo ${i + 1}`);
+    const finalWarrantyPrompts = form.warranty_old_part_photo_prompts
+      .slice(0, form.warranty_old_part_photos_required_count)
+      .map((p, i) => p.trim() || `Old part photo ${i + 1}`);
+    const finalGoodwillPrompts = form.goodwill_old_part_photo_prompts
+      .slice(0, form.goodwill_old_part_photos_required_count)
+      .map((p, i) => p.trim() || `Old part photo ${i + 1}`);
 
     try {
       const payload = {
@@ -144,6 +203,10 @@ export default function ManageSpareMasterPage() {
         usage_proof_photo_prompts: JSON.stringify(finalPrompts),
         warranty_available: form.warranty_available,
         goodwill_available: form.goodwill_available,
+        warranty_old_part_photos_required_count: form.warranty_old_part_photos_required_count,
+        warranty_old_part_photo_prompts: JSON.stringify(finalWarrantyPrompts),
+        goodwill_old_part_photos_required_count: form.goodwill_old_part_photos_required_count,
+        goodwill_old_part_photo_prompts: JSON.stringify(finalGoodwillPrompts),
       };
 
       if (editingPart) {
@@ -434,10 +497,69 @@ export default function ManageSpareMasterPage() {
                 <Label>Warranty Available</Label>
                 <Switch checked={form.warranty_available} onCheckedChange={v => setForm(f => ({ ...f, warranty_available: v }))} />
               </div>
+
+              {/* Warranty Old Part Photos */}
+              {form.warranty_available && (
+                <div className="space-y-2 pl-4 border-l-2 border-muted">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Warranty Old Part Photos (count)</Label>
+                    <Input
+                      type="number" min={0} max={10}
+                      value={form.warranty_old_part_photos_required_count}
+                      onChange={e => handleWarrantyPhotoCountChange(parseInt(e.target.value) || 0)}
+                      className="h-8"
+                    />
+                  </div>
+                  {form.warranty_old_part_photos_required_count > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Warranty Old Part Photo Prompts</Label>
+                      {Array.from({ length: form.warranty_old_part_photos_required_count }).map((_, idx) => (
+                        <Input
+                          key={idx}
+                          placeholder={`Prompt for photo ${idx + 1}`}
+                          value={form.warranty_old_part_photo_prompts[idx] || ''}
+                          onChange={e => updateWarrantyPrompt(idx, e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <Label>Goodwill Available</Label>
                 <Switch checked={form.goodwill_available} onCheckedChange={v => setForm(f => ({ ...f, goodwill_available: v }))} />
               </div>
+
+              {/* Goodwill Old Part Photos */}
+              {form.goodwill_available && (
+                <div className="space-y-2 pl-4 border-l-2 border-muted">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Goodwill Old Part Photos (count)</Label>
+                    <Input
+                      type="number" min={0} max={10}
+                      value={form.goodwill_old_part_photos_required_count}
+                      onChange={e => handleGoodwillPhotoCountChange(parseInt(e.target.value) || 0)}
+                      className="h-8"
+                    />
+                  </div>
+                  {form.goodwill_old_part_photos_required_count > 0 && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Goodwill Old Part Photo Prompts</Label>
+                      {Array.from({ length: form.goodwill_old_part_photos_required_count }).map((_, idx) => (
+                        <Input
+                          key={idx}
+                          placeholder={`Prompt for photo ${idx + 1}`}
+                          value={form.goodwill_old_part_photo_prompts[idx] || ''}
+                          onChange={e => updateGoodwillPrompt(idx, e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
