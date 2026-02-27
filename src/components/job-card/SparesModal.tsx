@@ -56,16 +56,6 @@ export function SparesModal({
   const [lines, setLines] = useState<SpareLineInput[]>([emptyLine()]);
   const [saving, setSaving] = useState(false);
   const [activeLineIdx, setActiveLineIdx] = useState(0);
-  const [activeLineIdx, setActiveLineIdx] = useState(0);
-
-  const filteredParts = useMemo(() => {
-    if (!searchTerm.trim()) return parts;
-    const term = searchTerm.toLowerCase();
-    return parts.filter(p =>
-      p.part_name.toLowerCase().includes(term) ||
-      (p.part_code && p.part_code.toLowerCase().includes(term))
-    );
-  }, [parts, searchTerm]);
 
   const updateLine = (idx: number, updates: Partial<SpareLineInput>) => {
     setLines(prev => prev.map((l, i) => i === idx ? { ...l, ...updates } : l));
