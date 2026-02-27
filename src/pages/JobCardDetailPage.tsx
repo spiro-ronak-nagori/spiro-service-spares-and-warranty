@@ -34,9 +34,11 @@ import { ReopenJobCardDialog } from '@/components/job-card/ReopenJobCardDialog';
 import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/DeliveryWithSocDialog';
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
-import { useSparesFeatureFlags, useJobCardSpares } from '@/hooks/useSparesFlow';
+import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
+import { JobCardSpare } from '@/types';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +57,8 @@ export default function JobCardDetailPage() {
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
   const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
+  const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
+  const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
