@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Spiro Aftersales Service App - Design System
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Spiro Green Theme - High contrast for workshop environments */
+    --background: 0 0% 98%;
+    --foreground: 160 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 10% 10%;
+
+    /* Spiro Green Primary */
+    --primary: 152 69% 31%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 150 15% 95%;
+    --secondary-foreground: 160 10% 10%;
+
+    --muted: 150 10% 94%;
+    --muted-foreground: 160 5% 45%;
+
+    --accent: 150 20% 92%;
+    --accent-foreground: 160 10% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --success: 152 69% 31%;
+    --success-foreground: 0 0% 100%;
+    
+    --info: 210 80% 55%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 150 10% 88%;
+    --input: 150 10% 88%;
+    --ring: 152 69% 31%;
+
+    --radius: 0.75rem;
+
+    /* Status Pill Colors */
+    --status-draft: 210 15% 50%;
+    --status-inwarded: 38 92% 50%;
+    --status-in-progress: 210 80% 55%;
+    --status-ready: 152 69% 31%;
+    --status-delivered: 160 50% 40%;
+    --status-closed: 160 10% 60%;
+  }
+
+  .dark {
+    --background: 160 15% 8%;
+    --foreground: 150 10% 95%;
+
+    --card: 160 12% 12%;
+    --card-foreground: 150 10% 95%;
+
+    --popover: 160 12% 12%;
+    --popover-foreground: 150 10% 95%;
+
+    --primary: 152 60% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 160 10% 18%;
+    --secondary-foreground: 150 10% 95%;
+
+    --muted: 160 10% 20%;
+    --muted-foreground: 150 10% 60%;
+
+    --accent: 160 12% 22%;
+    --accent-foreground: 150 10% 95%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 85% 45%;
+    --warning-foreground: 0 0% 100%;
+    
+    --success: 152 60% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --info: 210 70% 50%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 160 10% 22%;
+    --input: 160 10% 22%;
+    --ring: 152 60% 45%;
+
+    --status-draft: 210 15% 55%;
+    --status-inwarded: 38 85% 50%;
+    --status-in-progress: 210 70% 55%;
+    --status-ready: 152 60% 45%;
+    --status-delivered: 160 45% 50%;
+    --status-closed: 160 10% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Optimize for mobile */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Safe area for mobile devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+}
+
+@layer utilities {
+  /* Status pill utilities */
+  .status-draft {
+    @apply bg-[hsl(var(--status-draft))] text-white;
+  }
+  
+  .status-inwarded {
+    @apply bg-[hsl(var(--status-inwarded))] text-white;
+  }
+  
+  .status-in-progress {
+    @apply bg-[hsl(var(--status-in-progress))] text-white;
+  }
+  
+  .status-ready {
+    @apply bg-[hsl(var(--status-ready))] text-white;
+  }
+  
+  .status-delivered {
+    @apply bg-[hsl(var(--status-delivered))] text-white;
+  }
+  
+  .status-closed {
+    @apply bg-[hsl(var(--status-closed))] text-white;
+  }
+}

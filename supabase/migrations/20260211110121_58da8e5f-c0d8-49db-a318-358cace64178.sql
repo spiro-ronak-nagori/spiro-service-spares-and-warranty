@@ -1,0 +1,1 @@
+ALTER TABLE public.sms_audit_log ADD COLUMN api_key_alias text;
