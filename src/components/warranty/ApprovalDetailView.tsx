@@ -247,8 +247,8 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
               <div className="relative pl-5">
                 {/* Vertical timeline line */}
                 <div className="absolute left-[7px] top-1 bottom-1 w-px bg-border" />
-                <div className="space-y-4">
-                  {actions.map((action, idx) => {
+              <div className="space-y-4">
+                  {[...actions].reverse().map((action, idx) => {
                     const cfg = ACTION_CONFIG[action.action_type] || { icon: AlertCircle, className: 'text-muted-foreground bg-muted', label: action.action_type };
                     const Icon = cfg.icon;
                     return (
