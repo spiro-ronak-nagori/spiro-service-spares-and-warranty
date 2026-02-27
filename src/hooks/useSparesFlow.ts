@@ -264,4 +264,15 @@ export async function withdrawSpare(spareId: string, actorProfileId: string): Pr
     .eq('id', spareId);
 
   if (error) throw error;
+
+  // 3. Log EDIT_RESET action
+  const { data: userData } = await supabase.auth.getUser();
+  if (userData?.user) {
+    await supabase.from('job_card_spare_actions' as any).insert({
+      job_card_spare_id: spareId,
+      action_type: 'EDIT_RESET',
+      comment: null,
+      actor_user_id: userData.user.id,
+    } as any);
+  }
 }

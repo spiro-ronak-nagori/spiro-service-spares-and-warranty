@@ -85,6 +85,13 @@ export default function SuperAdminConsolePage() {
       visible: isSystemAdmin,
     },
     {
+      label: 'Warranty Admin Assignments',
+      description: 'Assign warranty admins to workshops or countries',
+      icon: ShieldCheck,
+      path: '/console/warranty-admins',
+      visible: isSystemAdmin,
+    },
+    {
       label: 'System Configuration',
       description: isSystemAdmin
         ? 'Feature flag toggles (SMS, OCR, Feedback, Spares)'

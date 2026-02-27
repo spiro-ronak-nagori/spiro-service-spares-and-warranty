@@ -763,6 +763,19 @@ export default function JobCardDetailPage() {
         confirmLabel="Withdraw"
         variant="destructive"
       />
+
+      {/* Needs Info Response Sheet */}
+      {needsInfoSpare && profile && (
+        <NeedsInfoResponseSheet
+          open={!!needsInfoSpare}
+          onOpenChange={(open) => { if (!open) setNeedsInfoSpare(null); }}
+          spare={needsInfoSpare}
+          jobCardId={jobCard.id}
+          profileId={profile.id}
+          userId={profile.user_id}
+          onResponded={() => { setNeedsInfoSpare(null); refetchSpares(); }}
+        />
+      )}
     </AppLayout>
   );
 }

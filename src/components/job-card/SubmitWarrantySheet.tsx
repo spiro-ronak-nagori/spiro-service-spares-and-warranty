@@ -146,6 +146,17 @@ export function SubmitWarrantySheet({
 
       if (error) throw error;
 
+      // Log SUBMIT action
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        await supabase.from('job_card_spare_actions' as any).insert({
+          job_card_spare_id: spare.id,
+          action_type: 'SUBMIT',
+          comment: claimComment.trim() || null,
+          actor_user_id: userData.user.id,
+        } as any);
+      }
+
       toast.success(`${CLAIM_LABEL[spare.claim_type]} claim submitted`);
       setNewPhotos([]);
       setOldPartSerial('');
