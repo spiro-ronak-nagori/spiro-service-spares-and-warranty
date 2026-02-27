@@ -205,8 +205,7 @@ export default function SystemConfigPage() {
               </CardContent>
             </Card>
 
-            {isSystemAdmin && (
-              <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/spare-parts')}>
+            <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/spare-parts')}>
                 <CardContent className="p-4 flex items-center gap-4">
                   <Package className="h-5 w-5 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
@@ -216,7 +215,8 @@ export default function SystemConfigPage() {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </CardContent>
               </Card>
-            )}
+
+
           </>
         )}
       </div>
