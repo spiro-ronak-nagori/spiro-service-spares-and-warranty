@@ -584,6 +584,7 @@ export default function JobCardDetailPage() {
             onEditSpare={handleEditSpare}
             onDeleteSpare={(id) => setDeletingSpareId(id)}
             onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
+            onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
             warrantyEnabled={warrantyEnabled}
           />
