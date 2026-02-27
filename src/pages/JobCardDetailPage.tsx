@@ -191,6 +191,24 @@ export default function JobCardDetailPage() {
     refetchSpares();
   };
 
+  const handleEditSpare = (spare: JobCardSpare) => {
+    setEditingSpare(spare);
+    setShowSparesModal(true);
+  };
+
+  const handleDeleteSpare = async () => {
+    if (!deletingSpareId) return;
+    try {
+      await deleteJobCardSpare(deletingSpareId);
+      toast.success('Spare removed');
+      refetchSpares();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete spare');
+    } finally {
+      setDeletingSpareId(null);
+    }
+  };
+
   const handleCompleteWork = async (remarks: string) => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
 
