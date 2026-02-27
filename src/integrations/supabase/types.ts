@@ -1514,6 +1514,7 @@ export type Database = {
         | "super_admin"
         | "country_admin"
         | "system_admin"
+        | "warranty_admin"
       user_status: "INVITED" | "ACTIVE" | "REMOVED"
       workshop_grade: "A" | "B" | "C"
       workshop_type: "COCO" | "FOFO"
@@ -1672,6 +1673,7 @@ export const Constants = {
         "super_admin",
         "country_admin",
         "system_admin",
+        "warranty_admin",
       ],
       user_status: ["INVITED", "ACTIVE", "REMOVED"],
       workshop_grade: ["A", "B", "C"],
