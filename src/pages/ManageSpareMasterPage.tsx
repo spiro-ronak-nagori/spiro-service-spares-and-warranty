@@ -29,6 +29,16 @@ interface VehicleModel {
 
 const COLOR_OPTIONS = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'BLACK'] as const;
 
+/** Extracted outside component to avoid re-mount on every render (fixes focus loss) */
+function SectionCard({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-lg border bg-card p-3 space-y-3 ${className}`}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      {children}
+    </div>
+  );
+}
+
 export default function ManageSpareMasterPage() {
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'system_admin' || profile?.role === 'super_admin';
