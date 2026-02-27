@@ -164,6 +164,7 @@ export interface SparePart {
   warranty_old_part_photo_prompts: string[];
   goodwill_old_part_photos_required_count: number;
   goodwill_old_part_photo_prompts: string[];
+  old_part_srno_required: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -185,6 +186,8 @@ export interface JobCardSpare {
   part_number: string | null;
   serial_number: string | null;
   technician_comment: string | null;
+  old_part_serial_number: string | null;
+  claim_comment: string | null;
   approval_state: ApprovalState;
   submitted_at: string | null;
   last_submitted_at: string | null;
