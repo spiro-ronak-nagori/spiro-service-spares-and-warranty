@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -187,12 +187,12 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
   const [showRequestInfo, setShowRequestInfo] = useState(false);
   const [comment, setComment] = useState('');
 
-  useState(() => {
+  useEffect(() => {
     fetchSpareActions(item.spare.id).then(a => {
       setActions(a);
       setLoadingActions(false);
     });
-  });
+  }, [item.spare.id]);
 
   const spare = item.spare;
   const part = spare.spare_part;
