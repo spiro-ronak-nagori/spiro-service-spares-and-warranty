@@ -86,10 +86,12 @@ export default function SuperAdminConsolePage() {
     },
     {
       label: 'System Configuration',
-      description: 'Feature flag toggles (SMS, OCR, Feedback, Spares)',
+      description: isSystemAdmin
+        ? 'Feature flag toggles (SMS, OCR, Feedback, Spares)'
+        : 'Manage service categories & feedback forms',
       icon: Settings,
       path: '/console/system-config',
-      visible: isSystemAdmin,
+      visible: isSystemAdmin || isSuperAdmin,
     },
   ];
 

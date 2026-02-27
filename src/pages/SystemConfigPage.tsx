@@ -80,8 +80,9 @@ export default function SystemConfigPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
-  // Only system_admin can access the config toggles page
   const isSystemAdmin = profile?.role === 'system_admin';
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const hasAccess = isSystemAdmin || isSuperAdmin;
 
   useEffect(() => {
     if (isSystemAdmin) fetchSettings();
