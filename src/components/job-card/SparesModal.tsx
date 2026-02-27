@@ -112,7 +112,7 @@ export function SparesModal({
   const currentLine = lines[activeLineIdx];
   const currentPart = currentLine?.part;
 
-  // Photo validation for current line
+  // Photo validation for current line — OLD_PART_EVIDENCE does NOT block saving
   const photoValidation = useMemo(() => {
     if (!currentLine || !currentPart) return { valid: true, message: '' };
 
@@ -125,29 +125,13 @@ export function SparesModal({
       return { valid: false, message: `Upload ${totalProof}/${requiredProof} required proof photos to continue.` };
     }
 
-    // Check old-part evidence if warranty/goodwill
-    if (warrantyEnabled && currentLine.claim_type !== 'USER_PAID') {
-      const isWarranty = currentLine.claim_type === 'WARRANTY';
-      const reqOldCount = isWarranty
-        ? currentPart.warranty_old_part_photos_required_count
-        : currentPart.goodwill_old_part_photos_required_count;
-
-      const existingOldCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-      const newOldCount = currentLine.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
-      const totalOld = existingOldCount + newOldCount;
-
-      if (reqOldCount > 0 && totalOld < reqOldCount) {
-        return { valid: false, message: `Upload ${totalOld}/${reqOldCount} required old-part evidence photos.` };
-      }
-    }
-
     return { valid: true, message: '' };
-  }, [currentLine, currentPart, warrantyEnabled]);
+  }, [currentLine, currentPart]);
 
-  // Check all lines for save validity
+  // Check all lines for save validity — only NEW_PART_PROOF + serial block save
   const allLinesValid = useMemo(() => {
     return lines.every(line => {
-      if (!line.spare_part_id) return true; // Empty line is skippable
+      if (!line.spare_part_id) return true;
       const part = line.part;
       if (!part) return true;
 
@@ -155,17 +139,9 @@ export function SparesModal({
       const newProof = line.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
       if (part.usage_proof_photos_required_count > 0 && (existProof + newProof) < part.usage_proof_photos_required_count) return false;
 
-      if (warrantyEnabled && line.claim_type !== 'USER_PAID') {
-        const isW = line.claim_type === 'WARRANTY';
-        const reqOld = isW ? part.warranty_old_part_photos_required_count : part.goodwill_old_part_photos_required_count;
-        const existOld = line.existingPhotos.filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
-        const newOld = line.newPhotoKinds.filter(k => k === 'OLD_PART_EVIDENCE').length;
-        if (reqOld > 0 && (existOld + newOld) < reqOld) return false;
-      }
-
       return true;
     });
-  }, [lines, warrantyEnabled]);
+  }, [lines]);
 
   const handleSave = async () => {
     const validLines = lines.filter(l => l.spare_part_id);

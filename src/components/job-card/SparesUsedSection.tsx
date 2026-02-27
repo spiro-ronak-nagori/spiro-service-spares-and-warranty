@@ -5,8 +5,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Package, Camera, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
-import { JobCardSpare, SparePhotoKind } from '@/types';
+import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send } from 'lucide-react';
+import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
 
 interface SparesUsedSectionProps {
   spares: JobCardSpare[];
@@ -14,6 +14,7 @@ interface SparesUsedSectionProps {
   onAddSpares?: () => void;
   onEditSpare?: (spare: JobCardSpare) => void;
   onDeleteSpare?: (spareId: string) => void;
+  onSubmitWarranty?: (spare: JobCardSpare) => void;
   canEdit?: boolean;
 }
 
@@ -29,13 +30,22 @@ const PHOTO_KIND_LABEL: Record<SparePhotoKind, string> = {
   ADDITIONAL: 'Additional',
 };
 
+const WARRANTY_STATE_CONFIG: Record<WarrantyDisplayState, { label: string; className: string }> = {
+  SUBMISSION_PENDING: { label: 'Submission Pending', className: 'bg-amber-100 text-amber-800 border-amber-200' },
+  READY_TO_SUBMIT: { label: 'Ready to Submit', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+  SUBMITTED: { label: 'Submitted', className: 'bg-green-100 text-green-800 border-green-200' },
+  NEEDS_INFO: { label: 'Needs Info', className: 'bg-orange-100 text-orange-800 border-orange-200' },
+  RESUBMITTED: { label: 'Resubmitted', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+  APPROVED: { label: 'Approved', className: 'bg-green-100 text-green-800 border-green-200' },
+  REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200' },
+};
+
 function DocsIndicator({ spare }: { spare: JobCardSpare }) {
   const part = spare.spare_part;
   if (!part) return null;
 
   const indicators: React.ReactNode[] = [];
 
-  // Photo indicator
   const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
   const reqCount = part.usage_proof_photos_required_count;
   if (reqCount > 0) {
@@ -48,7 +58,6 @@ function DocsIndicator({ spare }: { spare: JobCardSpare }) {
     );
   }
 
-  // Serial indicator
   if (part.serial_required) {
     indicators.push(
       <span key="serial" className={`text-[10px] flex items-center gap-0.5 ${spare.serial_number ? 'text-green-600' : 'text-destructive'}`}>
@@ -62,7 +71,18 @@ function DocsIndicator({ spare }: { spare: JobCardSpare }) {
   return <div className="flex items-center gap-2">{indicators}</div>;
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, canEdit }: SparesUsedSectionProps) {
+function WarrantyBadge({ spare }: { spare: JobCardSpare }) {
+  if (spare.claim_type === 'USER_PAID') return null;
+  const displayState = getWarrantyDisplayState(spare);
+  const config = WARRANTY_STATE_CONFIG[displayState];
+  return (
+    <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${config.className}`}>
+      {config.label}
+    </span>
+  );
+}
+
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, canEdit }: SparesUsedSectionProps) {
   if (isLoading) {
     return (
       <Card>
@@ -123,7 +143,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                           <span className="text-muted-foreground font-normal"> ({spare.spare_part.part_code})</span>
                         )}
                       </p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <Badge variant="outline" className="text-[10px] h-5 px-1.5">
                           Qty: {spare.qty}
                         </Badge>
@@ -133,6 +153,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         >
                           {CLAIM_LABEL[spare.claim_type]}
                         </Badge>
+                        <WarrantyBadge spare={spare} />
                         <DocsIndicator spare={spare} />
                       </div>
                     </div>
@@ -140,7 +161,6 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-3 pt-1">
-                    {/* Serial Number */}
                     {spare.serial_number && (
                       <div className="text-xs">
                         <span className="text-muted-foreground">Part Serial#:</span>{' '}
@@ -148,7 +168,6 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                       </div>
                     )}
 
-                    {/* Comment */}
                     {spare.technician_comment && (
                       <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
                     )}
@@ -187,6 +206,19 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         </div>
                       ));
                     })()}
+
+                    {/* Submit Warranty CTA */}
+                    {canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-8 text-xs w-full"
+                        onClick={(e) => { e.stopPropagation(); onSubmitWarranty(spare); }}
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        Submit {CLAIM_LABEL[spare.claim_type]}
+                      </Button>
+                    )}
 
                     {/* Edit / Delete buttons */}
                     {canEdit && (
