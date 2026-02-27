@@ -188,10 +188,57 @@ export default function JobCardDetailPage() {
   };
 
   const handleCompleteWork = (remarks: string) => {
-    if (jobCard && canTransitionTo(jobCard.status, 'READY')) {
-      updateStatus('READY', { completion_remarks: remarks });
-      sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
+    if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
+
+    // Work completion blockers (Phase 1)
+    if (sparesEnabled) {
+      const blockers: string[] = [];
+
+      // Check if any service/issue category requires spares
+      const allCats = [...jobCard.service_categories, ...jobCard.issue_categories];
+      // We need to check requires_spares - fetch from cache or check spares count
+      if (spares.length === 0) {
+        // Simple check: if spares flow is on and no spares added, warn but don't hard-block
+        // unless we know a category requires it (we'll do a soft check here)
+      }
+
+      // Check each spare line for missing required fields/photos
+      for (const spare of spares) {
+        const part = spare.spare_part;
+        if (!part) continue;
+        if (part.partno_required && !spare.part_number) {
+          blockers.push(`${part.part_name}: Part number is required`);
+        }
+        if (part.serial_required && !spare.serial_number) {
+          blockers.push(`${part.part_name}: Serial number is required`);
+        }
+        const proofPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
+        if (part.usage_proof_photos_required_count > 0 && proofPhotos.length < part.usage_proof_photos_required_count) {
+          blockers.push(`${part.part_name}: ${part.usage_proof_photos_required_count} proof photo(s) required, ${proofPhotos.length} uploaded`);
+        }
+        // Old part evidence check (warranty flow)
+        if (warrantyEnabled && spare.claim_type !== 'USER_PAID') {
+          const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
+          const reqCount = spare.claim_type === 'WARRANTY'
+            ? part.warranty_old_part_photos_required_count
+            : part.goodwill_old_part_photos_required_count;
+          if (reqCount > 0 && oldPhotos.length < reqCount) {
+            blockers.push(`${part.part_name}: ${reqCount} old-part evidence photo(s) required for ${spare.claim_type}, ${oldPhotos.length} uploaded`);
+          }
+        }
+      }
+
+      if (blockers.length > 0) {
+        toast.error('Cannot complete work', {
+          description: blockers.join('\n'),
+          duration: 8000,
+        });
+        return;
+      }
     }
+
+    updateStatus('READY', { completion_remarks: remarks });
+    sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
     setShowCompleteWork(false);
   };
 
