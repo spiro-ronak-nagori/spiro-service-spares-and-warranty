@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,9 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw } from 'lucide-react';
-import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
+import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw, UserCheck } from 'lucide-react';
+import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState, SpareAction } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SparesUsedSectionProps {
   spares: JobCardSpare[];
@@ -231,13 +233,8 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         ));
                       })()}
 
-                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON and approval is needed */}
-                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (() => {
-                        const part = spare.spare_part;
-                        if (!part) return false;
-                        const needsApproval = spare.claim_type === 'WARRANTY' ? part.warranty_approval_needed : part.goodwill_approval_needed;
-                        return needsApproval;
-                      })() && (
+                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON */}
+                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
                         <Button
                           variant="default"
                           size="sm"
@@ -248,6 +245,9 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                           Submit {CLAIM_LABEL[spare.claim_type]}
                         </Button>
                       )}
+
+                      {/* Decision info (admin name for APPROVED/REJECTED/NEEDS_INFO) */}
+                      <SpareDecisionInfo spare={spare} />
 
                       {/* Withdraw & Edit — for SUBMITTED spares */}
                       {canEdit && locked && spare.approval_state === 'SUBMITTED' && onWithdrawSpare && (
