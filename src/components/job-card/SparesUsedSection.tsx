@@ -224,13 +224,36 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3 pt-1">
+                      {/* 1. New Part Serial */}
                       {spare.serial_number && (
                         <div className="text-xs">
-                          <span className="text-muted-foreground">Part Serial#:</span>{' '}
+                          <span className="text-muted-foreground">New Part Serial#:</span>{' '}
                           <span className="font-medium">{spare.serial_number}</span>
                         </div>
                       )}
 
+                      {/* 2. New Part Proof photos */}
+                      {(() => {
+                        const newPartPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
+                        if (newPartPhotos.length === 0) return null;
+                        return (
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Camera className="h-3 w-3" />
+                              {PHOTO_KIND_LABEL.NEW_PART_PROOF}
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              {newPartPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-16 h-16 rounded-md overflow-hidden border bg-muted">
+                                  <img src={photo.photo_url} alt={photo.description_prompt || 'New part'} className="w-full h-full object-cover" loading="lazy" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* 3. Old Part Serial */}
                       {spare.old_part_serial_number && (
                         <div className="text-xs">
                           <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
@@ -238,44 +261,51 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         </div>
                       )}
 
-                      {spare.technician_comment && (
-                        <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
-                      )}
-
-                      {/* Photos grouped by kind */}
+                      {/* 4. Old Part Evidence photos */}
                       {(() => {
-                        const groups: Record<string, typeof spare.photos> = {};
-                        (spare.photos || []).forEach(p => {
-                          if (!groups[p.photo_kind]) groups[p.photo_kind] = [];
-                          groups[p.photo_kind]!.push(p);
-                        });
-                        return Object.entries(groups).map(([kind, photos]) => (
-                          <div key={kind} className="space-y-1">
+                        const oldPartPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
+                        if (oldPartPhotos.length === 0) return null;
+                        return (
+                          <div className="space-y-1">
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
                               <Camera className="h-3 w-3" />
-                              {PHOTO_KIND_LABEL[kind as SparePhotoKind] || kind}
+                              {PHOTO_KIND_LABEL.OLD_PART_EVIDENCE}
                             </p>
                             <div className="flex gap-2 flex-wrap">
-                              {(photos || []).map(photo => (
-                                <a
-                                  key={photo.id}
-                                  href={photo.photo_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="block w-16 h-16 rounded-md overflow-hidden border bg-muted"
-                                >
-                                  <img
-                                    src={photo.photo_url}
-                                    alt={photo.description_prompt || 'Spare photo'}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                  />
+                              {oldPartPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-16 h-16 rounded-md overflow-hidden border bg-muted">
+                                  <img src={photo.photo_url} alt={photo.description_prompt || 'Old part'} className="w-full h-full object-cover" loading="lazy" />
                                 </a>
                               ))}
                             </div>
                           </div>
-                        ));
+                        );
                       })()}
+
+                      {/* 5. Additional photos */}
+                      {(() => {
+                        const additionalPhotos = (spare.photos || []).filter(p => p.photo_kind === 'ADDITIONAL');
+                        if (additionalPhotos.length === 0) return null;
+                        return (
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Camera className="h-3 w-3" />
+                              {PHOTO_KIND_LABEL.ADDITIONAL}
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              {additionalPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-16 h-16 rounded-md overflow-hidden border bg-muted">
+                                  <img src={photo.photo_url} alt={photo.description_prompt || 'Additional'} className="w-full h-full object-cover" loading="lazy" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {spare.technician_comment && (
+                        <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+                      )}
 
                       {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON */}
                       {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
