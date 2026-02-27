@@ -389,6 +389,11 @@ export type Database = {
           id: string
           job_card_id: string
           last_submitted_at: string | null
+          last_submitted_claim_type:
+            | Database["public"]["Enums"]["claim_type"]
+            | null
+          last_submitted_qty: number | null
+          last_submitted_spare_part_id: string | null
           old_part_serial_number: string | null
           part_number: string | null
           qty: number
@@ -410,6 +415,11 @@ export type Database = {
           id?: string
           job_card_id: string
           last_submitted_at?: string | null
+          last_submitted_claim_type?:
+            | Database["public"]["Enums"]["claim_type"]
+            | null
+          last_submitted_qty?: number | null
+          last_submitted_spare_part_id?: string | null
           old_part_serial_number?: string | null
           part_number?: string | null
           qty?: number
@@ -431,6 +441,11 @@ export type Database = {
           id?: string
           job_card_id?: string
           last_submitted_at?: string | null
+          last_submitted_claim_type?:
+            | Database["public"]["Enums"]["claim_type"]
+            | null
+          last_submitted_qty?: number | null
+          last_submitted_spare_part_id?: string | null
           old_part_serial_number?: string | null
           part_number?: string | null
           qty?: number
