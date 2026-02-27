@@ -183,9 +183,9 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
   const [actions, setActions] = useState<SpareAction[]>([]);
   const [loadingActions, setLoadingActions] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [showRequestInfo, setShowRequestInfo] = useState(false);
-  const [comment, setComment] = useState('');
 
   useEffect(() => {
     fetchSpareActions(item.spare.id).then(a => {
@@ -201,11 +201,14 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
   const newPhotos = (spare.photos || []).filter(p => p.photo_kind === 'NEW_PART_PROOF');
   const additionalPhotos = (spare.photos || []).filter(p => p.photo_kind === 'ADDITIONAL');
 
-  const handleApprove = async () => {
+  const handleApprove = async (reason?: string) => {
+    const text = (reason || '').trim();
+    if (!text) { toast.error('Comment is required'); return; }
     setProcessing(true);
     try {
-      await approveSpare(spare.id, actorUserId);
+      await approveSpare(spare.id, actorUserId, text);
       toast.success('Claim approved');
+      setShowApprove(false);
       onBack();
     } catch (err: any) {
       toast.error(err.message || 'Failed to approve');
@@ -214,10 +217,12 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
     }
   };
 
-  const handleReject = async () => {
+  const handleReject = async (reason?: string) => {
+    const text = (reason || '').trim();
+    if (!text) { toast.error('Comment is required'); return; }
     setProcessing(true);
     try {
-      await rejectSpare(spare.id, actorUserId, comment || undefined);
+      await rejectSpare(spare.id, actorUserId, text);
       toast.success('Claim rejected');
       setShowReject(false);
       onBack();
@@ -229,7 +234,7 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
   };
 
   const handleRequestInfoSubmit = async (reason?: string) => {
-    const text = (reason || comment || '').trim();
+    const text = (reason || '').trim();
     if (!text) {
       toast.error('Comment is required when requesting info');
       return;
@@ -393,22 +398,36 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
 
         {/* Action Buttons */}
         <div className="space-y-2 pb-4">
-          <Button className="w-full h-12" onClick={handleApprove} disabled={processing}>
+          <Button className="w-full h-12" onClick={() => setShowApprove(true)} disabled={processing}>
             <CheckCircle2 className="h-4 w-4 mr-2" />
             Approve
           </Button>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" className="h-10" onClick={() => { setComment(''); setShowRequestInfo(true); }} disabled={processing}>
+            <Button variant="outline" className="h-10" onClick={() => setShowRequestInfo(true)} disabled={processing}>
               <MessageSquare className="h-4 w-4 mr-1" />
               Request Info
             </Button>
-            <Button variant="destructive" className="h-10" onClick={() => { setComment(''); setShowReject(true); }} disabled={processing}>
+            <Button variant="destructive" className="h-10" onClick={() => setShowReject(true)} disabled={processing}>
               <XCircle className="h-4 w-4 mr-1" />
               Reject
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Approve Dialog */}
+      <ConfirmationDialog
+        open={showApprove}
+        onOpenChange={setShowApprove}
+        title="Approve Claim"
+        description="Add a comment for the approval."
+        confirmLabel="Approve"
+        requireReason
+        reasonLabel="Approval Comment"
+        reasonPlaceholder="Enter approval remarks (min 10 characters)..."
+        onConfirm={(reason) => handleApprove(reason)}
+        isLoading={processing}
+      />
 
       {/* Request Info Dialog */}
       <ConfirmationDialog
@@ -429,10 +448,13 @@ function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProps) {
         open={showReject}
         onOpenChange={setShowReject}
         title="Reject Claim"
-        description="Optionally provide a reason for rejection."
+        description="Provide a reason for rejection."
         confirmLabel="Reject"
         variant="destructive"
-        onConfirm={() => handleReject()}
+        requireReason
+        reasonLabel="Rejection Reason"
+        reasonPlaceholder="Enter rejection reason (min 10 characters)..."
+        onConfirm={(reason) => handleReject(reason)}
         isLoading={processing}
       />
     </AppLayout>
