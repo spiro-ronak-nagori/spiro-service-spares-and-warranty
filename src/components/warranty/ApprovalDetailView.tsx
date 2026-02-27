@@ -154,6 +154,12 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
                   <p className="font-medium flex items-center gap-1"><Send className="h-3 w-3" />{item.submitted_by_name}</p>
                 </div>
               )}
+              {spare.last_submitted_at && (
+                <div>
+                  <span className="text-muted-foreground">Submitted at</span>
+                  <p className="font-medium text-xs">{format(new Date(spare.last_submitted_at), 'MMM d, h:mm a')}</p>
+                </div>
+              )}
               {item.technician_name !== '—' && (
                 <div>
                   <span className="text-muted-foreground">Technician</span>
