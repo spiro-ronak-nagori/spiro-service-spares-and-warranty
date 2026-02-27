@@ -30,6 +30,7 @@ export default function ProfilePage() {
       case 'super_admin': return 'destructive';
       case 'country_admin': return 'default';
       case 'workshop_admin': return 'default';
+      case 'warranty_admin': return 'default';
       default: return 'secondary';
     }
   };
