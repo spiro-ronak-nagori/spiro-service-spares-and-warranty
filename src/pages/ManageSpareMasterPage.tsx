@@ -567,6 +567,14 @@ export default function ManageSpareMasterPage() {
                   )}
                 </div>
               )}
+
+              {/* Old Part Serial — only relevant when warranty or goodwill is on */}
+              {(form.warranty_available || form.goodwill_available) && (
+                <div className="flex items-center justify-between pl-4 border-l-2 border-muted">
+                  <Label className="text-xs">Old Part Serial Number Required</Label>
+                  <Switch checked={form.old_part_srno_required} onCheckedChange={v => setForm(f => ({ ...f, old_part_srno_required: v }))} />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
