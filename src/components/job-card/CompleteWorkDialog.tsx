@@ -92,7 +92,10 @@ export function CompleteWorkDialog({
         if (warrantyEnabled && spare.claim_type !== 'USER_PAID') {
           const isWarranty = spare.claim_type === 'WARRANTY';
           const approvalNeeded = isWarranty ? part.warranty_approval_needed : part.goodwill_approval_needed;
-          if (approvalNeeded) {
+
+          if (spare.approval_state === 'DRAFT') {
+            blocker.approvalBlockers.push(`${part.part_name}: ${spare.claim_type} claim not yet submitted`);
+          } else if (approvalNeeded) {
             if (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') {
               blocker.approvalBlockers.push(`${part.part_name}: ${spare.claim_type} claim pending admin approval`);
             } else if (spare.approval_state === 'NEEDS_INFO') {
