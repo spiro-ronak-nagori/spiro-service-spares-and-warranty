@@ -240,6 +240,7 @@ export async function deleteJobCardSpare(spareId: string): Promise<void> {
 /**
  * Withdraw a submitted spare claim back to DRAFT.
  * Resets approval fields, clears old-part serial, deletes OLD_PART_EVIDENCE photos.
+ * Preserves last_submitted_* identity snapshot for resubmission logic.
  */
 export async function withdrawSpare(spareId: string, actorProfileId: string): Promise<void> {
   // 1. Look up denormalized fields before deletion
@@ -266,7 +267,7 @@ export async function withdrawSpare(spareId: string, actorProfileId: string): Pr
     .eq('job_card_spare_id', spareId)
     .eq('photo_kind', 'OLD_PART_EVIDENCE');
 
-  // 3. Reset the spare line to DRAFT
+  // 3. Reset the spare line to DRAFT (preserve last_submitted_* identity)
   const { error } = await supabase
     .from('job_card_spares' as any)
     .update({
@@ -292,6 +293,67 @@ export async function withdrawSpare(spareId: string, actorProfileId: string): Pr
       workshop_id: workshopId,
       action_type: 'WITHDRAW',
       comment: null,
+      actor_user_id: userData.user.id,
+    } as any);
+  }
+}
+
+/**
+ * Convert a rejected (or any non-APPROVED) warranty/goodwill spare to USER_PAID.
+ * Resets approval fields, deletes OLD_PART_EVIDENCE photos, logs EDIT_RESET.
+ */
+export async function convertToUserPaid(spareId: string, actorProfileId: string): Promise<void> {
+  // 1. Look up denormalized fields
+  const { data: spareRow } = await supabase
+    .from('job_card_spares' as any)
+    .select('job_card_id')
+    .eq('id', spareId)
+    .maybeSingle();
+  const jobCardId = (spareRow as any)?.job_card_id || null;
+  let workshopId: string | null = null;
+  if (jobCardId) {
+    const { data: jcRow } = await supabase
+      .from('job_cards')
+      .select('workshop_id')
+      .eq('id', jobCardId)
+      .maybeSingle();
+    workshopId = jcRow?.workshop_id || null;
+  }
+
+  // 2. Delete OLD_PART_EVIDENCE photos
+  await supabase
+    .from('job_card_spare_photos' as any)
+    .delete()
+    .eq('job_card_spare_id', spareId)
+    .eq('photo_kind', 'OLD_PART_EVIDENCE');
+
+  // 3. Convert to USER_PAID + reset approval fields
+  const { error } = await supabase
+    .from('job_card_spares' as any)
+    .update({
+      claim_type: 'USER_PAID',
+      approval_state: 'DRAFT',
+      submitted_at: null,
+      last_submitted_at: null,
+      decided_at: null,
+      old_part_serial_number: null,
+      claim_comment: null,
+      submitted_by: null,
+      updated_by: actorProfileId,
+    } as any)
+    .eq('id', spareId);
+
+  if (error) throw error;
+
+  // 4. Log EDIT_RESET action
+  const { data: userData } = await supabase.auth.getUser();
+  if (userData?.user) {
+    await supabase.from('job_card_spare_actions' as any).insert({
+      job_card_spare_id: spareId,
+      job_card_id: jobCardId,
+      workshop_id: workshopId,
+      action_type: 'EDIT_RESET',
+      comment: 'Converted to User Paid',
       actor_user_id: userData.user.id,
     } as any);
   }
