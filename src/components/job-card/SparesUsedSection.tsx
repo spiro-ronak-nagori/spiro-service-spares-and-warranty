@@ -44,8 +44,14 @@ const WARRANTY_STATE_CONFIG: Record<WarrantyDisplayState, { label: string; class
   SUBMITTED: { label: 'Submitted', className: 'bg-green-100 text-green-800 border-green-200' },
   NEEDS_INFO: { label: 'Needs Info', className: 'bg-orange-100 text-orange-800 border-orange-200' },
   RESUBMITTED: { label: 'Resubmitted', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-  APPROVED: { label: 'Approved', className: 'bg-green-100 text-green-800 border-green-200' },
+  APPROVED: { label: 'Approved', className: 'bg-green-600 text-white border-green-600' },
   REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200' },
+};
+
+const CLAIM_TYPE_CLASS: Record<string, string> = {
+  WARRANTY: 'bg-blue-600 text-white hover:bg-blue-600',
+  GOODWILL: 'bg-pink-600 text-white hover:bg-pink-600',
+  USER_PAID: 'bg-muted text-muted-foreground hover:bg-muted',
 };
 
 /** Whether a spare line is locked (non-DRAFT = submitted or beyond) */
@@ -213,8 +219,8 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                             Qty: {spare.qty}
                           </Badge>
                           <Badge
-                            variant={spare.claim_type === 'USER_PAID' ? 'secondary' : 'default'}
-                            className="text-[10px] h-5 px-1.5"
+                            variant="secondary"
+                            className={`text-[10px] h-5 px-1.5 ${CLAIM_TYPE_CLASS[spare.claim_type] || ''}`}
                           >
                             {CLAIM_LABEL[spare.claim_type]}
                           </Badge>
