@@ -255,7 +255,8 @@ export function getWarrantyDisplayState(spare: JobCardSpare): WarrantyDisplaySta
     const oldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE').length;
     if (oldPhotos < reqCount) return 'SUBMISSION_PENDING';
   }
-  // Old-part serial check (only if required) — not pre-filled, so always ready to submit from list view
+  // Old-part serial check (only if required and not yet filled)
+  if (part.old_part_srno_required && !spare.old_part_serial_number) return 'SUBMISSION_PENDING';
   return 'READY_TO_SUBMIT';
 }
 

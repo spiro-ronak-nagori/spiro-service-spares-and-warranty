@@ -231,8 +231,13 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                         ));
                       })()}
 
-                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON */}
-                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+                      {/* Submit Warranty CTA — only for DRAFT, when warranty flow is ON and approval is needed */}
+                      {warrantyEnabled && canEdit && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (() => {
+                        const part = spare.spare_part;
+                        if (!part) return false;
+                        const needsApproval = spare.claim_type === 'WARRANTY' ? part.warranty_approval_needed : part.goodwill_approval_needed;
+                        return needsApproval;
+                      })() && (
                         <Button
                           variant="default"
                           size="sm"
