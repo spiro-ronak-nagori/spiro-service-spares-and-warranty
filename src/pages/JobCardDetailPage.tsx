@@ -61,6 +61,7 @@ export default function JobCardDetailPage() {
   const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
   const [warrantySpare, setWarrantySpare] = useState<JobCardSpare | null>(null);
+  const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
   
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -194,12 +195,24 @@ export default function JobCardDetailPage() {
   };
 
   const handleEditSpare = (spare: JobCardSpare) => {
+    // Block editing non-DRAFT spares
+    if (spare.approval_state !== 'DRAFT') {
+      toast.error('Claim submitted. Withdraw to make changes.');
+      return;
+    }
     setEditingSpare(spare);
     setShowSparesModal(true);
   };
 
   const handleDeleteSpare = async () => {
     if (!deletingSpareId) return;
+    // Find the spare to check state
+    const spare = spares.find(s => s.id === deletingSpareId);
+    if (spare && spare.approval_state !== 'DRAFT') {
+      toast.error('Cannot delete a submitted spare. Withdraw first.');
+      setDeletingSpareId(null);
+      return;
+    }
     try {
       await deleteJobCardSpare(deletingSpareId);
       toast.success('Spare removed');
@@ -208,6 +221,19 @@ export default function JobCardDetailPage() {
       toast.error(err.message || 'Failed to delete spare');
     } finally {
       setDeletingSpareId(null);
+    }
+  };
+
+  const handleWithdrawSpare = async () => {
+    if (!withdrawingSpare || !profile) return;
+    try {
+      await withdrawSpare(withdrawingSpare.id, profile.id);
+      toast.success('Submission withdrawn. You can now edit this spare.');
+      refetchSpares();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to withdraw');
+    } finally {
+      setWithdrawingSpare(null);
     }
   };
 
