@@ -238,17 +238,34 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
             ) : actions.length === 0 ? (
               <p className="text-xs text-muted-foreground">No actions recorded yet.</p>
             ) : (
-              <div className="space-y-2">
-                {actions.map(action => (
-                  <div key={action.id} className="flex gap-2 text-xs">
-                    <ActionBadge type={action.action_type} />
-                    <div className="flex-1">
-                      <p className="font-medium">{action.actor?.full_name || 'Unknown'}</p>
-                      {action.comment && <p className="text-muted-foreground mt-0.5">{action.comment}</p>}
-                      <p className="text-muted-foreground text-[10px]">{format(new Date(action.created_at), 'MMM d, h:mm a')}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="relative pl-5">
+                {/* Vertical timeline line */}
+                <div className="absolute left-[7px] top-1 bottom-1 w-px bg-border" />
+                <div className="space-y-4">
+                  {actions.map((action, idx) => {
+                    const cfg = ACTION_CONFIG[action.action_type] || { icon: AlertCircle, className: 'text-muted-foreground bg-muted', label: action.action_type };
+                    const Icon = cfg.icon;
+                    return (
+                      <div key={action.id} className="relative">
+                        {/* Timeline dot */}
+                        <div className={`absolute -left-5 top-0 w-4 h-4 rounded-full flex items-center justify-center ${cfg.className}`}>
+                          <Icon className="h-2.5 w-2.5" />
+                        </div>
+                        <div className="text-xs">
+                          <p className="font-semibold">{cfg.label}</p>
+                          <p className="text-muted-foreground">
+                            {action.actor?.full_name || 'Unknown'} · {format(new Date(action.created_at), 'MMM d, h:mm a')}
+                          </p>
+                          {action.comment && (
+                            <p className="mt-1 text-muted-foreground bg-muted/50 rounded-md p-1.5 text-[11px]">
+                              {action.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </CardContent>
@@ -321,22 +338,13 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
   );
 }
 
-function ActionBadge({ type }: { type: string }) {
-  const config: Record<string, { icon: typeof CheckCircle2; className: string; label: string }> = {
-    SUBMIT: { icon: Package, className: 'text-blue-600', label: 'Submitted' },
-    APPROVE: { icon: CheckCircle2, className: 'text-green-600', label: 'Approved' },
-    REJECT: { icon: XCircle, className: 'text-red-600', label: 'Rejected' },
-    REQUEST_INFO: { icon: MessageSquare, className: 'text-orange-600', label: 'Info Requested' },
-    TECH_RESPONSE: { icon: MessageSquare, className: 'text-blue-600', label: 'Tech Response' },
-    RESUBMIT: { icon: Package, className: 'text-blue-600', label: 'Resubmitted' },
-    EDIT_RESET: { icon: AlertCircle, className: 'text-amber-600', label: 'Edit Reset' },
-    WITHDRAW: { icon: AlertCircle, className: 'text-amber-600', label: 'Withdrawn' },
-  };
-  const c = config[type] || { icon: AlertCircle, className: 'text-muted-foreground', label: type };
-  const Icon = c.icon;
-  return (
-    <div className={`shrink-0 mt-0.5 ${c.className}`} title={c.label}>
-      <Icon className="h-3.5 w-3.5" />
-    </div>
-  );
-}
+const ACTION_CONFIG: Record<string, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  SUBMIT: { icon: Send, className: 'text-blue-600 bg-blue-100', label: 'Submitted' },
+  APPROVE: { icon: CheckCircle2, className: 'text-white bg-green-600', label: 'Approved' },
+  REJECT: { icon: XCircle, className: 'text-white bg-red-600', label: 'Rejected' },
+  REQUEST_INFO: { icon: MessageSquare, className: 'text-orange-700 bg-orange-100', label: 'Info Requested' },
+  TECH_RESPONSE: { icon: MessageSquare, className: 'text-blue-700 bg-blue-100', label: 'Tech Response' },
+  RESUBMIT: { icon: Package, className: 'text-blue-600 bg-blue-100', label: 'Resubmitted' },
+  EDIT_RESET: { icon: AlertCircle, className: 'text-amber-700 bg-amber-100', label: 'Edit Reset' },
+  WITHDRAW: { icon: AlertCircle, className: 'text-amber-700 bg-amber-100', label: 'Withdrawn' },
+};
