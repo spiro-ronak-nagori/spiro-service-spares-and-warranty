@@ -31,6 +31,9 @@ import { OtpVerificationDialog } from '@/components/job-card/OtpVerificationDial
 import { CompleteWorkDialog } from '@/components/job-card/CompleteWorkDialog';
 import { ReopenJobCardDialog } from '@/components/job-card/ReopenJobCardDialog';
 import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/DeliveryWithSocDialog';
+import { SparesModal } from '@/components/job-card/SparesModal';
+import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
+import { useSparesFeatureFlags, useJobCardSpares } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 
