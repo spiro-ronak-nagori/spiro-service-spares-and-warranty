@@ -106,7 +106,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
             className="pl-9 h-9"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="flex-1 h-9">
               <SelectValue />
