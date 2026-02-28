@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { JobCardSpare, JobCardSparePhoto, SparePart, SpareAction } from '@/types';
+import { getBucketForTat } from '@/hooks/useSlaBuckets';
 
 export interface ApprovalQueueItem {
   spare: JobCardSpare;
@@ -16,15 +17,6 @@ export interface ApprovalQueueItem {
   odometer_photo_url: string | null;
   job_card_id: string;
   tat_minutes: number;
-}
-
-export type TatBucket = '<4h' | '4-12h' | '12-24h' | '>24h';
-
-export function getTatBucket(tatMinutes: number): TatBucket {
-  if (tatMinutes < 240) return '<4h';
-  if (tatMinutes < 720) return '4-12h';
-  if (tatMinutes < 1440) return '12-24h';
-  return '>24h';
 }
 
 export function formatTat(minutes: number): string {
@@ -43,7 +35,8 @@ interface Filters {
   status?: string;
   search?: string;
   claimType?: string;
-  tatBucket?: TatBucket | 'all';
+  tatBucket?: string; // dynamic bucket label or 'all'
+  slaCutoffs?: number[];
 }
 
 /** All states we can query */
@@ -187,16 +180,17 @@ export function useWarrantyApprovalQueue(filters: Filters) {
       }
 
       // Compute bucket counts BEFORE TAT filtering
+      const cutoffs = filters.slaCutoffs || [4, 12, 24];
       const counts: Record<string, number> = {};
       for (const item of preFilterResult) {
-        const bucket = getTatBucket(item.tat_minutes);
+        const bucket = getBucketForTat(item.tat_minutes, cutoffs);
         counts[bucket] = (counts[bucket] || 0) + 1;
       }
       setBucketCounts(counts);
 
       // Now apply TAT bucket filter
       const result = filters.tatBucket && filters.tatBucket !== 'all'
-        ? preFilterResult.filter(item => getTatBucket(item.tat_minutes) === filters.tatBucket)
+        ? preFilterResult.filter(item => getBucketForTat(item.tat_minutes, cutoffs) === filters.tatBucket)
         : preFilterResult;
 
       // Sort by TAT descending (oldest/longest wait first)
@@ -207,7 +201,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.country, filters.workshopId, filters.status, filters.search, filters.claimType, filters.tatBucket]);
+  }, [filters.country, filters.workshopId, filters.status, filters.search, filters.claimType, filters.tatBucket, filters.slaCutoffs]);
 
   useEffect(() => {
     fetchQueue();

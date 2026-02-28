@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package } from 'lucide-react';
+import { WarrantySlaConfig } from '@/components/admin/WarrantySlaConfig';
 import { toast } from 'sonner';
 
 interface SettingItem {
@@ -224,6 +225,9 @@ export default function SystemConfigPage() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Warranty SLA Bucket Config — system_admin only */}
+            {isSystemAdmin && <WarrantySlaConfig />}
 
             {/* Navigation Cards */}
             <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/service-categories')}>
