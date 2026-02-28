@@ -475,6 +475,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               </Button>
             </div>
           )}
+          </>
         )}
       </CardContent>
     </Card>
