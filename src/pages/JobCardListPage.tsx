@@ -396,7 +396,6 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
   const color = vehicle?.color;
   const workshop = showWorkshop ? workshopName : undefined;
 
-  // Collect non-null flex segments for line 2
   type Seg = { value: string; shrink: boolean };
   const line2Segs: Seg[] = [];
   if (name) line2Segs.push({ value: name, shrink: true });
@@ -404,18 +403,35 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
   if (color) line2Segs.push({ value: color, shrink: false });
   if (workshop) line2Segs.push({ value: workshop, shrink: true });
 
-  // Build line 3 segments: JC Number · time elapsed
   const line3Parts = [jobCard.jc_number, timeAgo].filter(Boolean);
 
-  const dot = <span className="flex-shrink-0 mx-0.5">·</span>;
-...
+  return (
+    <Card 
+      className="cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent"
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        {/* Top row: Vehicle Reg + Status + Chevron */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="font-semibold text-base truncate">
+              {vehicle?.reg_no || 'Unknown'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <StatusPill status={jobCard.status} />
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </div>
+
         {/* Line 2: Name · Model · Colour · Workshop */}
         {line2Segs.length > 0 && (
-          <div className="flex items-center text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden">
+          <div className="flex items-center text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden min-w-0">
             {line2Segs.map((seg, i) => (
-              <span key={i} className="flex items-center min-w-0">
-                {i > 0 && dot}
-                <span className={seg.shrink ? 'truncate min-w-0' : 'flex-shrink-0'}>
+              <span key={i} className={`flex items-center ${seg.shrink ? 'min-w-0 shrink' : 'shrink-0'}`}>
+                {i > 0 && <span className="shrink-0 mx-0.5">·</span>}
+                <span className={seg.shrink ? 'truncate' : ''}>
                   {seg.value}
                 </span>
               </span>
