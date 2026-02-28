@@ -430,7 +430,7 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
           <div className="flex items-center text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden min-w-0">
             {line2Segs.map((seg, i) => (
               <span key={i} className={`flex items-center ${seg.shrink ? 'min-w-0 shrink' : 'shrink-0'}`}>
-                {i > 0 && <span className="shrink-0 mx-0.5">·</span>}
+                {i > 0 && <span className="shrink-0 px-1.5 text-[0.85rem] leading-none font-medium text-muted-foreground/70">·</span>}
                 <span className={seg.shrink ? 'truncate' : ''}>
                   {seg.value}
                 </span>
@@ -441,7 +441,12 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
 
         {/* Line 3: JC Number · time elapsed */}
         <p className="text-xs text-muted-foreground mt-1.5 whitespace-nowrap overflow-hidden text-ellipsis font-mono">
-          {line3Parts.join(' · ')}
+          {line3Parts.map((part, i) => (
+            <span key={i}>
+              {i > 0 && <span className="text-[0.85rem] font-medium text-muted-foreground/70 px-1.5">·</span>}
+              {part}
+            </span>
+          ))}
         </p>
       </CardContent>
     </Card>
