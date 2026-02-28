@@ -18,15 +18,6 @@ export interface ApprovalQueueItem {
   tat_minutes: number;
 }
 
-export type TatBucket = '<4h' | '4-12h' | '12-24h' | '>24h';
-
-export function getTatBucket(tatMinutes: number): TatBucket {
-  if (tatMinutes < 240) return '<4h';
-  if (tatMinutes < 720) return '4-12h';
-  if (tatMinutes < 1440) return '12-24h';
-  return '>24h';
-}
-
 export function formatTat(minutes: number): string {
   if (minutes < 60) return `${Math.round(minutes)}m`;
   const h = Math.floor(minutes / 60);
@@ -43,7 +34,8 @@ interface Filters {
   status?: string;
   search?: string;
   claimType?: string;
-  tatBucket?: TatBucket | 'all';
+  tatBucket?: string; // dynamic bucket label or 'all'
+  slaCutoffs?: number[];
 }
 
 /** All states we can query */
