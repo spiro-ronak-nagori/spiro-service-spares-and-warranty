@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { JobCardSpare, JobCardSparePhoto, SparePart, SpareAction } from '@/types';
+import { getBucketForTat } from '@/hooks/useSlaBuckets';
 
 export interface ApprovalQueueItem {
   spare: JobCardSpare;
