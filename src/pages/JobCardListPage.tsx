@@ -390,16 +390,20 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
   const timeAgo = formatDistanceToNow(new Date(jobCard.updated_at), { addSuffix: true });
   const workshopName = (jobCard as any).workshop?.name;
 
-  // Build line 1 segments: Name · Variant · Colour · Workshop
-  const line1Parts = [
-    vehicle?.owner_name,
-    vehicle?.model,
-    vehicle?.color,
-    showWorkshop ? workshopName : undefined,
-  ].filter(Boolean);
+  // Line 2 segments with truncation priority
+  const name = vehicle?.owner_name;
+  const model = vehicle?.model;
+  const color = vehicle?.color;
+  const workshop = showWorkshop ? workshopName : undefined;
 
-  // Build line 2 segments: JC Number · time elapsed
-  const line2Parts = [jobCard.jc_number, timeAgo].filter(Boolean);
+  type Seg = { value: string; shrink: boolean };
+  const line2Segs: Seg[] = [];
+  if (name) line2Segs.push({ value: name, shrink: true });
+  if (model) line2Segs.push({ value: model, shrink: false });
+  if (color) line2Segs.push({ value: color, shrink: false });
+  if (workshop) line2Segs.push({ value: workshop, shrink: true });
+
+  const line3Parts = [jobCard.jc_number, timeAgo].filter(Boolean);
 
   return (
     <Card 
@@ -407,32 +411,37 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
       onClick={onClick}
     >
       <CardContent className="p-4">
+        {/* Top row: Vehicle Reg + Status + Chevron */}
         <div className="flex items-start justify-between gap-3">
-          {/* Vehicle Reg */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="font-semibold text-base truncate">
               {vehicle?.reg_no || 'Unknown'}
             </span>
           </div>
-
-          {/* Status & Arrow */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <StatusPill status={jobCard.status} />
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </div>
         </div>
 
-        {/* Line 1: Name · Variant · Colour · Workshop */}
-        {line1Parts.length > 0 && (
-          <p className="text-sm text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
-            {line1Parts.join(' · ')}
-          </p>
+        {/* Line 2: Name · Model · Colour · Workshop */}
+        {line2Segs.length > 0 && (
+          <div className="flex items-center text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden min-w-0">
+            {line2Segs.map((seg, i) => (
+              <span key={i} className={`flex items-center ${seg.shrink ? 'min-w-0 shrink' : 'shrink-0'}`}>
+                {i > 0 && <span className="shrink-0 mx-0.5">·</span>}
+                <span className={seg.shrink ? 'truncate' : ''}>
+                  {seg.value}
+                </span>
+              </span>
+            ))}
+          </div>
         )}
 
-        {/* Line 2: JC Number · time elapsed */}
-        <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis font-mono">
-          {line2Parts.join(' · ')}
+        {/* Line 3: JC Number · time elapsed */}
+        <p className="text-xs text-muted-foreground mt-1.5 whitespace-nowrap overflow-hidden text-ellipsis font-mono">
+          {line3Parts.join(' · ')}
         </p>
       </CardContent>
     </Card>
