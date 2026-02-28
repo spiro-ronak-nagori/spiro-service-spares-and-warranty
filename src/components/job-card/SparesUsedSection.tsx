@@ -466,6 +466,15 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               );
             })}
           </Accordion>
+          {showSubmitAll && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs text-muted-foreground text-center">Review all parts above before submitting.</p>
+              <Button variant="default" className="w-full" onClick={onSubmitAll}>
+                <Send className="h-4 w-4 mr-2" />
+                Submit All Claims
+              </Button>
+            </div>
+          )}
         )}
       </CardContent>
     </Card>
