@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Car, Clock, ChevronRight, FileText, X, ArrowUpDown, Building2 } from 'lucide-react';
+import { Search, Plus, Car, ChevronRight, FileText, X, ArrowUpDown, Building2 } from 'lucide-react';
 import { JobCard, JobCardStatus, Workshop } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { WorkshopSelectorDialog } from '@/components/admin/WorkshopSelectorDialog';
