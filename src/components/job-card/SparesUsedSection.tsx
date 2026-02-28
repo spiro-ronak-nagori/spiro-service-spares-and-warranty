@@ -192,12 +192,6 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             )}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {showSubmitAll && (
-              <Button variant="default" size="sm" onClick={onSubmitAll} className="h-8 text-xs">
-                <Send className="h-3.5 w-3.5 mr-1" />
-                Submit All
-              </Button>
-            )}
             {canEdit && onAddSpares && (
               <Button variant="outline" size="sm" onClick={onAddSpares} className="h-8 text-xs">
                 <Plus className="h-3.5 w-3.5 mr-1" />
