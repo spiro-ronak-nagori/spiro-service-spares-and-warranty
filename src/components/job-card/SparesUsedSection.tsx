@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ interface SparesUsedSectionProps {
   onWithdrawSpare?: (spare: JobCardSpare) => void;
   onRespondNeedsInfo?: (spare: JobCardSpare) => void;
   onConvertToUserPaid?: (spare: JobCardSpare) => void;
+  onSubmitAll?: () => void;
   canEdit?: boolean;
   warrantyEnabled?: boolean;
 }
@@ -152,7 +153,17 @@ function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+  // Compute whether Submit All CTA should show
+  const showSubmitAll = useMemo(() => {
+    if (!warrantyEnabled || !canEdit || !onSubmitAll) return false;
+    const warrantyDraftLines = spares.filter(
+      s => s.claim_type !== 'USER_PAID' && s.approval_state === 'DRAFT'
+    );
+    if (warrantyDraftLines.length === 0) return false;
+    // All warranty/goodwill DRAFT lines must be READY_TO_SUBMIT (none SUBMISSION_PENDING)
+    return warrantyDraftLines.every(s => getWarrantyDisplayState(s) === 'READY_TO_SUBMIT');
+  }, [spares, warrantyEnabled, canEdit, onSubmitAll]);
   if (isLoading) {
     return (
       <Card>
@@ -180,12 +191,20 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               <Badge variant="secondary" className="text-xs">{spares.length}</Badge>
             )}
           </CardTitle>
-          {canEdit && onAddSpares && (
-            <Button variant="outline" size="sm" onClick={onAddSpares} className="h-8 text-xs">
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add Spares
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {showSubmitAll && (
+              <Button variant="default" size="sm" onClick={onSubmitAll} className="h-8 text-xs">
+                <Send className="h-3.5 w-3.5 mr-1" />
+                Submit All
+              </Button>
+            )}
+            {canEdit && onAddSpares && (
+              <Button variant="outline" size="sm" onClick={onAddSpares} className="h-8 text-xs">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add Spares
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
