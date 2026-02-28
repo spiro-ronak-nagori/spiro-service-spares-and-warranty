@@ -9,8 +9,9 @@ import {
 } from 'lucide-react';
 import {
   useWarrantyApprovalQueue, useAdminScopeWorkshops,
-  ApprovalQueueItem, TatBucket, getTatBucket, formatTat,
+  ApprovalQueueItem, formatTat,
 } from '@/hooks/useWarrantyApprovals';
+import { useSlaBuckets, getBucketForTat } from '@/hooks/useSlaBuckets';
 
 const CLAIM_LABEL: Record<string, string> = { WARRANTY: 'Warranty', GOODWILL: 'Goodwill' };
 const CLAIM_COLORS: Record<string, string> = {
@@ -18,12 +19,12 @@ const CLAIM_COLORS: Record<string, string> = {
   GOODWILL: 'bg-pink-100 text-pink-800 border-pink-200',
 };
 
-const TAT_COLORS: Record<string, string> = {
-  '<4h': 'bg-green-100 text-green-800',
-  '4-12h': 'bg-amber-100 text-amber-800',
-  '12-24h': 'bg-orange-100 text-orange-800',
-  '>24h': 'bg-red-100 text-red-800',
-};
+const TAT_BUCKET_COLORS = [
+  'bg-green-100 text-green-800',
+  'bg-amber-100 text-amber-800',
+  'bg-orange-100 text-orange-800',
+  'bg-red-100 text-red-800',
+];
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
@@ -56,11 +57,12 @@ interface ApprovalQueueListProps {
 export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending');
-  const [tatFilter, setTatFilter] = useState<TatBucket | 'all'>('all');
+  const [tatFilter, setTatFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [workshopFilter, setWorkshopFilter] = useState('all');
 
   const workshops = useAdminScopeWorkshops();
+  const { cutoffs, labels: bucketLabels, isLoading: slaLoading } = useSlaBuckets();
 
   const { items, bucketCounts, isLoading } = useWarrantyApprovalQueue({
     status: statusFilter,
@@ -68,13 +70,20 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
     workshopId: workshopFilter !== 'all' ? workshopFilter : undefined,
     claimType: typeFilter !== 'all' ? typeFilter : undefined,
     tatBucket: tatFilter,
+    slaCutoffs: cutoffs,
   });
 
   const totalCount = Object.values(bucketCounts).reduce((sum, c) => sum + c, 0);
 
+  // Map bucket label to color
+  const getBucketColor = (label: string): string => {
+    const idx = bucketLabels.indexOf(label);
+    return TAT_BUCKET_COLORS[Math.min(idx, TAT_BUCKET_COLORS.length - 1)] || TAT_BUCKET_COLORS[TAT_BUCKET_COLORS.length - 1];
+  };
+
   return (
     <div className="p-4 space-y-4">
-      {/* TAT Bucket Chips — act as filters */}
+      {/* TAT Bucket Chips — dynamic from config */}
       <div className="flex gap-2 flex-wrap">
         <Badge
           variant="outline"
@@ -83,14 +92,14 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
         >
           All: {totalCount}
         </Badge>
-        {(['<4h', '4-12h', '12-24h', '>24h'] as const).map(bucket => (
+        {bucketLabels.map((label, idx) => (
           <Badge
-            key={bucket}
+            key={label}
             variant="outline"
-            className={`text-xs cursor-pointer border-0 ${tatFilter === bucket ? 'ring-2 ring-primary' : ''} ${TAT_COLORS[bucket]}`}
-            onClick={() => setTatFilter(tatFilter === bucket ? 'all' : bucket)}
+            className={`text-xs cursor-pointer border-0 ${tatFilter === label ? 'ring-2 ring-primary' : ''} ${TAT_BUCKET_COLORS[Math.min(idx, TAT_BUCKET_COLORS.length - 1)]}`}
+            onClick={() => setTatFilter(tatFilter === label ? 'all' : label)}
           >
-            {bucket}: {bucketCounts[bucket] || 0}
+            {label}: {bucketCounts[label] || 0}
           </Badge>
         ))}
       </div>
@@ -144,7 +153,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
       </div>
 
       {/* Queue List */}
-      {isLoading ? (
+      {isLoading || slaLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full" />)}
         </div>
@@ -158,7 +167,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
       ) : (
         <div className="space-y-2">
           {items.map(item => {
-            const tatBucket = getTatBucket(item.tat_minutes);
+            const tatBucketLabel = getBucketForTat(item.tat_minutes, cutoffs);
             const statePill = APPROVAL_STATE_PILL[item.spare.approval_state];
             return (
               <Card
@@ -202,7 +211,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className={`text-[10px] h-5 border-0 ${TAT_COLORS[tatBucket]}`}>
+                      <Badge variant="outline" className={`text-[10px] h-5 border-0 ${getBucketColor(tatBucketLabel)}`}>
                         <Clock className="h-2.5 w-2.5 mr-0.5" />
                         {formatTat(item.tat_minutes)}
                       </Badge>

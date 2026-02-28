@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package } from 'lucide-react';
+import { WarrantySlaConfig } from '@/components/admin/WarrantySlaConfig';
 import { toast } from 'sonner';
 
 interface SettingItem {
