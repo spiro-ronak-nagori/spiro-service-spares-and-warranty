@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -10,7 +9,7 @@ import {
   Car, Gauge, Camera, Package, User, Building2, Clock, Send,
 } from 'lucide-react';
 import {
-  ApprovalQueueItem, getTatBucket, formatTat,
+  ApprovalQueueItem,
   approveSpare, rejectSpare, requestMoreInfo, fetchSpareActions,
 } from '@/hooks/useWarrantyApprovals';
 import { SpareAction } from '@/types';
@@ -20,12 +19,6 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 const CLAIM_LABEL: Record<string, string> = { WARRANTY: 'Warranty', GOODWILL: 'Goodwill' };
 
-const TAT_COLORS: Record<string, string> = {
-  '<4h': 'bg-green-100 text-green-800',
-  '4-12h': 'bg-amber-100 text-amber-800',
-  '12-24h': 'bg-orange-100 text-orange-800',
-  '>24h': 'bg-red-100 text-red-800',
-};
 
 interface DetailViewProps {
   item: ApprovalQueueItem;
