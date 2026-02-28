@@ -626,6 +626,7 @@ export default function JobCardDetailPage() {
             onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
             onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
             onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
+            onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
             canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
             warrantyEnabled={warrantyEnabled}
           />
@@ -777,6 +778,18 @@ export default function JobCardDetailPage() {
           profileId={profile?.id || ''}
           jobCard={jobCard}
           onSubmitted={() => { setWarrantySpare(null); refetchSpares(); }}
+        />
+      )}
+
+      {/* Submit All Warranty Sheet */}
+      {warrantyEnabled && (
+        <SubmitAllWarrantySheet
+          open={showSubmitAll}
+          onOpenChange={setShowSubmitAll}
+          spares={spares}
+          jobCardId={jobCard.id}
+          profileId={profile?.id || ''}
+          onSubmitted={() => { setShowSubmitAll(false); refetchSpares(); }}
         />
       )}
 
