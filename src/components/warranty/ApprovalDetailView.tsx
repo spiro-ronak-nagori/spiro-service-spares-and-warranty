@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   CheckCircle2, XCircle, MessageSquare, AlertCircle,
-  Car, Gauge, Camera, Package, User, Building2, Clock, Send,
+  Car, Gauge, Camera, Package, User, Clock, Send,
 } from 'lucide-react';
 import {
   ApprovalQueueItem,
@@ -16,9 +16,9 @@ import { SpareAction } from '@/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ImageViewerModal } from './ImageViewerModal';
 
 const CLAIM_LABEL: Record<string, string> = { WARRANTY: 'Warranty', GOODWILL: 'Goodwill' };
-
 
 interface DetailViewProps {
   item: ApprovalQueueItem;
@@ -33,6 +33,17 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [showRequestInfo, setShowRequestInfo] = useState(false);
+
+  // Image viewer state
+  const [viewerImages, setViewerImages] = useState<{ url: string; alt?: string }[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+
+  const openViewer = (images: { url: string; alt?: string }[], index: number) => {
+    setViewerImages(images);
+    setViewerIndex(index);
+    setViewerOpen(true);
+  };
 
   useEffect(() => {
     fetchSpareActions(item.spare.id).then(a => {
@@ -96,6 +107,13 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
     }
   };
 
+  // Build odo image list for viewer
+  const odoImages = item.odometer_photo_url
+    ? [{ url: item.odometer_photo_url, alt: 'Odometer' }]
+    : [];
+  const oldPhotoImages = oldPhotos.map(p => ({ url: p.photo_url, alt: p.description_prompt || 'Old part' }));
+  const newPhotoImages = newPhotos.map(p => ({ url: p.photo_url, alt: 'New part' }));
+
   return (
     <AppLayout>
       <PageHeader title="Claim Review" subtitle={item.jc_number} showBack onBack={onBack} />
@@ -119,11 +137,14 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
                 <p className="font-medium flex items-center gap-1"><Gauge className="h-3 w-3" />{item.odometer.toLocaleString()} km</p>
               </div>
             </div>
-            {item.odometer_photo_url && (
-              <a href={item.odometer_photo_url} target="_blank" rel="noopener noreferrer"
-                className="block w-20 h-20 rounded-md overflow-hidden border bg-muted">
-                <img src={item.odometer_photo_url} alt="Odometer" className="w-full h-full object-cover" loading="lazy" />
-              </a>
+            {odoImages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => openViewer(odoImages, 0)}
+                className="block w-20 h-20 rounded-md overflow-hidden border bg-muted cursor-pointer"
+              >
+                <img src={odoImages[0].url} alt="Odometer" className="w-full h-full object-cover" loading="lazy" />
+              </button>
             )}
           </CardContent>
         </Card>
@@ -140,8 +161,10 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
               <div><span className="text-muted-foreground">Part</span><p className="font-medium">{part?.part_name || '—'}</p></div>
               <div><span className="text-muted-foreground">Qty</span><p className="font-medium">{spare.qty}</p></div>
               <div>
-                <span className="text-muted-foreground">Claim Type</span>
-                <p className={`font-medium inline-flex items-center rounded-full px-2 py-0.5 text-xs mt-1 ${spare.claim_type === 'WARRANTY' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}`}>{CLAIM_LABEL[spare.claim_type]}</p>
+                <span className="text-muted-foreground block">Claim Type</span>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1 ${spare.claim_type === 'WARRANTY' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}`}>
+                  {CLAIM_LABEL[spare.claim_type]}
+                </span>
               </div>
               <div><span className="text-muted-foreground">Workshop</span><p className="font-medium">{item.workshop_name}</p></div>
               {item.submitted_by_name && (
@@ -190,11 +213,15 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
             </CardHeader>
             <CardContent>
               <div className="flex gap-2 flex-wrap">
-                {oldPhotos.map(photo => (
-                  <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer"
-                    className="block w-20 h-20 rounded-md overflow-hidden border bg-muted">
+                {oldPhotos.map((photo, idx) => (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    onClick={() => openViewer(oldPhotoImages, idx)}
+                    className="block w-20 h-20 rounded-md overflow-hidden border bg-muted cursor-pointer"
+                  >
                     <img src={photo.photo_url} alt={photo.description_prompt || 'Old part'} className="w-full h-full object-cover" loading="lazy" />
-                  </a>
+                  </button>
                 ))}
               </div>
             </CardContent>
@@ -211,11 +238,15 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
             </CardHeader>
             <CardContent>
               <div className="flex gap-2 flex-wrap">
-                {newPhotos.map(photo => (
-                  <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer"
-                    className="block w-16 h-16 rounded-md overflow-hidden border bg-muted">
+                {newPhotos.map((photo, idx) => (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    onClick={() => openViewer(newPhotoImages, idx)}
+                    className="block w-16 h-16 rounded-md overflow-hidden border bg-muted cursor-pointer"
+                  >
                     <img src={photo.photo_url} alt="New part" className="w-full h-full object-cover" loading="lazy" />
-                  </a>
+                  </button>
                 ))}
               </div>
             </CardContent>
@@ -271,16 +302,16 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
         {/* Action Buttons — only for non-terminal states */}
         {!isTerminal && (
           <div className="space-y-2 pb-4">
-            <Button className="w-full h-12" onClick={() => setShowApprove(true)} disabled={processing}>
+            <Button className="w-full h-11" onClick={() => setShowApprove(true)} disabled={processing}>
               <CheckCircle2 className="h-4 w-4 mr-2" />
               Approve
             </Button>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="h-10" onClick={() => setShowRequestInfo(true)} disabled={processing}>
+              <Button variant="outline" className="h-11" onClick={() => setShowRequestInfo(true)} disabled={processing}>
                 <MessageSquare className="h-4 w-4 mr-1" />
                 Request Info
               </Button>
-              <Button variant="destructive" className="h-10" onClick={() => setShowReject(true)} disabled={processing}>
+              <Button variant="destructive" className="h-11" onClick={() => setShowReject(true)} disabled={processing}>
                 <XCircle className="h-4 w-4 mr-1" />
                 Reject
               </Button>
@@ -288,6 +319,14 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
           </div>
         )}
       </div>
+
+      {/* Image Viewer Modal */}
+      <ImageViewerModal
+        images={viewerImages}
+        initialIndex={viewerIndex}
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+      />
 
       {/* Approve Dialog */}
       <ConfirmationDialog
