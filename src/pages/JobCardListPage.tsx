@@ -390,50 +390,38 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
   const timeAgo = formatDistanceToNow(new Date(jobCard.updated_at), { addSuffix: true });
   const workshopName = (jobCard as any).workshop?.name;
 
+  // Build line 1 segments: Name · Variant · Colour · Workshop
+  const line1Parts: string[] = [];
+  if (vehicle?.owner_name) line1Parts.push(vehicle.owner_name);
+  if (vehicle?.model) line1Parts.push(vehicle.model);
+  if (vehicle?.color) line1Parts.push(vehicle.color);
+  if (showWorkshop && workshopName) line1Parts.push(workshopName);
+  const line1 = line1Parts.length > 0 ? line1Parts.join(' · ') : 'Unknown';
+
   return (
     <Card 
       className="cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent"
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
+      <CardContent className="px-3 py-2.5">
+        <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            {/* Vehicle Reg */}
-            <div className="flex items-center gap-2">
-              <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-semibold text-base truncate">
-                {vehicle?.reg_no || 'Unknown'}
-              </span>
-            </div>
-            
-            {/* Customer & Model */}
-            <p className="text-sm text-muted-foreground mt-1 truncate">
-              {vehicle?.owner_name || 'Unknown customer'}
-              {vehicle?.model && ` • ${vehicle.model}`}
+            {/* Line 1: Name · Variant · Colour · Workshop */}
+            <p className="text-sm font-medium truncate whitespace-nowrap overflow-hidden">
+              {line1}
             </p>
-
-            {/* Workshop name for super admin */}
-            {showWorkshop && workshopName && (
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
-                <Building2 className="h-3 w-3 flex-shrink-0" />
-                {workshopName}
-              </p>
-            )}
-            
-            {/* JC Number & Time */}
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+            {/* Line 2: JC Number · time ago */}
+            <p className="text-xs text-muted-foreground mt-0.5 truncate whitespace-nowrap overflow-hidden">
               <span className="font-mono">{jobCard.jc_number}</span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {timeAgo}
-              </span>
-            </div>
+              <span> · </span>
+              <span>{timeAgo}</span>
+            </p>
           </div>
 
-          {/* Status & Arrow */}
-          <div className="flex items-center gap-2">
+          {/* Status chip + chevron */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <StatusPill status={jobCard.status} />
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
       </CardContent>
