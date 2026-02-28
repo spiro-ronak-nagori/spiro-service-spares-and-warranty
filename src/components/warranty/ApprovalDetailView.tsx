@@ -146,7 +146,7 @@ export function ApprovalDetailView({ item, actorUserId, onBack }: DetailViewProp
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div><span className="text-muted-foreground">Part</span><p className="font-medium">{part?.part_name || '—'}</p></div>
               <div><span className="text-muted-foreground">Qty</span><p className="font-medium">{spare.qty}</p></div>
-              <div><span className="text-muted-foreground">Claim Type</span><p className="font-medium">{CLAIM_LABEL[spare.claim_type]}</p></div>
+              <div><span className="text-muted-foreground">Claim Type</span><p className={`font-medium inline-flex items-center rounded-full px-2 py-0.5 text-xs mt-0.5 ${spare.claim_type === 'WARRANTY' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}`}>{CLAIM_LABEL[spare.claim_type]}</p></div>
               <div><span className="text-muted-foreground">Workshop</span><p className="font-medium">{item.workshop_name}</p></div>
               {item.submitted_by_name && (
                 <div>

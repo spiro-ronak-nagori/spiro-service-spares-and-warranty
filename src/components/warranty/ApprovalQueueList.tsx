@@ -13,6 +13,10 @@ import {
 } from '@/hooks/useWarrantyApprovals';
 
 const CLAIM_LABEL: Record<string, string> = { WARRANTY: 'Warranty', GOODWILL: 'Goodwill' };
+const CLAIM_COLORS: Record<string, string> = {
+  WARRANTY: 'bg-blue-100 text-blue-800 border-blue-200',
+  GOODWILL: 'bg-pink-100 text-pink-800 border-pink-200',
+};
 
 const TAT_COLORS: Record<string, string> = {
   '<4h': 'bg-green-100 text-green-800',
@@ -31,6 +35,12 @@ const STATUS_OPTIONS = [
   { value: 'REJECTED', label: 'Rejected' },
 ];
 
+const TYPE_OPTIONS = [
+  { value: 'all', label: 'All Types' },
+  { value: 'WARRANTY', label: 'Warranty' },
+  { value: 'GOODWILL', label: 'Goodwill' },
+];
+
 const APPROVAL_STATE_PILL: Record<string, { label: string; className: string }> = {
   SUBMITTED: { label: 'Submitted', className: 'bg-green-100 text-green-800' },
   RESUBMITTED: { label: 'Resubmitted', className: 'bg-blue-100 text-blue-800' },
@@ -47,6 +57,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending');
   const [tatFilter, setTatFilter] = useState<TatBucket | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [workshopFilter, setWorkshopFilter] = useState('all');
 
   const workshops = useAdminScopeWorkshops();
@@ -55,6 +66,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
     status: statusFilter,
     search: search.trim() || undefined,
     workshopId: workshopFilter !== 'all' ? workshopFilter : undefined,
+    claimType: typeFilter !== 'all' ? typeFilter : undefined,
     tatBucket: tatFilter,
   });
 
@@ -105,6 +117,16 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
               ))}
             </SelectContent>
           </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="flex-1 h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TYPE_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {workshops.length > 0 && (
             <Select value={workshopFilter} onValueChange={setWorkshopFilter}>
               <SelectTrigger className="flex-1 h-9">
@@ -149,7 +171,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm">{item.jc_number}</span>
-                        <Badge variant="outline" className="text-[10px] h-5">
+                        <Badge variant="outline" className={`text-[10px] h-5 ${CLAIM_COLORS[item.spare.claim_type] || ''}`}>
                           {CLAIM_LABEL[item.spare.claim_type]}
                         </Badge>
                         {statePill && (

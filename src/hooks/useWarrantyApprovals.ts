@@ -42,6 +42,7 @@ interface Filters {
   workshopId?: string;
   status?: string;
   search?: string;
+  claimType?: string;
   tatBucket?: TatBucket | 'all';
 }
 
@@ -72,6 +73,10 @@ export function useWarrantyApprovalQueue(filters: Filters) {
         .select('*')
         .in('approval_state', queryStates)
         .neq('claim_type', 'USER_PAID');
+
+      if (filters.claimType) {
+        sparesQuery = sparesQuery.eq('claim_type', filters.claimType);
+      }
 
       const { data: sparesData } = await sparesQuery;
       const sparesList = (sparesData || []) as unknown as JobCardSpare[];
@@ -202,7 +207,7 @@ export function useWarrantyApprovalQueue(filters: Filters) {
     } finally {
       setIsLoading(false);
     }
-  }, [filters.country, filters.workshopId, filters.status, filters.search, filters.tatBucket]);
+  }, [filters.country, filters.workshopId, filters.status, filters.search, filters.claimType, filters.tatBucket]);
 
   useEffect(() => {
     fetchQueue();
