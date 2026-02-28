@@ -214,6 +214,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             )}
           </div>
         ) : (
+          <>
           <Accordion type="multiple" className="w-full">
             {spares.map((spare) => {
               const locked = isLocked(spare);
