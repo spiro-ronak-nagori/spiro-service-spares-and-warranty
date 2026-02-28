@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Car, Clock, ChevronRight, FileText, X, ArrowUpDown, Building2 } from 'lucide-react';
+import { Search, Plus, Car, ChevronRight, FileText, X, ArrowUpDown, Building2 } from 'lucide-react';
 import { JobCard, JobCardStatus, Workshop } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { WorkshopSelectorDialog } from '@/components/admin/WorkshopSelectorDialog';
@@ -390,6 +390,17 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
   const timeAgo = formatDistanceToNow(new Date(jobCard.updated_at), { addSuffix: true });
   const workshopName = (jobCard as any).workshop?.name;
 
+  // Build line 1 segments: Name · Variant · Colour · Workshop
+  const line1Parts = [
+    vehicle?.owner_name,
+    vehicle?.model,
+    vehicle?.color,
+    showWorkshop ? workshopName : undefined,
+  ].filter(Boolean);
+
+  // Build line 2 segments: JC Number · time elapsed
+  const line2Parts = [jobCard.jc_number, timeAgo].filter(Boolean);
+
   return (
     <Card 
       className="cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent"
@@ -397,45 +408,32 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            {/* Vehicle Reg */}
-            <div className="flex items-center gap-2">
-              <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="font-semibold text-base truncate">
-                {vehicle?.reg_no || 'Unknown'}
-              </span>
-            </div>
-            
-            {/* Customer & Model */}
-            <p className="text-sm text-muted-foreground mt-1 truncate">
-              {vehicle?.owner_name || 'Unknown customer'}
-              {vehicle?.model && ` • ${vehicle.model}`}
-            </p>
-
-            {/* Workshop name for super admin */}
-            {showWorkshop && workshopName && (
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
-                <Building2 className="h-3 w-3 flex-shrink-0" />
-                {workshopName}
-              </p>
-            )}
-            
-            {/* JC Number & Time */}
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-              <span className="font-mono">{jobCard.jc_number}</span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {timeAgo}
-              </span>
-            </div>
+          {/* Vehicle Reg */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="font-semibold text-base truncate">
+              {vehicle?.reg_no || 'Unknown'}
+            </span>
           </div>
 
           {/* Status & Arrow */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <StatusPill status={jobCard.status} />
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </div>
         </div>
+
+        {/* Line 1: Name · Variant · Colour · Workshop */}
+        {line1Parts.length > 0 && (
+          <p className="text-sm text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+            {line1Parts.join(' · ')}
+          </p>
+        )}
+
+        {/* Line 2: JC Number · time elapsed */}
+        <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis font-mono">
+          {line2Parts.join(' · ')}
+        </p>
       </CardContent>
     </Card>
   );
