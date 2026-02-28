@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   CheckCircle2, XCircle, MessageSquare, AlertCircle,
-  Car, Gauge, Camera, Package, User, Building2, Clock, Send,
+  Car, Gauge, Camera, Package, User, Building2, Clock, Send, AlertCircle,
 } from 'lucide-react';
 import {
   ApprovalQueueItem, getTatBucket, formatTat,
