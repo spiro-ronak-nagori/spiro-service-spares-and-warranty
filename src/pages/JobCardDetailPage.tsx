@@ -35,6 +35,7 @@ import { DeliveryWithSocDialog, OutgoingSocData } from '@/components/job-card/De
 import { SparesModal } from '@/components/job-card/SparesModal';
 import { SparesUsedSection } from '@/components/job-card/SparesUsedSection';
 import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
+import { SubmitAllWarrantySheet } from '@/components/job-card/SubmitAllWarrantySheet';
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
 import { uploadJcImage } from '@/lib/upload-jc-image';
@@ -65,7 +66,7 @@ export default function JobCardDetailPage() {
   const [warrantySpare, setWarrantySpare] = useState<JobCardSpare | null>(null);
   const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
-  
+  const [showSubmitAll, setShowSubmitAll] = useState(false);
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
   const [showDeliveryOtp, setShowDeliveryOtp] = useState(false);
