@@ -226,6 +226,9 @@ export default function SystemConfigPage() {
               </Card>
             ))}
 
+            {/* Warranty SLA Bucket Config — system_admin only */}
+            {isSystemAdmin && <WarrantySlaConfig />}
+
             {/* Navigation Cards */}
             <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/service-categories')}>
               <CardContent className="p-4 flex items-center gap-4">
