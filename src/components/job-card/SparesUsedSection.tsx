@@ -192,12 +192,6 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             )}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {showSubmitAll && (
-              <Button variant="default" size="sm" onClick={onSubmitAll} className="h-8 text-xs">
-                <Send className="h-3.5 w-3.5 mr-1" />
-                Submit All
-              </Button>
-            )}
             {canEdit && onAddSpares && (
               <Button variant="outline" size="sm" onClick={onAddSpares} className="h-8 text-xs">
                 <Plus className="h-3.5 w-3.5 mr-1" />
@@ -220,6 +214,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             )}
           </div>
         ) : (
+          <>
           <Accordion type="multiple" className="w-full">
             {spares.map((spare) => {
               const locked = isLocked(spare);
@@ -472,6 +467,16 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               );
             })}
           </Accordion>
+          {showSubmitAll && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs text-muted-foreground text-center">Review all parts above before submitting.</p>
+              <Button variant="default" className="w-full" onClick={onSubmitAll}>
+                <Send className="h-4 w-4 mr-2" />
+                Submit All Claims
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </CardContent>
     </Card>
