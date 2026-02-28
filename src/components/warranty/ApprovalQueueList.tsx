@@ -106,9 +106,9 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
             className="pl-9 h-9"
           />
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${workshops.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="flex-1 h-9">
+            <SelectTrigger className="h-9 min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -118,7 +118,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="flex-1 h-9">
+            <SelectTrigger className="h-9 min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -129,7 +129,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
           </Select>
           {workshops.length > 0 && (
             <Select value={workshopFilter} onValueChange={setWorkshopFilter}>
-              <SelectTrigger className="flex-1 h-9">
+              <SelectTrigger className="h-9 min-w-0">
                 <SelectValue placeholder="All Workshops" />
               </SelectTrigger>
               <SelectContent>
