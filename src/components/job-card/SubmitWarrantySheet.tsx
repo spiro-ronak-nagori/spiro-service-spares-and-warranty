@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, AlertCircle, Send, Car, Gauge } from 'lucide-react';
+import { AlertCircle, Send, Car, Gauge } from 'lucide-react';
+import { PhotoSlot } from '@/components/job-card/PhotoSlot';
 import { JobCardSpare, SparePhotoKind, Vehicle, JobCard } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -46,11 +47,12 @@ export function SubmitWarrantySheet({
     : 0;
 
   // Photo prompts
-  const prompts: string[] = part
-    ? (isWarranty
-        ? (Array.isArray(part.warranty_old_part_photo_prompts) ? part.warranty_old_part_photo_prompts as string[] : [])
-        : (Array.isArray(part.goodwill_old_part_photo_prompts) ? part.goodwill_old_part_photo_prompts as string[] : []))
+  const rawPrompts = part
+    ? (isWarranty ? part.warranty_old_part_photo_prompts : part.goodwill_old_part_photo_prompts)
     : [];
+  const prompts: string[] = Array.isArray(rawPrompts)
+    ? rawPrompts as string[]
+    : (typeof rawPrompts === 'string' ? (() => { try { const p = JSON.parse(rawPrompts); return Array.isArray(p) ? p : []; } catch { return []; } })() : []);
 
   const existingOldPhotos = (spare.photos || []).filter(p => p.photo_kind === 'OLD_PART_EVIDENCE');
   const totalOld = existingOldPhotos.length + newPhotos.length;
@@ -82,12 +84,12 @@ export function SubmitWarrantySheet({
     return msgs;
   }, [needsOldPhotos, photosReady, reqCount, totalOld, needsOldSerial, serialReady]);
 
-  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setNewPhotos(prev => [...prev, file]);
-    }
-    e.target.value = '';
+  const handlePhotoCapture = (file: File) => {
+    setNewPhotos(prev => [...prev, file]);
+  };
+
+  const handlePhotoReplace = (index: number, file: File) => {
+    setNewPhotos(prev => prev.map((p, i) => i === index ? file : p));
   };
 
   const handleSubmitClick = () => {
@@ -317,8 +319,7 @@ export function SubmitWarrantySheet({
             {needsOldPhotos && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
-                  <Camera className="h-3.5 w-3.5" />
-                  Old Part Evidence
+                  📷 Old Part Evidence
                   <span className={`text-xs font-normal ${photosReady ? 'text-green-600' : 'text-destructive'}`}>
                     ({totalOld}/{reqCount} required)
                   </span>
@@ -335,47 +336,33 @@ export function SubmitWarrantySheet({
                   </div>
                 )}
 
-                {/* New photos captured in this session */}
+                {/* New photos with replace capability */}
                 {newPhotos.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {newPhotos.map((file, i) => (
-                      <div key={i} className="w-14 h-14 rounded-md overflow-hidden border bg-muted">
-                        <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
-                      </div>
+                      <PhotoSlot
+                        key={i}
+                        prompt={prompts[existingOldPhotos.length + i] || `Photo ${existingOldPhotos.length + i + 1}`}
+                        suffix=""
+                        capturedFile={file}
+                        onCapture={(f) => handlePhotoReplace(i, f)}
+                      />
                     ))}
                   </div>
                 )}
 
                 {/* Remaining upload slots */}
-                {prompts.map((prompt, pi) => {
-                  if (totalOld > pi) return null;
+                {Array.from({ length: Math.max(0, reqCount - totalOld) }).map((_, si) => {
+                  const slotIdx = totalOld + si;
+                  const promptText = prompts[slotIdx] || `Photo ${slotIdx + 1}`;
                   return (
-                    <div key={pi} className="space-y-1">
-                      <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handlePhotoCapture}
-                        className="h-9"
-                      />
-                    </div>
+                    <PhotoSlot
+                      key={`slot-${si}`}
+                      prompt={promptText}
+                      onCapture={handlePhotoCapture}
+                    />
                   );
                 })}
-
-                {/* Extra slots if prompts < reqCount */}
-                {Array.from({ length: Math.max(0, reqCount - Math.max(prompts.length, totalOld)) }).map((_, i) => (
-                  <div key={`extra-${i}`} className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Photo {prompts.length + i + 1} <span className="text-[10px]">(Camera only)</span></p>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handlePhotoCapture}
-                      className="h-9"
-                    />
-                  </div>
-                ))}
               </div>
             )}
 
@@ -388,6 +375,7 @@ export function SubmitWarrantySheet({
                   placeholder="Enter old part serial number"
                   value={oldPartSerial}
                   onChange={(e) => setOldPartSerial(e.target.value)}
+                  className="text-sm"
                 />
               </div>
             )}
