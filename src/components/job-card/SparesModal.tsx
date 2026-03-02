@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Plus, Trash2, Camera, Package } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Package } from 'lucide-react';
 import { SparePart, ClaimType, JobCardSpare, JobCardSparePhoto } from '@/types';
 import { useApplicableSpareParts } from '@/hooks/useSparesFlow';
 import { SearchablePartSelect } from '@/components/job-card/SearchablePartSelect';
+import { PhotoSlot } from '@/components/job-card/PhotoSlot';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/compress-image';
@@ -323,14 +324,16 @@ export function SparesModal({
     }
   };
 
-  const handlePhotoCapture = (idx: number, kind: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const newPhotos = [...lines[idx].newPhotos, file];
-      const newKinds = [...lines[idx].newPhotoKinds, kind];
-      updateLine(idx, { newPhotos, newPhotoKinds: newKinds });
-    }
-    e.target.value = '';
+  const handlePhotoCapture = (idx: number, kind: string, file: File) => {
+    const newPhotos = [...lines[idx].newPhotos, file];
+    const newKinds = [...lines[idx].newPhotoKinds, kind];
+    updateLine(idx, { newPhotos, newPhotoKinds: newKinds });
+  };
+
+  const handlePhotoReplace = (idx: number, photoIdx: number, file: File) => {
+    const newPhotos = [...lines[idx].newPhotos];
+    newPhotos[photoIdx] = file;
+    updateLine(idx, { newPhotos });
   };
 
   return (
@@ -433,7 +436,7 @@ export function SparesModal({
                     value={currentLine.serial_number}
                     onChange={(e) => updateLine(activeLineIdx, { serial_number: e.target.value })}
                     placeholder="Enter part serial number"
-                    className="h-11"
+                    className="h-11 text-sm"
                   />
                 </div>
               )}
@@ -451,58 +454,65 @@ export function SparesModal({
               </div>
 
               {/* NEW_PART_PROOF photos */}
-              {currentPart && currentPart.usage_proof_photos_required_count > 0 && (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5">
-                    <Camera className="h-3.5 w-3.5" />
-                    New Part Proof Photos ({currentPart.usage_proof_photos_required_count} required)
-                  </Label>
-                  {currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').map(photo => (
-                        <div key={photo.id} className="w-16 h-16 rounded-md overflow-hidden border bg-muted">
-                          <img src={photo.photo_url} alt="Existing" className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {(() => {
-                    const prompts = Array.isArray(currentPart.usage_proof_photo_prompts) ? currentPart.usage_proof_photo_prompts as string[] : [];
-                    const requiredCount = currentPart.usage_proof_photos_required_count;
-                    const slots = Array.from({ length: requiredCount }, (_, i) => prompts[i] || `Proof photo ${i + 1}`);
-                    const existingCount = currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF').length;
-                    const newCount = currentLine.newPhotoKinds.filter(k => k === 'NEW_PART_PROOF').length;
-                    const filled = existingCount + newCount;
-                    return slots.map((prompt, pi) => {
-                      if (filled > pi) return null;
-                      return (
-                        <div key={pi} className="space-y-1">
-                          <p className="text-xs text-muted-foreground">{prompt} <span className="text-[10px]">(Camera only)</span></p>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            onChange={(e) => handlePhotoCapture(activeLineIdx, 'NEW_PART_PROOF', e)}
-                            className="h-11"
-                          />
-                        </div>
-                      );
-                    });
-                  })()}
-                  {currentLine.newPhotos.length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {currentLine.newPhotos.map((file, fi) => {
-                        if (currentLine.newPhotoKinds[fi] !== 'NEW_PART_PROOF') return null;
-                        return (
-                          <div key={fi} className="w-16 h-16 rounded-md overflow-hidden border bg-muted">
-                            <img src={URL.createObjectURL(file)} alt="New" className="w-full h-full object-cover" />
+              {currentPart && currentPart.usage_proof_photos_required_count > 0 && (() => {
+                const rawPrompts = currentPart.usage_proof_photo_prompts;
+                const prompts: string[] = Array.isArray(rawPrompts)
+                  ? rawPrompts as string[]
+                  : (typeof rawPrompts === 'string' ? (() => { try { const p = JSON.parse(rawPrompts); return Array.isArray(p) ? p : []; } catch { return []; } })() : []);
+                const requiredCount = currentPart.usage_proof_photos_required_count;
+                const existingProof = currentLine.existingPhotos.filter(p => p.photo_kind === 'NEW_PART_PROOF');
+                const newProofIndices = currentLine.newPhotoKinds
+                  .map((k, i) => k === 'NEW_PART_PROOF' ? i : -1)
+                  .filter(i => i >= 0);
+                const filled = existingProof.length + newProofIndices.length;
+
+                return (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      📷 New Part Proof Photos ({requiredCount} required)
+                    </Label>
+
+                    {/* Existing saved photos */}
+                    {existingProof.length > 0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {existingProof.map(photo => (
+                          <div key={photo.id} className="w-16 h-16 rounded-md overflow-hidden border bg-muted">
+                            <img src={photo.photo_url} alt="Existing" className="w-full h-full object-cover" />
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* New captured photos with replace capability */}
+                    {newProofIndices.length > 0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {newProofIndices.map(fi => (
+                          <PhotoSlot
+                            key={fi}
+                            prompt={prompts[existingProof.length + newProofIndices.indexOf(fi)] || `Proof photo ${existingProof.length + newProofIndices.indexOf(fi) + 1}`}
+                            suffix=""
+                            capturedFile={currentLine.newPhotos[fi]}
+                            onCapture={(file) => handlePhotoReplace(activeLineIdx, fi, file)}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Remaining unfilled slots */}
+                    {Array.from({ length: Math.max(0, requiredCount - filled) }).map((_, si) => {
+                      const slotIdx = filled + si;
+                      const promptText = prompts[slotIdx] || `Proof photo ${slotIdx + 1}`;
+                      return (
+                        <PhotoSlot
+                          key={`slot-${si}`}
+                          prompt={promptText}
+                          onCapture={(file) => handlePhotoCapture(activeLineIdx, 'NEW_PART_PROOF', file)}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Old-part evidence note */}
               {warrantyEnabled && currentPart && currentLine.claim_type !== 'USER_PAID' && (() => {
