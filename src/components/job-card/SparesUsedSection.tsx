@@ -240,7 +240,6 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                             {CLAIM_LABEL[spare.claim_type]}
                           </Badge>
                           <WarrantyBadge spare={spare} warrantyEnabled={warrantyEnabled} />
-                          <DocsIndicator spare={spare} />
                         </div>
                       </div>
                     </div>
