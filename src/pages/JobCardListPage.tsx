@@ -198,8 +198,7 @@ export default function JobCardListPage() {
   return (
     <AppLayout>
       <PageHeader 
-        title="Job Cards" 
-        subtitle={isElevatedAdmin ? (selectedWorkshopId === 'all' ? (isCountryAdmin ? `${profile?.country} Workshops` : 'All Workshops') : workshops.find(w => w.id === selectedWorkshopId)?.name || 'All Workshops') : workshop?.name}
+        title="Aftersales Platform"
         rightAction={
           <Button 
             size="icon" 

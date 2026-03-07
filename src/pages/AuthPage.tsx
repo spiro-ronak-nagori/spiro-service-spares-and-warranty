@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Mail, Lock, Wrench, Eye, EyeOff, CheckCircle2, Shield } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, CheckCircle2, Shield } from 'lucide-react';
+import spiroLogo from '@/assets/spiro-logo.png';
 import { toast } from 'sonner';
 
 type AuthMode = 'login' | 'activate';
@@ -258,13 +259,8 @@ export default function AuthPage() {
       <div className="w-full max-w-sm space-y-6">
         {/* Logo/Branding */}
         <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-            <Wrench className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Spiro Service</h1>
-          <p className="text-sm text-muted-foreground">
-            Aftersales Service Management
-          </p>
+          <img src={spiroLogo} alt="Spiro" className="h-16 w-16 object-contain" />
+          <h1 className="text-2xl font-bold text-foreground">Aftersales Platform</h1>
         </div>
 
         <Card>
