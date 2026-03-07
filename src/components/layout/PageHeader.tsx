@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import spiroLogo from '@/assets/spiro-logo.png';
 
 interface PageHeaderProps {
   title: string;
@@ -53,17 +54,24 @@ export function PageHeader({
             <span className="sr-only">Go back</span>
           </Button>
         )}
-        
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-semibold leading-tight truncate">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground truncate">
-              {subtitle}
-            </p>
-          )}
-        </div>
+
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 min-w-0 flex-1 focus:outline-none"
+        >
+          <img src={spiroLogo} alt="Spiro" className="h-8 w-8 object-contain flex-shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold leading-tight truncate text-left">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-sm text-muted-foreground truncate text-left">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        </button>
         
         {rightAction && (
           <div className="flex-shrink-0">
