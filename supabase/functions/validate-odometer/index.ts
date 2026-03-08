@@ -11,6 +11,9 @@ interface ValidationResult {
   ocrReading: number | null;
   ocrConfidence: number;
   clusterDetected: boolean;
+  socReading: number | null;
+  socConfidence: number;
+  socDetected: boolean;
   error?: string;
 }
 
@@ -46,16 +49,21 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert at reading vehicle odometer displays. Your task is to:
+            content: `You are an expert at reading vehicle instrument clusters. Your task is to:
 1. Detect if an odometer/speedometer cluster is visible in the image
 2. Read the odometer value (total kilometers/miles driven)
-3. Provide a confidence score
+3. Check if a battery State of Charge (SOC) percentage is also visible
+4. If SOC is visible, read its value
+5. Provide confidence scores
 
 Respond ONLY with valid JSON in this exact format:
 {
   "cluster_detected": true/false,
   "odometer_reading": <number or null if not readable>,
   "confidence": <0-100 percentage>,
+  "soc_detected": true/false,
+  "soc_reading": <number 0-100 or null if not visible/readable>,
+  "soc_confidence": <0-100 percentage, 0 if not detected>,
   "notes": "<brief explanation>"
 }
 
@@ -63,7 +71,10 @@ Important:
 - Focus on the ODOMETER (total distance), not the speedometer
 - If the image is blurry, dark, or unclear, set confidence low
 - If no odometer cluster is visible, set cluster_detected to false
-- Return the reading as a plain number without units`
+- Return the odometer reading as a plain number without units
+- SOC is typically shown as a battery percentage (0-100%) on electric vehicle dashboards
+- If no SOC indicator is visible, set soc_detected to false and soc_reading to null
+- Return SOC as a plain integer (0-100)`
           },
           {
             role: "user",
@@ -131,6 +142,9 @@ Important:
       ocrReading: parsed.odometer_reading ?? null,
       ocrConfidence: parsed.confidence ?? 0,
       clusterDetected: parsed.cluster_detected ?? false,
+      socReading: parsed.soc_reading ?? null,
+      socConfidence: parsed.soc_confidence ?? 0,
+      socDetected: parsed.soc_detected ?? false,
     };
 
     return new Response(
