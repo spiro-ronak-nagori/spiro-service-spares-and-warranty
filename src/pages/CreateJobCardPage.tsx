@@ -310,20 +310,32 @@ export default function CreateJobCardPage() {
   const handleOdometerValidation = (
     file: File | null,
     result: ValidationResult | null,
-    mismatchConfirmed: boolean,
-    mismatchReason?: string
   ) => {
     setOdometerPhoto(file);
     setOdometerValidation(result);
-    setOdometerMismatchConfirmed(mismatchConfirmed);
-    setOdometerMismatchReason(mismatchReason);
+    setOdometerMismatchConfirmed(false);
+    setOdometerMismatchReason(undefined);
 
-    // If odometer photo was cleared (retake), also clear auto-filled SOC
-    if (!file && socAutoFilled) {
-      setSocAutoFilled(false);
-      setSoc('');
-      setSocPhoto(null);
-      setSocValidation(null);
+    // If odometer photo was cleared (retake), also clear auto-filled SOC and odometer
+    if (!file) {
+      setOcrOdometerReading(null);
+      setOdometer('');
+      if (socAutoFilled) {
+        setSocAutoFilled(false);
+        setSoc('');
+        setSocPhoto(null);
+        setSocValidation(null);
+      }
+      return;
+    }
+
+    // Prefill odometer from OCR if reading was extracted
+    if (result?.ocr?.ocrReading !== null && result?.ocr?.ocrReading !== undefined) {
+      setOcrOdometerReading(result.ocr.ocrReading);
+      setOdometer(String(result.ocr.ocrReading));
+      setOdoLowerConfirmed(false);
+    } else {
+      setOcrOdometerReading(null);
     }
 
     // Auto-fill SOC if the odometer image also contains a SOC reading
@@ -345,11 +357,11 @@ export default function CreateJobCardPage() {
           confidence: result.ocr.socConfidence,
           dashboardDetected: true,
         },
-        mismatch: null, // No mismatch since we're using the detected value directly
+        mismatch: null,
         isValidating: false,
         error: null,
       };
-      setSocPhoto(file); // Reuse the same image
+      setSocPhoto(file);
       setSocValidation(syntheticSocResult);
       setSocMismatchConfirmed(false);
       setSocMismatchReason(undefined);
@@ -357,6 +369,20 @@ export default function CreateJobCardPage() {
       setSocAutoFilled(true);
     }
   };
+
+  // Compute odometer mismatch against OCR reading
+  const odometerMismatch = (() => {
+    if (ocrOdometerReading === null || !odometer || parseInt(odometer) <= 0) return null;
+    const enteredVal = parseInt(odometer);
+    const diff = Math.abs(ocrOdometerReading - enteredVal);
+    const percentage = diff / Math.max(enteredVal, 1);
+    return {
+      hasMismatch: percentage > 0.10,
+      percentage: percentage * 100,
+      enteredValue: enteredVal,
+      ocrValue: ocrOdometerReading,
+    };
+  })();
 
   // Check if odometer step can proceed
   const isOdometerStepValid = (): boolean => {
