@@ -343,6 +343,7 @@ export default function CreateJobCardPage() {
       setSocMismatchConfirmed(false);
       setSocMismatchReason(undefined);
       setSocMismatchComment(undefined);
+      setSocAutoFilled(true);
     }
   };
 
