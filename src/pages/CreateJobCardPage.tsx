@@ -801,13 +801,20 @@ export default function CreateJobCardPage() {
                     ocrEnabled={ocrEnabled}
                     onResult={(regNumber) => {
                       setRegNo(regNumber);
-                      setVehicleSearched(false);
                       setVehicle(null);
                       setIsNewVehicle(false);
                       setSelectedModel('');
                       setUnknownModelWarning(false);
                       setSelectedColor('');
                       setUnknownColorWarning(false);
+                      // Auto-search if format is valid
+                      const formatErr = validateRegNo(regNumber, workshop?.country);
+                      if (!formatErr) {
+                        // Use setTimeout to let state updates settle before searching
+                        setTimeout(() => searchVehicle(regNumber), 0);
+                      } else {
+                        setVehicleSearched(false);
+                      }
                     }}
                   />
                 )}
