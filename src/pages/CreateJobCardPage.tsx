@@ -124,11 +124,12 @@ export default function CreateJobCardPage() {
   const [odometer, setOdometer] = useState('');
   const [odometerPhoto, setOdometerPhoto] = useState<File | null>(null);
   const [odometerValidation, setOdometerValidation] = useState<ValidationResult | null>(null);
-  const [odometerMismatchConfirmed, setOdometerMismatchConfirmed] = useState(false);
-  const [odometerMismatchReason, setOdometerMismatchReason] = useState<string | undefined>();
+  const [ocrOdometerReading, setOcrOdometerReading] = useState<number | null>(null);
   const [lastServiceOdo, setLastServiceOdo] = useState<number>(0);
   const [showOdoLowerConfirm, setShowOdoLowerConfirm] = useState(false);
   const [odoLowerConfirmed, setOdoLowerConfirmed] = useState(false);
+  const [odometerMismatchConfirmed, setOdometerMismatchConfirmed] = useState(false);
+  const [odometerMismatchReason, setOdometerMismatchReason] = useState<string | undefined>();
 
   // SOC data
   const [soc, setSoc] = useState('');
