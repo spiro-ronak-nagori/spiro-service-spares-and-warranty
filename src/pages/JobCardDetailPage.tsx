@@ -53,7 +53,7 @@ export default function JobCardDetailPage() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(true);
   
   // Spares
   const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
