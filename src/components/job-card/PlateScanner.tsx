@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
-import { Camera, Loader2, RotateCcw, AlertCircle, ScanLine } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Loader2, RotateCcw, AlertCircle, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
