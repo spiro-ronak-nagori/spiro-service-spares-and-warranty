@@ -200,10 +200,13 @@ export function useOdometerValidation() {
     setResult(prev => ({ ...prev, isValidating: true, error: null }));
 
     try {
-      // Step 1: Check image quality
-      const quality = await checkImageQuality(file);
-      
-      setResult(prev => ({ ...prev, quality }));
+      // Run quality check and OCR in parallel for speed
+      const qualityPromise = checkImageQuality(file);
+      const ocrPromise = ocrEnabled ? runOcr(file) : Promise.resolve(null);
+
+      const [quality, ocr] = await Promise.all([qualityPromise, ocrPromise]);
+
+      setResult(prev => ({ ...prev, quality, ocr }));
 
       if (!quality.passed) {
         const finalResult: ValidationResult = {
@@ -217,7 +220,6 @@ export function useOdometerValidation() {
         return finalResult;
       }
 
-      // If OCR is disabled, skip OCR and mismatch check — image captured for record-keeping only
       if (!ocrEnabled) {
         const finalResult: ValidationResult = {
           quality,
@@ -230,8 +232,7 @@ export function useOdometerValidation() {
         return finalResult;
       }
 
-      // Step 2: Run OCR
-      const ocr = await runOcr(file);
+      // OCR result (already awaited above)
       
       setResult(prev => ({ ...prev, ocr }));
 
