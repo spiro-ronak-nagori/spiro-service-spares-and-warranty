@@ -180,7 +180,7 @@ export function useSocValidation() {
           hasMismatch: percentage > MISMATCH_THRESHOLD,
           percentage: percentage * 100,
           enteredValue,
-          ocrValue: ocr.socReading,
+          ocrValue: ocr!.socReading,
         };
       }
 
