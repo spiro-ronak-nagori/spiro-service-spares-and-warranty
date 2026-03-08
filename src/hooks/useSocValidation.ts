@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/compress-image';
 
 export interface SocOcrResult {
   socReading: number | null;
@@ -106,6 +107,7 @@ export function useSocValidation() {
   }, []);
 
   const runOcr = useCallback(async (file: File): Promise<SocOcrResult> => {
+    const compressed = await compressImage(file, 800, 0.75);
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -131,7 +133,13 @@ export function useSocValidation() {
           });
         }
       };
-      reader.readAsDataURL(file);
+      reader.onerror = () => resolve({
+        socReading: null,
+        confidence: 0,
+        dashboardDetected: false,
+        error: 'Failed to read file',
+      });
+      reader.readAsDataURL(compressed);
     });
   }, []);
 
@@ -139,8 +147,12 @@ export function useSocValidation() {
     setResult(prev => ({ ...prev, isValidating: true, error: null }));
 
     try {
-      const quality = await checkImageQuality(file);
-      setResult(prev => ({ ...prev, quality }));
+      // Run quality check and OCR in parallel for speed
+      const qualityPromise = checkImageQuality(file);
+      const ocrPromise = ocrEnabled ? runOcr(file) : Promise.resolve(null);
+
+      const [quality, ocr] = await Promise.all([qualityPromise, ocrPromise]);
+      setResult(prev => ({ ...prev, quality, ocr }));
 
       if (!quality.passed) {
         const finalResult: SocValidationResult = { quality, ocr: null, mismatch: null, isValidating: false, error: quality.message || 'Image quality check failed' };
@@ -148,25 +160,21 @@ export function useSocValidation() {
         return finalResult;
       }
 
-      // If OCR is disabled, skip OCR — image captured for record-keeping only
       if (!ocrEnabled) {
         const finalResult: SocValidationResult = { quality, ocr: null, mismatch: null, isValidating: false, error: null };
         setResult(finalResult);
         return finalResult;
       }
 
-      const ocr = await runOcr(file);
-      setResult(prev => ({ ...prev, ocr }));
-
-      if (!ocr.dashboardDetected) {
+      if (!ocr!.dashboardDetected) {
         const finalResult: SocValidationResult = { quality, ocr, mismatch: null, isValidating: false, error: 'Battery SOC indicator not detected. Please retake photo.' };
         setResult(finalResult);
         return finalResult;
       }
 
       let mismatch: SocValidationResult['mismatch'] = null;
-      if (ocr.socReading !== null && enteredValue >= 0) {
-        const diff = Math.abs(ocr.socReading - enteredValue);
+      if (ocr!.socReading !== null && enteredValue >= 0) {
+        const diff = Math.abs(ocr!.socReading - enteredValue);
         const percentage = enteredValue > 0 ? diff / enteredValue : (diff > 0 ? 1 : 0);
         mismatch = {
           hasMismatch: percentage > MISMATCH_THRESHOLD,
