@@ -124,11 +124,12 @@ export default function CreateJobCardPage() {
   const [odometer, setOdometer] = useState('');
   const [odometerPhoto, setOdometerPhoto] = useState<File | null>(null);
   const [odometerValidation, setOdometerValidation] = useState<ValidationResult | null>(null);
-  const [odometerMismatchConfirmed, setOdometerMismatchConfirmed] = useState(false);
-  const [odometerMismatchReason, setOdometerMismatchReason] = useState<string | undefined>();
+  const [ocrOdometerReading, setOcrOdometerReading] = useState<number | null>(null);
   const [lastServiceOdo, setLastServiceOdo] = useState<number>(0);
   const [showOdoLowerConfirm, setShowOdoLowerConfirm] = useState(false);
   const [odoLowerConfirmed, setOdoLowerConfirmed] = useState(false);
+  const [odometerMismatchConfirmed, setOdometerMismatchConfirmed] = useState(false);
+  const [odometerMismatchReason, setOdometerMismatchReason] = useState<string | undefined>();
 
   // SOC data
   const [soc, setSoc] = useState('');
@@ -309,20 +310,32 @@ export default function CreateJobCardPage() {
   const handleOdometerValidation = (
     file: File | null,
     result: ValidationResult | null,
-    mismatchConfirmed: boolean,
-    mismatchReason?: string
   ) => {
     setOdometerPhoto(file);
     setOdometerValidation(result);
-    setOdometerMismatchConfirmed(mismatchConfirmed);
-    setOdometerMismatchReason(mismatchReason);
+    setOdometerMismatchConfirmed(false);
+    setOdometerMismatchReason(undefined);
 
-    // If odometer photo was cleared (retake), also clear auto-filled SOC
-    if (!file && socAutoFilled) {
-      setSocAutoFilled(false);
-      setSoc('');
-      setSocPhoto(null);
-      setSocValidation(null);
+    // If odometer photo was cleared (retake), also clear auto-filled SOC and odometer
+    if (!file) {
+      setOcrOdometerReading(null);
+      setOdometer('');
+      if (socAutoFilled) {
+        setSocAutoFilled(false);
+        setSoc('');
+        setSocPhoto(null);
+        setSocValidation(null);
+      }
+      return;
+    }
+
+    // Prefill odometer from OCR if reading was extracted
+    if (result?.ocr?.ocrReading !== null && result?.ocr?.ocrReading !== undefined) {
+      setOcrOdometerReading(result.ocr.ocrReading);
+      setOdometer(String(result.ocr.ocrReading));
+      setOdoLowerConfirmed(false);
+    } else {
+      setOcrOdometerReading(null);
     }
 
     // Auto-fill SOC if the odometer image also contains a SOC reading
@@ -344,11 +357,11 @@ export default function CreateJobCardPage() {
           confidence: result.ocr.socConfidence,
           dashboardDetected: true,
         },
-        mismatch: null, // No mismatch since we're using the detected value directly
+        mismatch: null,
         isValidating: false,
         error: null,
       };
-      setSocPhoto(file); // Reuse the same image
+      setSocPhoto(file);
       setSocValidation(syntheticSocResult);
       setSocMismatchConfirmed(false);
       setSocMismatchReason(undefined);
@@ -357,28 +370,34 @@ export default function CreateJobCardPage() {
     }
   };
 
+  // Compute odometer mismatch against OCR reading
+  const odometerMismatch = (() => {
+    if (ocrOdometerReading === null || !odometer || parseInt(odometer) <= 0) return null;
+    const enteredVal = parseInt(odometer);
+    const diff = Math.abs(ocrOdometerReading - enteredVal);
+    const percentage = diff / Math.max(enteredVal, 1);
+    return {
+      hasMismatch: percentage > 0.10,
+      percentage: percentage * 100,
+      enteredValue: enteredVal,
+      ocrValue: ocrOdometerReading,
+    };
+  })();
+
   // Check if odometer step can proceed
   const isOdometerStepValid = (): boolean => {
-    // Must have valid odometer value
     if (!odometer || parseInt(odometer) <= 0) return false;
-    
-    // Must have photo
     if (!odometerPhoto) return false;
-    
-    // Must have validation result
     if (!odometerValidation) return false;
-    
-    // Quality must pass
     if (!odometerValidation.quality?.passed) return false;
     if (odometerValidation.error) return false;
-    
-    // OCR checks only when OCR is enabled
+
     if (ocrEnabled) {
       if (!odometerValidation.ocr?.clusterDetected) return false;
-      // If there's a mismatch, must be confirmed
-      if (odometerValidation.mismatch?.hasMismatch && !odometerMismatchConfirmed) return false;
+      // If there's a mismatch with OCR, must be confirmed
+      if (odometerMismatch?.hasMismatch && !odometerMismatchConfirmed) return false;
     }
-    
+
     return true;
   };
 
@@ -1036,132 +1055,197 @@ export default function CreateJobCardPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Gauge className="h-5 w-5" />
-                Odometer Reading
+                Odometer &amp; Battery SOC
               </CardTitle>
               <CardDescription>
-                Enter current odometer and capture photo
+                Capture the dashboard photo to auto-read odometer and SOC
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Current Odometer (km) <span className="text-destructive">*</span></Label>
-                <Input
-                  type="number"
-                  placeholder="e.g., 15000"
-                  value={odometer}
-                  onChange={(e) => {
-                    setOdometer(e.target.value);
-                    setOdoLowerConfirmed(false);
-                  }}
-                  className="h-12 text-lg"
-                  inputMode="numeric"
-                />
-                {lastServiceOdo > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Last service odometer: {lastServiceOdo.toLocaleString()} km
-                  </p>
-                )}
-                {lastServiceOdo > 0 && odometer && parseInt(odometer) < lastServiceOdo && !odoLowerConfirmed && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    Reading is lower than last service — justification required
-                  </p>
-                )}
-              </div>
-
+              {/* 1. Photo capture FIRST */}
               <OdometerPhotoCapture
-                enteredOdometer={parseInt(odometer) || 0}
                 onValidationComplete={handleOdometerValidation}
                 ocrEnabled={ocrEnabled}
               />
 
-              <Separator className="my-4" />
-
-              {/* SOC Section */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Battery className="h-4 w-4" />
-                  Incoming SOC (%) <span className="text-destructive">*</span>
-                </Label>
-
-                {socAutoFilled && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
-                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                    <span className="text-xs text-success font-medium">
-                      SOC auto-detected from odometer photo ({soc}%)
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="ml-auto h-6 text-xs px-2"
-                      onClick={() => {
-                        setSocAutoFilled(false);
-                        setSoc('');
-                        setSocPhoto(null);
-                        setSocValidation(null);
-                        setSocMismatchConfirmed(false);
-                        setSocMismatchReason(undefined);
-                        setSocMismatchComment(undefined);
+              {/* 2. Odometer text field (prefilled from OCR) */}
+              {odometerPhoto && odometerValidation && !odometerValidation.isValidating && !odometerValidation.error && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Current Odometer (km) <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 15000"
+                      value={odometer}
+                      onChange={(e) => {
+                        setOdometer(e.target.value);
+                        setOdoLowerConfirmed(false);
+                        setOdometerMismatchConfirmed(false);
+                        setOdometerMismatchReason(undefined);
                       }}
-                    >
-                      Override
-                    </Button>
+                      className="h-12 text-lg"
+                      inputMode="numeric"
+                    />
+                    {ocrOdometerReading !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        OCR reading: {ocrOdometerReading.toLocaleString()} km
+                      </p>
+                    )}
+                    {lastServiceOdo > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Last service odometer: {lastServiceOdo.toLocaleString()} km
+                      </p>
+                    )}
+                    {lastServiceOdo > 0 && odometer && parseInt(odometer) < lastServiceOdo && !odoLowerConfirmed && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        Reading is lower than last service — justification required
+                      </p>
+                    )}
                   </div>
-                )}
 
-              <Input
-                  type="number"
-                  placeholder="e.g., 75"
-                  value={soc}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      setSoc('');
-                    } else {
-                      const num = parseInt(val, 10);
-                      if (!isNaN(num) && num >= 0 && num <= 100 && String(num) === val.replace(/^0+(?=\d)/, '')) {
-                        setSoc(String(num));
-                      }
-                    }
-                    // If user manually changes SOC, clear auto-fill state
-                    if (socAutoFilled) {
-                      setSocAutoFilled(false);
-                      setSocPhoto(null);
-                      setSocValidation(null);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="h-12 text-lg"
-                  inputMode="numeric"
-                  disabled={socAutoFilled}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {socAutoFilled
-                    ? 'Value and photo auto-filled from odometer image. Click "Override" to change.'
-                    : 'Enter the battery State of Charge as a whole number (0–100)'}
-                </p>
-                {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    SOC must be a whole number between 0 and 100
-                  </p>
-                )}
-              </div>
+                  {/* Inline mismatch warning when user edits to differ from OCR by >10% */}
+                  {odometerMismatch?.hasMismatch && !odometerMismatchConfirmed && (
+                    <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
+                      <div className="flex items-center gap-2 text-warning">
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          Odometer value differs from photo by {odometerMismatch.percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 p-2 bg-muted rounded">
+                        <div>
+                          <p className="text-xs text-muted-foreground">You entered</p>
+                          <p className="text-sm font-bold">{odometerMismatch.enteredValue.toLocaleString()} km</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Photo shows</p>
+                          <p className="text-sm font-bold">{odometerMismatch.ocrValue.toLocaleString()} km</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="odo-mismatch-reason" className="text-xs">
+                          Explain the discrepancy <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="odo-mismatch-reason"
+                          placeholder="e.g., Partial digits, reflection..."
+                          value={odometerMismatchReason || ''}
+                          onChange={(e) => setOdometerMismatchReason(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!odometerMismatchReason || odometerMismatchReason.trim().length < 10}
+                        onClick={() => setOdometerMismatchConfirmed(true)}
+                      >
+                        Confirm Value
+                      </Button>
+                      {odometerMismatchReason && odometerMismatchReason.trim().length > 0 && odometerMismatchReason.trim().length < 10 && (
+                        <p className="text-xs text-destructive">Minimum 10 characters required</p>
+                      )}
+                    </div>
+                  )}
 
-              {!socAutoFilled && (
-                <SocPhotoCapture
-                  enteredSoc={soc !== '' ? parseInt(soc) : -1}
-                  onValidationComplete={handleSocValidation}
-                  ocrEnabled={ocrEnabled}
-                />
+                  {odometerMismatch?.hasMismatch && odometerMismatchConfirmed && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                      <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                      <span className="text-xs text-success font-medium">
+                        Mismatch confirmed with reason
+                      </span>
+                    </div>
+                  )}
+
+                  <Separator className="my-4" />
+
+                  {/* 3. SOC Section */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Battery className="h-4 w-4" />
+                      Incoming SOC (%) <span className="text-destructive">*</span>
+                    </Label>
+
+                    {socAutoFilled && (
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                        <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                        <span className="text-xs text-success font-medium">
+                          SOC auto-detected from odometer photo ({soc}%)
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="ml-auto h-6 text-xs px-2"
+                          onClick={() => {
+                            setSocAutoFilled(false);
+                            setSoc('');
+                            setSocPhoto(null);
+                            setSocValidation(null);
+                            setSocMismatchConfirmed(false);
+                            setSocMismatchReason(undefined);
+                            setSocMismatchComment(undefined);
+                          }}
+                        >
+                          Override
+                        </Button>
+                      </div>
+                    )}
+
+                    <Input
+                      type="number"
+                      placeholder="e.g., 75"
+                      value={soc}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setSoc('');
+                        } else {
+                          const num = parseInt(val, 10);
+                          if (!isNaN(num) && num >= 0 && num <= 100 && String(num) === val.replace(/^0+(?=\d)/, '')) {
+                            setSoc(String(num));
+                          }
+                        }
+                        // If user manually changes SOC, clear auto-fill state
+                        if (socAutoFilled) {
+                          setSocAutoFilled(false);
+                          setSocPhoto(null);
+                          setSocValidation(null);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="h-12 text-lg"
+                      inputMode="numeric"
+                      disabled={socAutoFilled}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {socAutoFilled
+                        ? 'Value and photo auto-filled from odometer image. Click "Override" to change.'
+                        : 'Enter the battery State of Charge as a whole number (0–100)'}
+                    </p>
+                    {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        SOC must be a whole number between 0 and 100
+                      </p>
+                    )}
+                  </div>
+
+                  {!socAutoFilled && (
+                    <SocPhotoCapture
+                      enteredSoc={soc !== '' ? parseInt(soc) : -1}
+                      onValidationComplete={handleSocValidation}
+                      ocrEnabled={ocrEnabled}
+                    />
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
