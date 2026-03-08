@@ -38,8 +38,9 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
       setPreviewUrl(dataUrl);
       const base64 = dataUrl.split(',')[1];
       setImageBase64(base64);
-      setState('preview');
       setErrorMessage(null);
+      // Skip preview — go directly to processing
+      processPlate(base64);
     };
     reader.readAsDataURL(file);
   };
@@ -52,8 +53,9 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
     fileInputRef.current?.click();
   };
 
-  const handleUsePhoto = async () => {
-    if (!imageBase64) return;
+  const processPlate = async (base64?: string) => {
+    const b64 = base64 || imageBase64;
+    if (!b64) return;
 
     const now = Date.now();
     if (now - lastScanTime.current < 3000) {
@@ -67,7 +69,7 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
 
     try {
       const { data, error } = await supabase.functions.invoke('extract-plate', {
-        body: { imageBase64, workshop_id: workshopId },
+        body: { imageBase64: b64, workshop_id: workshopId },
       });
 
       if (error) {
