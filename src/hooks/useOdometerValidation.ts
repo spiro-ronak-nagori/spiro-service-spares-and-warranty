@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/compress-image';
 
 export interface ImageQualityResult {
   isBlurry: boolean;
@@ -145,21 +146,17 @@ export function useOdometerValidation() {
   }, []);
 
   const runOcr = useCallback(async (file: File): Promise<OcrResult> => {
-    return new Promise((resolve, reject) => {
+    // Compress image to 800px for faster upload & processing
+    const compressed = await compressImage(file, 800, 0.75);
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      
       reader.onload = async (e) => {
         const base64 = (e.target?.result as string).split(',')[1];
-        
         try {
           const { data, error } = await supabase.functions.invoke('validate-odometer', {
             body: { imageBase64: base64 },
           });
-
-          if (error) {
-            throw error;
-          }
-
+          if (error) throw error;
           resolve({
             ocrReading: data.ocrReading,
             ocrConfidence: data.ocrConfidence,
@@ -182,12 +179,16 @@ export function useOdometerValidation() {
           });
         }
       };
-
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'));
-      };
-
-      reader.readAsDataURL(file);
+      reader.onerror = () => resolve({
+        ocrReading: null,
+        ocrConfidence: 0,
+        clusterDetected: false,
+        socReading: null,
+        socConfidence: 0,
+        socDetected: false,
+        error: 'Failed to read file',
+      });
+      reader.readAsDataURL(compressed);
     });
   }, []);
 
@@ -199,10 +200,13 @@ export function useOdometerValidation() {
     setResult(prev => ({ ...prev, isValidating: true, error: null }));
 
     try {
-      // Step 1: Check image quality
-      const quality = await checkImageQuality(file);
-      
-      setResult(prev => ({ ...prev, quality }));
+      // Run quality check and OCR in parallel for speed
+      const qualityPromise = checkImageQuality(file);
+      const ocrPromise = ocrEnabled ? runOcr(file) : Promise.resolve(null);
+
+      const [quality, ocr] = await Promise.all([qualityPromise, ocrPromise]);
+
+      setResult(prev => ({ ...prev, quality, ocr }));
 
       if (!quality.passed) {
         const finalResult: ValidationResult = {
@@ -216,7 +220,6 @@ export function useOdometerValidation() {
         return finalResult;
       }
 
-      // If OCR is disabled, skip OCR and mismatch check — image captured for record-keeping only
       if (!ocrEnabled) {
         const finalResult: ValidationResult = {
           quality,
@@ -229,10 +232,7 @@ export function useOdometerValidation() {
         return finalResult;
       }
 
-      // Step 2: Run OCR
-      const ocr = await runOcr(file);
-      
-      setResult(prev => ({ ...prev, ocr }));
+      // OCR result already set above via Promise.all
 
       if (!ocr.clusterDetected) {
         const finalResult: ValidationResult = {
