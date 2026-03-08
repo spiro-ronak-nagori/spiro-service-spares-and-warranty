@@ -232,9 +232,7 @@ export function useOdometerValidation() {
         return finalResult;
       }
 
-      // OCR result (already awaited above)
-      
-      setResult(prev => ({ ...prev, ocr }));
+      // OCR result already set above via Promise.all
 
       if (!ocr.clusterDetected) {
         const finalResult: ValidationResult = {
