@@ -137,6 +137,7 @@ export default function CreateJobCardPage() {
   const [socMismatchConfirmed, setSocMismatchConfirmed] = useState(false);
   const [socMismatchReason, setSocMismatchReason] = useState<string | undefined>();
   const [socMismatchComment, setSocMismatchComment] = useState<string | undefined>();
+  const [socAutoFilled, setSocAutoFilled] = useState(false);
   
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
