@@ -773,7 +773,7 @@ export default function CreateJobCardPage() {
                     />
                   </div>
                   <Button 
-                    onClick={searchVehicle}
+                    onClick={() => searchVehicle()}
                     disabled={isLoading || !regNo.trim() || !!regNoError}
                     className="h-12"
                   >
