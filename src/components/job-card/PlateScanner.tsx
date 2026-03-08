@@ -10,7 +10,7 @@ interface PlateScannerProps {
   ocrEnabled?: boolean;
 }
 
-type ScanState = 'idle' | 'preview' | 'processing' | 'error';
+type ScanState = 'idle' | 'processing' | 'error';
 
 export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateScannerProps) {
   const [state, setState] = useState<ScanState>('idle');
