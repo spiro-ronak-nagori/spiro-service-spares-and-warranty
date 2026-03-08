@@ -1066,13 +1066,39 @@ export default function CreateJobCardPage() {
                   <Battery className="h-4 w-4" />
                   Incoming SOC (%) <span className="text-destructive">*</span>
                 </Label>
+
+                {socAutoFilled && (
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                    <span className="text-xs text-success font-medium">
+                      SOC auto-detected from odometer photo ({soc}%)
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-6 text-xs px-2"
+                      onClick={() => {
+                        setSocAutoFilled(false);
+                        setSoc('');
+                        setSocPhoto(null);
+                        setSocValidation(null);
+                        setSocMismatchConfirmed(false);
+                        setSocMismatchReason(undefined);
+                        setSocMismatchComment(undefined);
+                      }}
+                    >
+                      Override
+                    </Button>
+                  </div>
+                )}
+
               <Input
                   type="number"
                   placeholder="e.g., 75"
                   value={soc}
                   onChange={(e) => {
                     const val = e.target.value;
-                    // Only allow empty or valid integers 0-100
                     if (val === '') {
                       setSoc('');
                     } else {
@@ -1081,9 +1107,14 @@ export default function CreateJobCardPage() {
                         setSoc(String(num));
                       }
                     }
+                    // If user manually changes SOC, clear auto-fill state
+                    if (socAutoFilled) {
+                      setSocAutoFilled(false);
+                      setSocPhoto(null);
+                      setSocValidation(null);
+                    }
                   }}
                   onKeyDown={(e) => {
-                    // Block decimal point, minus, 'e'
                     if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
                       e.preventDefault();
                     }
@@ -1093,9 +1124,12 @@ export default function CreateJobCardPage() {
                   step={1}
                   className="h-12 text-lg"
                   inputMode="numeric"
+                  disabled={socAutoFilled}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Enter the battery State of Charge as a whole number (0–100)
+                  {socAutoFilled
+                    ? 'Value and photo auto-filled from odometer image. Click "Override" to change.'
+                    : 'Enter the battery State of Charge as a whole number (0–100)'}
                 </p>
                 {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) && (
                   <p className="text-xs text-destructive flex items-center gap-1">
@@ -1105,11 +1139,13 @@ export default function CreateJobCardPage() {
                 )}
               </div>
 
-              <SocPhotoCapture
-                enteredSoc={soc !== '' ? parseInt(soc) : -1}
-                onValidationComplete={handleSocValidation}
-                ocrEnabled={ocrEnabled}
-              />
+              {!socAutoFilled && (
+                <SocPhotoCapture
+                  enteredSoc={soc !== '' ? parseInt(soc) : -1}
+                  onValidationComplete={handleSocValidation}
+                  ocrEnabled={ocrEnabled}
+                />
+              )}
             </CardContent>
           </Card>
         )}
