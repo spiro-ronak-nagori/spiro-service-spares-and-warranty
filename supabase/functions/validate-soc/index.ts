@@ -78,7 +78,7 @@ Important:
             ]
           }
         ],
-        max_tokens: 500,
+        max_tokens: 300,
         temperature: 0.1,
       }),
     });
