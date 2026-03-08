@@ -313,6 +313,36 @@ export default function CreateJobCardPage() {
     setOdometerValidation(result);
     setOdometerMismatchConfirmed(mismatchConfirmed);
     setOdometerMismatchReason(mismatchReason);
+
+    // Auto-fill SOC if the odometer image also contains a SOC reading
+    if (
+      result?.ocr?.socDetected &&
+      result.ocr.socReading !== null &&
+      result.ocr.socConfidence >= 50 &&
+      file &&
+      !socPhoto // Only auto-fill if SOC photo hasn't been manually set
+    ) {
+      const detectedSoc = result.ocr.socReading;
+      setSoc(String(detectedSoc));
+
+      // Create a synthetic SocValidationResult so the SOC step passes validation
+      const syntheticSocResult: SocValidationResult = {
+        quality: { passed: true },
+        ocr: {
+          socReading: detectedSoc,
+          confidence: result.ocr.socConfidence,
+          dashboardDetected: true,
+        },
+        mismatch: null, // No mismatch since we're using the detected value directly
+        isValidating: false,
+        error: null,
+      };
+      setSocPhoto(file); // Reuse the same image
+      setSocValidation(syntheticSocResult);
+      setSocMismatchConfirmed(false);
+      setSocMismatchReason(undefined);
+      setSocMismatchComment(undefined);
+    }
   };
 
   // Check if odometer step can proceed
