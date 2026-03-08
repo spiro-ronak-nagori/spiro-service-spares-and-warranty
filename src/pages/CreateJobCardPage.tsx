@@ -386,26 +386,18 @@ export default function CreateJobCardPage() {
 
   // Check if odometer step can proceed
   const isOdometerStepValid = (): boolean => {
-    // Must have valid odometer value
     if (!odometer || parseInt(odometer) <= 0) return false;
-    
-    // Must have photo
     if (!odometerPhoto) return false;
-    
-    // Must have validation result
     if (!odometerValidation) return false;
-    
-    // Quality must pass
     if (!odometerValidation.quality?.passed) return false;
     if (odometerValidation.error) return false;
-    
-    // OCR checks only when OCR is enabled
+
     if (ocrEnabled) {
       if (!odometerValidation.ocr?.clusterDetected) return false;
-      // If there's a mismatch, must be confirmed
-      if (odometerValidation.mismatch?.hasMismatch && !odometerMismatchConfirmed) return false;
+      // If there's a mismatch with OCR, must be confirmed
+      if (odometerMismatch?.hasMismatch && !odometerMismatchConfirmed) return false;
     }
-    
+
     return true;
   };
 
