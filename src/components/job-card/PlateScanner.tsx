@@ -133,7 +133,7 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
         </Button>
       )}
 
-      {(state === 'preview' || state === 'processing' || state === 'error') && previewUrl && (
+      {(state === 'processing' || state === 'error') && previewUrl && (
         <div className="space-y-3 rounded-lg border p-3 bg-muted/30">
           <img
             src={previewUrl}
@@ -156,18 +156,6 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
           )}
 
           <div className="flex gap-2">
-            {state === 'preview' && (
-              <>
-                <Button type="button" variant="outline" size="sm" onClick={handleRetake} className="gap-1 flex-1">
-                  <RotateCcw className="h-3 w-3" />
-                  Retake
-                </Button>
-                <Button type="button" size="sm" onClick={handleUsePhoto} className="gap-1 flex-1">
-                  <Check className="h-3 w-3" />
-                  Use Photo
-                </Button>
-              </>
-            )}
             {state === 'error' && (
               <>
                 <Button type="button" variant="outline" size="sm" onClick={handleRetake} className="gap-1 flex-1">
