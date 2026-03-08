@@ -15,6 +15,9 @@ export interface OcrResult {
   ocrReading: number | null;
   ocrConfidence: number;
   clusterDetected: boolean;
+  socReading: number | null;
+  socConfidence: number;
+  socDetected: boolean;
   error?: string;
 }
 
@@ -161,6 +164,9 @@ export function useOdometerValidation() {
             ocrReading: data.ocrReading,
             ocrConfidence: data.ocrConfidence,
             clusterDetected: data.clusterDetected,
+            socReading: data.socReading ?? null,
+            socConfidence: data.socConfidence ?? 0,
+            socDetected: data.socDetected ?? false,
             error: data.error,
           });
         } catch (err) {
@@ -169,6 +175,9 @@ export function useOdometerValidation() {
             ocrReading: null,
             ocrConfidence: 0,
             clusterDetected: false,
+            socReading: null,
+            socConfidence: 0,
+            socDetected: false,
             error: err instanceof Error ? err.message : 'OCR failed',
           });
         }
