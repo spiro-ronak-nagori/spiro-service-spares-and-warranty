@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/compress-image';
 
 export interface ImageQualityResult {
   isBlurry: boolean;
@@ -145,21 +146,17 @@ export function useOdometerValidation() {
   }, []);
 
   const runOcr = useCallback(async (file: File): Promise<OcrResult> => {
-    return new Promise((resolve, reject) => {
+    // Compress image to 800px for faster upload & processing
+    const compressed = await compressImage(file, 800, 0.75);
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      
       reader.onload = async (e) => {
         const base64 = (e.target?.result as string).split(',')[1];
-        
         try {
           const { data, error } = await supabase.functions.invoke('validate-odometer', {
             body: { imageBase64: base64 },
           });
-
-          if (error) {
-            throw error;
-          }
-
+          if (error) throw error;
           resolve({
             ocrReading: data.ocrReading,
             ocrConfidence: data.ocrConfidence,
@@ -182,12 +179,16 @@ export function useOdometerValidation() {
           });
         }
       };
-
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'));
-      };
-
-      reader.readAsDataURL(file);
+      reader.onerror = () => resolve({
+        ocrReading: null,
+        ocrConfidence: 0,
+        clusterDetected: false,
+        socReading: null,
+        socConfidence: 0,
+        socDetected: false,
+        error: 'Failed to read file',
+      });
+      reader.readAsDataURL(compressed);
     });
   }, []);
 
