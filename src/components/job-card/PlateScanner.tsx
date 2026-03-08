@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, RotateCcw, Check, AlertCircle, ScanLine } from 'lucide-react';
+import { Loader2, RotateCcw, AlertCircle, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ interface PlateScannerProps {
   ocrEnabled?: boolean;
 }
 
-type ScanState = 'idle' | 'preview' | 'processing' | 'error';
+type ScanState = 'idle' | 'processing' | 'error';
 
 export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateScannerProps) {
   const [state, setState] = useState<ScanState>('idle');
@@ -38,8 +38,9 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
       setPreviewUrl(dataUrl);
       const base64 = dataUrl.split(',')[1];
       setImageBase64(base64);
-      setState('preview');
       setErrorMessage(null);
+      // Skip preview — go directly to processing
+      processPlate(base64);
     };
     reader.readAsDataURL(file);
   };
@@ -52,8 +53,9 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
     fileInputRef.current?.click();
   };
 
-  const handleUsePhoto = async () => {
-    if (!imageBase64) return;
+  const processPlate = async (base64?: string) => {
+    const b64 = base64 || imageBase64;
+    if (!b64) return;
 
     const now = Date.now();
     if (now - lastScanTime.current < 3000) {
@@ -67,7 +69,7 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
 
     try {
       const { data, error } = await supabase.functions.invoke('extract-plate', {
-        body: { imageBase64, workshop_id: workshopId },
+        body: { imageBase64: b64, workshop_id: workshopId },
       });
 
       if (error) {
@@ -131,7 +133,7 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
         </Button>
       )}
 
-      {(state === 'preview' || state === 'processing' || state === 'error') && previewUrl && (
+      {(state === 'processing' || state === 'error') && previewUrl && (
         <div className="space-y-3 rounded-lg border p-3 bg-muted/30">
           <img
             src={previewUrl}
@@ -154,18 +156,6 @@ export function PlateScanner({ workshopId, onResult, ocrEnabled = true }: PlateS
           )}
 
           <div className="flex gap-2">
-            {state === 'preview' && (
-              <>
-                <Button type="button" variant="outline" size="sm" onClick={handleRetake} className="gap-1 flex-1">
-                  <RotateCcw className="h-3 w-3" />
-                  Retake
-                </Button>
-                <Button type="button" size="sm" onClick={handleUsePhoto} className="gap-1 flex-1">
-                  <Check className="h-3 w-3" />
-                  Use Photo
-                </Button>
-              </>
-            )}
             {state === 'error' && (
               <>
                 <Button type="button" variant="outline" size="sm" onClick={handleRetake} className="gap-1 flex-1">

@@ -186,15 +186,17 @@ export default function CreateJobCardPage() {
   // Compute reg number validation error for inline display
   const regNoError = regNo.trim() ? validateRegNo(regNo, workshop?.country) : null;
 
-  const searchVehicle = async () => {
-    if (!regNo.trim()) {
+  const searchVehicle = async (overrideRegNo?: string) => {
+    const searchRegNo = overrideRegNo || regNo;
+    if (!searchRegNo.trim()) {
       toast.error('Please enter a vehicle registration number');
       return;
     }
 
     // Block search if format is invalid for the workshop country
-    if (regNoError) {
-      toast.error(regNoError);
+    const formatError = validateRegNo(searchRegNo, workshop?.country);
+    if (formatError) {
+      toast.error(formatError);
       return;
     }
 
@@ -203,7 +205,7 @@ export default function CreateJobCardPage() {
 
     try {
       // Check if vehicle exists using canonical indexed lookup
-      const canonicalRegNo = normalizeRegNo(regNo);
+      const canonicalRegNo = normalizeRegNo(searchRegNo);
       const { data: vehicleData, error: vehicleError } = await supabase
         .from('vehicles')
         .select('id, reg_no, model, color, owner_name, owner_phone, last_service_odo, purchase_date, last_service_date, created_at, updated_at')
@@ -771,7 +773,7 @@ export default function CreateJobCardPage() {
                     />
                   </div>
                   <Button 
-                    onClick={searchVehicle}
+                    onClick={() => searchVehicle()}
                     disabled={isLoading || !regNo.trim() || !!regNoError}
                     className="h-12"
                   >
@@ -799,13 +801,20 @@ export default function CreateJobCardPage() {
                     ocrEnabled={ocrEnabled}
                     onResult={(regNumber) => {
                       setRegNo(regNumber);
-                      setVehicleSearched(false);
                       setVehicle(null);
                       setIsNewVehicle(false);
                       setSelectedModel('');
                       setUnknownModelWarning(false);
                       setSelectedColor('');
                       setUnknownColorWarning(false);
+                      // Auto-search if format is valid
+                      const formatErr = validateRegNo(regNumber, workshop?.country);
+                      if (!formatErr) {
+                        // Use setTimeout to let state updates settle before searching
+                        setTimeout(() => searchVehicle(regNumber), 0);
+                      } else {
+                        setVehicleSearched(false);
+                      }
                     }}
                   />
                 )}
