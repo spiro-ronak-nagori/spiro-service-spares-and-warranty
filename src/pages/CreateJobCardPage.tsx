@@ -315,6 +315,14 @@ export default function CreateJobCardPage() {
     setOdometerMismatchConfirmed(mismatchConfirmed);
     setOdometerMismatchReason(mismatchReason);
 
+    // If odometer photo was cleared (retake), also clear auto-filled SOC
+    if (!file && socAutoFilled) {
+      setSocAutoFilled(false);
+      setSoc('');
+      setSocPhoto(null);
+      setSocValidation(null);
+    }
+
     // Auto-fill SOC if the odometer image also contains a SOC reading
     if (
       result?.ocr?.socDetected &&
