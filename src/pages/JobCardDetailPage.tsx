@@ -529,6 +529,8 @@ export default function JobCardDetailPage() {
           sparesCount={spares.length}
           mandatorySparesRequired={mandatorySparesRequired}
           onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
+          checklistEnabled={checklistEnabled}
+          checklistCompleted={checklistCompleted}
         />
 
         {/* Vehicle & Customer Info */}
