@@ -99,7 +99,7 @@ export function OdometerPhotoCapture({
   return (
     <div className="space-y-3">
       <Label>
-        Odometer / Dashboard Photo <span className="text-destructive">*</span>
+        Dashboard Photo <span className="text-destructive">*</span>
       </Label>
 
       <input
