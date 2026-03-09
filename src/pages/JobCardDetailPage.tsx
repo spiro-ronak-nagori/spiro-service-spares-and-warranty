@@ -38,10 +38,12 @@ import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
 import { SubmitAllWarrantySheet } from '@/components/job-card/SubmitAllWarrantySheet';
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
+import { useChecklistFlag } from '@/hooks/useChecklistFlag';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 
 export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
