@@ -1212,6 +1212,7 @@ export default function CreateJobCardPage() {
                             setSocMismatchConfirmed(false);
                             setSocMismatchReason(undefined);
                             setSocMismatchComment(undefined);
+                            setOcrSocReading(null);
                           }}
                         >
                           Override
@@ -1219,59 +1220,118 @@ export default function CreateJobCardPage() {
                       </div>
                     )}
 
-                    <Input
-                      type="number"
-                      placeholder="e.g., 75"
-                      value={soc}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          setSoc('');
-                        } else {
-                          const num = parseInt(val, 10);
-                          if (!isNaN(num) && num >= 0 && num <= 100 && String(num) === val.replace(/^0+(?=\d)/, '')) {
-                            setSoc(String(num));
-                          }
-                        }
-                        // If user manually changes SOC, clear auto-fill state
-                        if (socAutoFilled) {
-                          setSocAutoFilled(false);
-                          setSocPhoto(null);
-                          setSocValidation(null);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      min={0}
-                      max={100}
-                      step={1}
-                      className="h-12 text-lg"
-                      inputMode="numeric"
-                      disabled={socAutoFilled}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {socAutoFilled
-                        ? 'Value and photo auto-filled from odometer image. Click "Override" to change.'
-                        : 'Enter the battery State of Charge as a whole number (0–100)'}
-                    </p>
-                    {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        SOC must be a whole number between 0 and 100
-                      </p>
+                    {/* Photo-first: show SocPhotoCapture before the SOC input when overriding */}
+                    {!socAutoFilled && (
+                      <SocPhotoCapture
+                        onValidationComplete={handleSocValidation}
+                        ocrEnabled={ocrEnabled}
+                      />
+                    )}
+
+                    {/* SOC input: show after photo is captured (or when auto-filled) */}
+                    {(socAutoFilled || socPhoto) && (
+                      <>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 75"
+                          value={soc}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              setSoc('');
+                            } else {
+                              const num = parseInt(val, 10);
+                              if (!isNaN(num) && num >= 0 && num <= 100 && String(num) === val.replace(/^0+(?=\d)/, '')) {
+                                setSoc(String(num));
+                              }
+                            }
+                            setSocMismatchConfirmed(false);
+                            setSocMismatchReason(undefined);
+                          }}
+                          onKeyDown={(e) => {
+                            if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="h-12 text-lg"
+                          inputMode="numeric"
+                          disabled={socAutoFilled}
+                        />
+                        {ocrSocReading !== null && !socAutoFilled && (
+                          <p className="text-xs text-muted-foreground">
+                            OCR reading: {ocrSocReading}%
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {socAutoFilled
+                            ? 'SOC auto-filled from odometer image. Click "Override" to change.'
+                            : 'Edit the value if needed (0–100)'}
+                        </p>
+                        {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) && (
+                          <p className="text-xs text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            SOC must be a whole number between 0 and 100
+                          </p>
+                        )}
+
+                        {/* Inline SOC mismatch warning */}
+                        {socMismatch?.hasMismatch && !socMismatchConfirmed && (
+                          <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
+                            <div className="flex items-center gap-2 text-warning">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-sm font-medium">
+                                SOC value differs from photo by {socMismatch.percentage.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 p-2 bg-muted rounded">
+                              <div>
+                                <p className="text-xs text-muted-foreground">You entered</p>
+                                <p className="text-sm font-bold">{socMismatch.enteredValue}%</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Photo shows</p>
+                                <p className="text-sm font-bold">{socMismatch.ocrValue}%</p>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="soc-mismatch-reason" className="text-xs">
+                                Explain the discrepancy <span className="text-destructive">*</span>
+                              </Label>
+                              <Input
+                                id="soc-mismatch-reason"
+                                placeholder="e.g., Display reflection, SOC fluctuating..."
+                                value={socMismatchReason || ''}
+                                onChange={(e) => setSocMismatchReason(e.target.value)}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={!socMismatchReason || socMismatchReason.trim().length < 10}
+                              onClick={() => setSocMismatchConfirmed(true)}
+                            >
+                              Confirm Value
+                            </Button>
+                            {socMismatchReason && socMismatchReason.trim().length > 0 && socMismatchReason.trim().length < 10 && (
+                              <p className="text-xs text-destructive">Minimum 10 characters required</p>
+                            )}
+                          </div>
+                        )}
+
+                        {socMismatch?.hasMismatch && socMismatchConfirmed && (
+                          <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                            <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                            <span className="text-xs text-success font-medium">
+                              Mismatch confirmed with reason
+                            </span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-
-                  {!socAutoFilled && (
-                    <SocPhotoCapture
-                      enteredSoc={soc !== '' ? parseInt(soc) : -1}
-                      onValidationComplete={handleSocValidation}
-                      ocrEnabled={ocrEnabled}
-                    />
-                  )}
                 </>
               )}
             </CardContent>
