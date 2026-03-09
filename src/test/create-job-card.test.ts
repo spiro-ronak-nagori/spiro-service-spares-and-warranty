@@ -103,9 +103,8 @@ describe('JC Number Parsing', () => {
 
   it('parses JC number with large numeric sequence', () => {
     const result = parseJcNumber('JC202602111112');
-    expect(result).toEqual({ date: '20260211', seq: 38 * 36 * 36 + 1 * 36 * 36 + 1 * 36 + 2 });
-    // Actually for pure numeric: 1*36^3 + 1*36^2 + 1*36 + 2 = 46656+1296+36+2 = 47990
-    // Wait, base-36 decode of "1112" = 1*36^3 + 1*36^2 + 1*36 + 2 = 47990
+    // base-36 decode of "1112" = 1*36^3 + 1*36^2 + 1*36 + 2 = 47990
+    expect(result).toEqual({ date: '20260211', seq: 47990 });
   });
 
   it('parses alphanumeric JC number', () => {
