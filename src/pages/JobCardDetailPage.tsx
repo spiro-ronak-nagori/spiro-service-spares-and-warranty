@@ -69,6 +69,10 @@ export default function JobCardDetailPage() {
   const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   const [showSubmitAll, setShowSubmitAll] = useState(false);
+  // Checklist
+  const { value: checklistEnabled } = useChecklistFlag();
+  const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
+  const [showChecklist, setShowChecklist] = useState(false);
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
   const [showDeliveryOtp, setShowDeliveryOtp] = useState(false);
