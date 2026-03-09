@@ -170,34 +170,34 @@ export function OdometerPhotoCapture({
             }
 
               {!isValidating && !error && quality &&
-            <div className="space-y-1 text-xs">
-                  <div className="flex items-center gap-2">
+            <div className="space-y-2 text-xs">
+                  <div>
                     <span className={quality.passed ? 'text-success' : 'text-destructive'}>
                       {quality.passed ? '✓' : '✗'} Image quality
                     </span>
                     {!quality.passed &&
-                <span className="text-destructive">{quality.message}</span>
+                <p className="text-destructive mt-0.5 pl-4">{quality.message}</p>
                 }
                   </div>
 
                   {ocr &&
               <>
-                      <div className="flex items-center gap-2">
+                      <div>
                         <span className={ocr.clusterDetected ? 'text-success' : 'text-destructive'}>
                           {ocr.clusterDetected ? '✓' : '✗'} Odometer detected
                         </span>
                         {ocr.ocrReading !== null &&
-                  <span className="text-muted-foreground">
-                            Read: {ocr.ocrReading.toLocaleString()} km ({ocr.ocrConfidence}%)
-                          </span>
+                  <p className="text-muted-foreground mt-0.5 pl-4">
+                            {ocr.ocrReading.toLocaleString()} km · {ocr.ocrConfidence}% confidence
+                          </p>
                   }
                       </div>
                       {ocr.socDetected && ocr.socReading !== null &&
-                <div className="flex items-center gap-2">
+                <div>
                           <span className="text-success">✓ SOC detected</span>
-                          <span className="text-muted-foreground">
-                            Read: {ocr.socReading}% ({ocr.socConfidence}%)
-                          </span>
+                          <p className="text-muted-foreground mt-0.5 pl-4">
+                            {ocr.socReading}% · {ocr.socConfidence}% confidence
+                          </p>
                         </div>
                 }
                     </>
