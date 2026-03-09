@@ -1465,42 +1465,37 @@ export default function CreateJobCardPage() {
 
                 <Separator />
 
-                {/* Services */}
-                <div>
-                  <span className="text-sm text-muted-foreground font-medium">Services Selected</span>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {Array.from(selectedL1).map((code) => {
+                {/* Services grouped by category */}
+                <div className="space-y-4">
+                  {Array.from(selectedL1).map((code) => {
                     const cat = l1Categories.find((c) => c.code === code);
+                    const mappedIssues = Array.from(selectedL2).filter((issueCode) => {
+                      const issueCat = categories.find((c) => c.code === issueCode);
+                      return issueCat?.parent_code === code;
+                    });
                     return (
-                      <span
-                        key={code}
-                        className="inline-flex items-center rounded-md bg-primary/10 text-primary px-2 py-1 text-xs font-medium">
-                        
+                      <div key={code} className="space-y-1.5">
+                        <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
                           {cat?.name || code}
-                        </span>);
-
+                        </span>
+                        {mappedIssues.length > 0 && (
+                          <div className="ml-2 flex flex-wrap gap-1.5">
+                            {mappedIssues.map((issueCode) => {
+                              const issueCat = categories.find((c) => c.code === issueCode);
+                              return (
+                                <span
+                                  key={issueCode}
+                                  className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                                  {issueCat?.name || issueCode}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
                   })}
-                  </div>
                 </div>
-
-                {selectedL2.size > 0 &&
-              <div>
-                    <span className="text-sm text-muted-foreground font-medium">Specific Issues</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {Array.from(selectedL2).map((code) => {
-                    const cat = categories.find((c) => c.code === code);
-                    return (
-                      <span
-                        key={code}
-                        className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs">
-                        
-                            {cat?.name || code}
-                          </span>);
-
-                  })}
-                    </div>
-                  </div>
-              }
 
               </CardContent>
             </Card>
