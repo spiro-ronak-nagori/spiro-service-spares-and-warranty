@@ -27,8 +27,17 @@ function validateRegNo(regNo: string, country: string): string | null {
 function parseJcNumber(jcNumber: string): { date: string; seq: number } | null {
   if (!jcNumber.startsWith('JC') || jcNumber.length < 14) return null;
   const date = jcNumber.substring(2, 10);
-  const seq = parseInt(jcNumber.substring(10), 10);
-  if (isNaN(seq)) return null;
+  const suffixStr = jcNumber.substring(10).toUpperCase();
+  // Decode base-36 suffix (supports both old numeric and new alphanumeric)
+  let seq = 0;
+  for (const ch of suffixStr) {
+    const code = ch.charCodeAt(0);
+    let val: number;
+    if (code >= 48 && code <= 57) val = code - 48;       // 0-9
+    else if (code >= 65 && code <= 90) val = code - 55;   // A-Z → 10-35
+    else return null;
+    seq = seq * 36 + val;
+  }
   return { date, seq };
 }
 
