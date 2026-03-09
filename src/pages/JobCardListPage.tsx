@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Car, ChevronRight, FileText, X, ArrowUpDown, Building2 } from 'lucide-react';
+import { Search, Plus, Motorbike, ChevronRight, FileText, X, ArrowUpDown, Building2 } from 'lucide-react';
 import { JobCard, JobCardStatus, Workshop } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { WorkshopSelectorDialog } from '@/components/admin/WorkshopSelectorDialog';
@@ -413,7 +413,7 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
         {/* Top row: Vehicle Reg + Status + Chevron */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Car className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <Motorbike className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="font-semibold text-base truncate">
               {vehicle?.reg_no || 'Unknown'}
             </span>
