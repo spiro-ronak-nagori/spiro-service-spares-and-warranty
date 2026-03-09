@@ -57,7 +57,7 @@ export function VehicleChecklistSheet({ open, onOpenChange, jobCardId, vehicleMo
     setIsLoading(true);
     setNoTemplate(false);
     try {
-      const resolved = await resolveTemplate(vehicleModel, workshopId, workshopCountry);
+      const resolved = await resolveChecklistTemplate(vehicleModel, workshopId, workshopCountry);
 
       if (!resolved) {
         // No template applies — silently skip checklist, treat as completed
@@ -235,15 +235,6 @@ export function VehicleChecklistSheet({ open, onOpenChange, jobCardId, vehicleMo
                 <div className="flex-1"><Skeleton className="h-4 w-3/4 mb-2" /><Skeleton className="h-4 w-1/2" /></div>
               </div>
             ))
-          ) : noTemplate ? (
-            <div className="text-center py-8">
-              <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No checklist template configured for this vehicle.</p>
-              <p className="text-xs text-muted-foreground mt-1">Contact your admin to set up a checklist template.</p>
-              <Button variant="outline" className="mt-4" onClick={() => { onCompleted(); onOpenChange(false); }}>
-                Skip & Continue
-              </Button>
-            </div>
           ) : (
             items.map(item => {
               const r = responses[item.id];
