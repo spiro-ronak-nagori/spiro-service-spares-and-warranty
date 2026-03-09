@@ -507,10 +507,6 @@ export default function CreateJobCardPage() {
           toast.error('Please select at least one service category');
           return false;
         }
-        if (selectedL2.size === 0) {
-          toast.error('Please select at least one specific issue');
-          return false;
-        }
         return true;
 
       default:
@@ -1511,7 +1507,7 @@ export default function CreateJobCardPage() {
                   <p className="text-xs text-muted-foreground mb-2 font-medium">Photo Validation</p>
                   <div className="space-y-1 text-sm">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-success" />
+                      
                       <span>Odometer photo captured and validated</span>
                     </div>
                     {odometerValidation?.ocr?.ocrReading != null &&
