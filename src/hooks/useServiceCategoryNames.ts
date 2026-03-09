@@ -7,19 +7,25 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export function useServiceCategoryNames() {
   const [codeToName, setCodeToName] = useState<Record<string, string>>({});
+  const [codeToParent, setCodeToParent] = useState<Record<string, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase
         .from('service_categories')
-        .select('code, name')
+        .select('code, name, parent_code')
         .eq('is_active', true);
 
       if (data) {
-        const map: Record<string, string> = {};
-        data.forEach((c) => { map[c.code] = c.name; });
-        setCodeToName(map);
+        const nameMap: Record<string, string> = {};
+        const parentMap: Record<string, string> = {};
+        data.forEach((c) => {
+          nameMap[c.code] = c.name;
+          if (c.parent_code) parentMap[c.code] = c.parent_code;
+        });
+        setCodeToName(nameMap);
+        setCodeToParent(parentMap);
       }
       setIsLoaded(true);
     };
@@ -31,5 +37,10 @@ export function useServiceCategoryNames() {
     [codeToName]
   );
 
-  return { resolve, isLoaded };
+  const getParentCode = useCallback(
+    (code: string) => codeToParent[code] ?? null,
+    [codeToParent]
+  );
+
+  return { resolve, getParentCode, isLoaded };
 }

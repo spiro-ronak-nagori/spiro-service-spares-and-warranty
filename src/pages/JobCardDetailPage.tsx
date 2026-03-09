@@ -47,7 +47,7 @@ export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { resolve: resolveCategoryName } = useServiceCategoryNames();
+  const { resolve: resolveCategoryName, getParentCode } = useServiceCategoryNames();
   
   const [jobCard, setJobCard] = useState<JobCard | null>(null);
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
@@ -573,36 +573,61 @@ export default function JobCardDetailPage() {
           </CardHeader>
           <CardContent>
             {jobCard.service_categories.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {jobCard.service_categories.map((cat, i) => (
-                  <span 
-                    key={i}
-                    className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium"
-                  >
-                    {resolveCategoryName(cat)}
-                  </span>
-                ))}
+              <div className="space-y-3">
+                {jobCard.service_categories.map((cat, i) => {
+                  const mappedIssues = jobCard.issue_categories.filter(
+                    (issue) => getParentCode(issue) === cat
+                  );
+                  return (
+                    <div key={i} className="space-y-2">
+                      <span className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium">
+                        {resolveCategoryName(cat)}
+                      </span>
+                      {mappedIssues.length > 0 && (
+                        <div className="ml-4 flex flex-wrap gap-1.5">
+                          {mappedIssues.map((issue, j) => (
+                            <span
+                              key={j}
+                              className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                            >
+                              {resolveCategoryName(issue)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {i < jobCard.service_categories.length - 1 && <Separator />}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No services selected</p>
             )}
 
-            {jobCard.issue_categories.length > 0 && (
-              <>
-                <Separator className="my-3" />
-                <p className="text-xs text-muted-foreground mb-2">Issues</p>
-                <div className="flex flex-wrap gap-2">
-                  {jobCard.issue_categories.map((issue, i) => (
-                    <span 
-                      key={i}
-                      className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs"
-                    >
-                      {resolveCategoryName(issue)}
-                    </span>
-                  ))}
-                </div>
-              </>
-            )}
+            {/* Show any orphan issues not mapped to a selected category */}
+            {(() => {
+              const mappedCats = new Set(jobCard.service_categories);
+              const orphanIssues = jobCard.issue_categories.filter(
+                (issue) => !mappedCats.has(getParentCode(issue) ?? '')
+              );
+              if (orphanIssues.length === 0) return null;
+              return (
+                <>
+                  <Separator className="my-3" />
+                  <p className="text-xs text-muted-foreground mb-2">Other Issues</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {orphanIssues.map((issue, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                      >
+                        {resolveCategoryName(issue)}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
 
             {jobCard.completion_remarks && (
               <>
