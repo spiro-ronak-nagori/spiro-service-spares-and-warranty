@@ -897,6 +897,17 @@ export default function JobCardDetailPage() {
           onResponded={() => { setNeedsInfoSpare(null); refetchSpares(); }}
         />
       )}
+
+      {/* Vehicle Checklist Sheet */}
+      {checklistEnabled && (
+        <VehicleChecklistSheet
+          open={showChecklist}
+          onOpenChange={setShowChecklist}
+          jobCardId={jobCard.id}
+          vehicleModel={jobCard.vehicle?.model || null}
+          onCompleted={handleChecklistCompleted}
+        />
+      )}
     </AppLayout>
   );
 }
