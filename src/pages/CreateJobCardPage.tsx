@@ -507,6 +507,10 @@ export default function CreateJobCardPage() {
           toast.error('Please select at least one service category');
           return false;
         }
+        if (selectedL2.size === 0) {
+          toast.error('Please select at least one specific issue');
+          return false;
+        }
         return true;
 
       default:
