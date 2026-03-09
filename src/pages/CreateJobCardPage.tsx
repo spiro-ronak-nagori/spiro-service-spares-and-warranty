@@ -1170,7 +1170,7 @@ export default function CreateJobCardPage() {
                       <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
                         <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                         <span className="text-xs text-success font-medium">
-                          SOC auto-detected from odometer photo ({soc}%)
+                          SOC auto-detected
                         </span>
                         <Button
                           type="button"
