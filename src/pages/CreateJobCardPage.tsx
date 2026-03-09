@@ -1546,17 +1546,6 @@ export default function CreateJobCardPage() {
               </CardContent>
             </Card>
 
-            {/* Confirmation Notice */}
-            <Card className="border-warning/50 bg-warning/5">
-              <CardContent className="py-3">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-warning mt-0.5" />
-                  <p className="text-sm text-muted-foreground">
-                    Please verify all information is correct. Once created, the job card will be in Draft status until customer verification.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         }
 
