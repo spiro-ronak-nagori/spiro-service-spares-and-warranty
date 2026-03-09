@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter,
-} from '@/components/ui/drawer';
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from
+'@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,7 +30,7 @@ const SOC_MISMATCH_THRESHOLD = 0.15;
 export function DeliveryWithSocDialog({
   open,
   onOpenChange,
-  onProceed,
+  onProceed
 }: DeliveryWithSocDialogProps) {
   const { value: ocrEnabled } = useSystemSetting('ENABLE_IMAGE_OCR', true);
 
@@ -42,9 +42,9 @@ export function DeliveryWithSocDialog({
   const [socMismatchReason, setSocMismatchReason] = useState<string | undefined>();
 
   const handleSocValidation = (
-    file: File | null,
-    result: SocValidationResult | null,
-  ) => {
+  file: File | null,
+  result: SocValidationResult | null) =>
+  {
     setSocFile(file);
     setSocValidation(result);
     setSocMismatchConfirmed(false);
@@ -76,7 +76,7 @@ export function DeliveryWithSocDialog({
       hasMismatch: percentage > SOC_MISMATCH_THRESHOLD,
       percentage: percentage * 100,
       enteredValue: enteredVal,
-      ocrValue: ocrSocReading,
+      ocrValue: ocrSocReading
     };
   })();
 
@@ -101,7 +101,7 @@ export function DeliveryWithSocDialog({
       file: socFile,
       validation: socValidation,
       mismatchConfirmed: socMismatchConfirmed,
-      mismatchReason: socMismatchReason,
+      mismatchReason: socMismatchReason
     });
     resetState();
   };
@@ -135,46 +135,46 @@ export function DeliveryWithSocDialog({
           <SocPhotoCapture
             onValidationComplete={handleSocValidation}
             ocrEnabled={ocrEnabled}
-            direction="outgoing"
-          />
+            direction="outgoing" />
+          
 
           {/* SOC input: show after photo is captured */}
-          {socFile && (
-            <div className="space-y-2">
+          {socFile &&
+          <div className="space-y-2">
               <Label htmlFor="out-soc-value" className="flex items-center gap-2">
                 <Battery className="h-4 w-4" />
                 Outgoing SOC (%) <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="out-soc-value"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={100}
-                placeholder="e.g. 85"
-                value={socValue}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === '' || (parseInt(v) >= 0 && parseInt(v) <= 100)) {
-                    setSocValue(v);
-                  }
-                  setSocMismatchConfirmed(false);
-                  setSocMismatchReason(undefined);
-                }}
-                className="h-11"
-              />
-              {ocrSocReading !== null && (
-                <p className="text-xs text-muted-foreground">
+              id="out-soc-value"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={100}
+              placeholder="e.g. 85"
+              value={socValue}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === '' || parseInt(v) >= 0 && parseInt(v) <= 100) {
+                  setSocValue(v);
+                }
+                setSocMismatchConfirmed(false);
+                setSocMismatchReason(undefined);
+              }}
+              className="h-11" />
+            
+              {ocrSocReading !== null &&
+            <p className="text-xs text-muted-foreground">
                   OCR reading: {ocrSocReading}%
                 </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Edit the value if needed (0–100)
-              </p>
+            }
+              
+
+            
 
               {/* Inline mismatch warning */}
-              {socMismatch?.hasMismatch && !socMismatchConfirmed && (
-                <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
+              {socMismatch?.hasMismatch && !socMismatchConfirmed &&
+            <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
                   <div className="flex items-center gap-2 text-warning">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm font-medium">
@@ -196,36 +196,36 @@ export function DeliveryWithSocDialog({
                       Explain the discrepancy <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      id="out-soc-mismatch-reason"
-                      placeholder="e.g., Display reflection, SOC fluctuating..."
-                      value={socMismatchReason || ''}
-                      onChange={(e) => setSocMismatchReason(e.target.value)}
-                    />
+                  id="out-soc-mismatch-reason"
+                  placeholder="e.g., Display reflection, SOC fluctuating..."
+                  value={socMismatchReason || ''}
+                  onChange={(e) => setSocMismatchReason(e.target.value)} />
+                
                   </div>
                   <Button
-                    type="button"
-                    size="sm"
-                    disabled={!socMismatchReason || socMismatchReason.trim().length < 10}
-                    onClick={() => setSocMismatchConfirmed(true)}
-                  >
+                type="button"
+                size="sm"
+                disabled={!socMismatchReason || socMismatchReason.trim().length < 10}
+                onClick={() => setSocMismatchConfirmed(true)}>
+                
                     Confirm Value
                   </Button>
-                  {socMismatchReason && socMismatchReason.trim().length > 0 && socMismatchReason.trim().length < 10 && (
-                    <p className="text-xs text-destructive">Minimum 10 characters required</p>
-                  )}
+                  {socMismatchReason && socMismatchReason.trim().length > 0 && socMismatchReason.trim().length < 10 &&
+              <p className="text-xs text-destructive">Minimum 10 characters required</p>
+              }
                 </div>
-              )}
+            }
 
-              {socMismatch?.hasMismatch && socMismatchConfirmed && (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+              {socMismatch?.hasMismatch && socMismatchConfirmed &&
+            <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
                   <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                   <span className="text-xs text-success font-medium">
                     Mismatch confirmed with reason
                   </span>
                 </div>
-              )}
+            }
             </div>
-          )}
+          }
         </div>
 
         <DrawerFooter className="safe-bottom">
@@ -237,6 +237,6 @@ export function DeliveryWithSocDialog({
           </Button>
         </DrawerFooter>
       </DrawerContent>
-    </Drawer>
-  );
+    </Drawer>);
+
 }
