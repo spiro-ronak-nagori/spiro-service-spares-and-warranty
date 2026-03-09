@@ -547,6 +547,7 @@ export default function JobCardDetailPage() {
           mandatorySparesRequired={mandatorySparesRequired}
           onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
           checklistEnabled={checklistEnabled}
+          checklistApplicable={checklistApplicable}
           checklistCompleted={checklistCompleted}
         />
 
@@ -946,6 +947,7 @@ interface ActionButtonsProps {
   mandatorySparesRequired?: boolean;
   onAddSpares?: () => void;
   checklistEnabled?: boolean;
+  checklistApplicable?: boolean;
   checklistCompleted?: boolean | null;
 }
 
@@ -962,6 +964,7 @@ function ActionButtons({
   mandatorySparesRequired,
   onAddSpares,
   checklistEnabled,
+  checklistApplicable,
   checklistCompleted,
 }: ActionButtonsProps) {
   const status = jobCard.status;
