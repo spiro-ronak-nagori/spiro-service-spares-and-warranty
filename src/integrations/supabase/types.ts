@@ -70,6 +70,7 @@ export type Database = {
           is_mandatory_snapshot: boolean
           label_snapshot: string
           photo_url: string | null
+          photo_urls: Json
           response_type_snapshot: Database["public"]["Enums"]["checklist_response_type"]
           template_item_id: string
           text_response: string | null
@@ -81,6 +82,7 @@ export type Database = {
           is_mandatory_snapshot: boolean
           label_snapshot: string
           photo_url?: string | null
+          photo_urls?: Json
           response_type_snapshot: Database["public"]["Enums"]["checklist_response_type"]
           template_item_id: string
           text_response?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           is_mandatory_snapshot?: boolean
           label_snapshot?: string
           photo_url?: string | null
+          photo_urls?: Json
           response_type_snapshot?: Database["public"]["Enums"]["checklist_response_type"]
           template_item_id?: string
           text_response?: string | null
@@ -208,6 +211,8 @@ export type Database = {
           is_active: boolean
           is_mandatory: boolean
           label: string
+          photo_count: number
+          photo_prompts: Json
           response_type: Database["public"]["Enums"]["checklist_response_type"]
           sort_order: number
           template_id: string
@@ -219,6 +224,8 @@ export type Database = {
           is_active?: boolean
           is_mandatory?: boolean
           label: string
+          photo_count?: number
+          photo_prompts?: Json
           response_type?: Database["public"]["Enums"]["checklist_response_type"]
           sort_order?: number
           template_id: string
@@ -230,6 +237,8 @@ export type Database = {
           is_active?: boolean
           is_mandatory?: boolean
           label?: string
+          photo_count?: number
+          photo_prompts?: Json
           response_type?: Database["public"]["Enums"]["checklist_response_type"]
           sort_order?: number
           template_id?: string
@@ -247,25 +256,34 @@ export type Database = {
       }
       checklist_templates: {
         Row: {
+          country_ids: string[]
           created_at: string
           id: string
           is_active: boolean
+          is_global: boolean
           name: string
           updated_at: string
+          workshop_ids: string[]
         }
         Insert: {
+          country_ids?: string[]
           created_at?: string
           id?: string
           is_active?: boolean
+          is_global?: boolean
           name: string
           updated_at?: string
+          workshop_ids?: string[]
         }
         Update: {
+          country_ids?: string[]
           created_at?: string
           id?: string
           is_active?: boolean
+          is_global?: boolean
           name?: string
           updated_at?: string
+          workshop_ids?: string[]
         }
         Relationships: []
       }
