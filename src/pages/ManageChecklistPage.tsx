@@ -388,32 +388,34 @@ export default function ManageChecklistPage() {
                       {(items[t.id] || []).length === 0 ? (
                         <p className="text-xs text-muted-foreground py-2">No items yet. Add checklist items above.</p>
                       ) : (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           {(items[t.id] || []).map((item, idx) => (
-                            <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${!item.is_active ? 'opacity-50' : ''}`}>
-                              <div className="flex flex-col gap-0.5 shrink-0">
-                                <button onClick={() => moveItem(item, 'up')} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-                                  <ChevronUp className="h-3 w-3" />
-                                </button>
-                                <button onClick={() => moveItem(item, 'down')} disabled={idx === (items[t.id] || []).length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-                                  <ChevronDown className="h-3 w-3" />
-                                </button>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{item.label}</p>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <Badge variant="outline" className="text-[10px] h-4">{RESPONSE_TYPE_LABELS[item.response_type]}</Badge>
-                                  {item.is_mandatory && <Badge variant="destructive" className="text-[10px] h-4">Required</Badge>}
+                            <div key={item.id} className={`rounded-lg border p-3 text-sm ${!item.is_active ? 'opacity-50' : ''}`}>
+                              <div className="flex items-start gap-2">
+                                <div className="flex flex-col gap-0.5 shrink-0 pt-0.5">
+                                  <button onClick={() => moveItem(item, 'up')} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5">
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button onClick={() => moveItem(item, 'down')} disabled={idx === (items[t.id] || []).length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5">
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  </button>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Switch checked={item.is_active} onCheckedChange={() => toggleItemActive(item)} />
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditItem(item)}>
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeletingItemId(item.id)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium break-words leading-snug">{item.label}</p>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <Badge variant="outline" className="text-[10px] h-5 shrink-0">{RESPONSE_TYPE_LABELS[item.response_type]}</Badge>
+                                    {item.is_mandatory && <Badge variant="destructive" className="text-[10px] h-5 shrink-0">Required</Badge>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Switch checked={item.is_active} onCheckedChange={() => toggleItemActive(item)} />
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeletingItemId(item.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           ))}
