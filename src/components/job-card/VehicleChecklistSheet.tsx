@@ -148,8 +148,9 @@ export function VehicleChecklistSheet({ open, onOpenChange, jobCardId, vehicleMo
       const resolved = await resolveTemplate(vehicleModel, workshopId, workshopCountry);
 
       if (!resolved) {
-        setNoTemplate(true);
-        setIsLoading(false);
+        // No template applies — silently skip checklist, treat as completed
+        onCompleted();
+        onOpenChange(false);
         return;
       }
 
