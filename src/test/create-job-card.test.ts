@@ -27,8 +27,17 @@ function validateRegNo(regNo: string, country: string): string | null {
 function parseJcNumber(jcNumber: string): { date: string; seq: number } | null {
   if (!jcNumber.startsWith('JC') || jcNumber.length < 14) return null;
   const date = jcNumber.substring(2, 10);
-  const seq = parseInt(jcNumber.substring(10), 10);
-  if (isNaN(seq)) return null;
+  const suffixStr = jcNumber.substring(10).toUpperCase();
+  // Decode base-36 suffix (supports both old numeric and new alphanumeric)
+  let seq = 0;
+  for (const ch of suffixStr) {
+    const code = ch.charCodeAt(0);
+    let val: number;
+    if (code >= 48 && code <= 57) val = code - 48;       // 0-9
+    else if (code >= 65 && code <= 90) val = code - 55;   // A-Z → 10-35
+    else return null;
+    seq = seq * 36 + val;
+  }
   return { date, seq };
 }
 
@@ -87,14 +96,21 @@ describe('Registration Number Validation', () => {
 });
 
 describe('JC Number Parsing', () => {
-  it('parses valid JC number', () => {
+  it('parses valid numeric JC number (backward compat)', () => {
     const result = parseJcNumber('JC202602110001');
     expect(result).toEqual({ date: '20260211', seq: 1 });
   });
 
-  it('parses JC number with large sequence', () => {
+  it('parses JC number with large numeric sequence', () => {
     const result = parseJcNumber('JC202602111112');
-    expect(result).toEqual({ date: '20260211', seq: 1112 });
+    // base-36 decode of "1112" = 1*36^3 + 1*36^2 + 1*36 + 2 = 47990
+    expect(result).toEqual({ date: '20260211', seq: 47990 });
+  });
+
+  it('parses alphanumeric JC number', () => {
+    const result = parseJcNumber('JC20260211001A');
+    // base-36: 0*36^3 + 0*36^2 + 1*36 + 10 = 46
+    expect(result).toEqual({ date: '20260211', seq: 46 });
   });
 
   it('returns null for invalid format', () => {
@@ -102,11 +118,10 @@ describe('JC Number Parsing', () => {
     expect(parseJcNumber('JC')).toBeNull();
   });
 
-  it('sequence starts at position 11 (after JC + 8-char date)', () => {
-    const jc = 'JC202602110005';
-    // JC = 2 chars, 20260211 = 8 chars = 10 total, seq from position 10 (0-indexed)
-    const seq = parseInt(jc.substring(10), 10);
-    expect(seq).toBe(5);
+  it('old numeric cards still parse correctly', () => {
+    // "0005" in base-36 = 5
+    const result = parseJcNumber('JC202602110005');
+    expect(result).toEqual({ date: '20260211', seq: 5 });
   });
 });
 
