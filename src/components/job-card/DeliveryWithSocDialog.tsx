@@ -5,7 +5,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Battery } from 'lucide-react';
+import { Battery, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { SocPhotoCapture } from '@/components/job-card/SocPhotoCapture';
 import { SocValidationResult } from '@/hooks/useSocValidation';
 import { useSystemSetting } from '@/hooks/useSystemSetting';
@@ -25,6 +25,8 @@ interface DeliveryWithSocDialogProps {
   onProceed: (socData: OutgoingSocData) => void;
 }
 
+const SOC_MISMATCH_THRESHOLD = 0.15;
+
 export function DeliveryWithSocDialog({
   open,
   onOpenChange,
@@ -35,23 +37,48 @@ export function DeliveryWithSocDialog({
   const [socValue, setSocValue] = useState('');
   const [socFile, setSocFile] = useState<File | null>(null);
   const [socValidation, setSocValidation] = useState<SocValidationResult | null>(null);
+  const [ocrSocReading, setOcrSocReading] = useState<number | null>(null);
   const [socMismatchConfirmed, setSocMismatchConfirmed] = useState(false);
   const [socMismatchReason, setSocMismatchReason] = useState<string | undefined>();
-  const [socMismatchComment, setSocMismatchComment] = useState<string | undefined>();
 
   const handleSocValidation = (
     file: File | null,
     result: SocValidationResult | null,
-    mismatchConfirmed: boolean,
-    mismatchReason?: string,
-    mismatchComment?: string
   ) => {
     setSocFile(file);
     setSocValidation(result);
-    setSocMismatchConfirmed(mismatchConfirmed);
-    setSocMismatchReason(mismatchReason);
-    setSocMismatchComment(mismatchComment);
+    setSocMismatchConfirmed(false);
+    setSocMismatchReason(undefined);
+
+    if (!file) {
+      setSocValue('');
+      setOcrSocReading(null);
+      return;
+    }
+
+    // Pre-fill SOC from OCR
+    if (result?.ocr?.socReading !== null && result?.ocr?.socReading !== undefined) {
+      setSocValue(String(Math.round(result.ocr.socReading)));
+      setOcrSocReading(result.ocr.socReading);
+    } else {
+      setOcrSocReading(null);
+    }
   };
+
+  // Compute mismatch
+  const socMismatch = (() => {
+    if (ocrSocReading === null || socValue === '') return null;
+    const enteredVal = parseInt(socValue);
+    if (isNaN(enteredVal) || enteredVal < 0 || enteredVal > 100) return null;
+    const diff = Math.abs(ocrSocReading - enteredVal);
+    const percentage = diff / Math.max(enteredVal, 1);
+    return {
+      hasMismatch: percentage > SOC_MISMATCH_THRESHOLD,
+      percentage: percentage * 100,
+      enteredValue: enteredVal,
+      ocrValue: ocrSocReading,
+    };
+  })();
 
   const isSocValid = (): boolean => {
     const val = parseInt(socValue);
@@ -62,7 +89,7 @@ export function DeliveryWithSocDialog({
     if (socValidation.error) return false;
     if (ocrEnabled) {
       if (!socValidation.ocr?.dashboardDetected) return false;
-      if (socValidation.mismatch?.hasMismatch && !socMismatchConfirmed) return false;
+      if (socMismatch?.hasMismatch && !socMismatchConfirmed) return false;
     }
     return true;
   };
@@ -75,7 +102,6 @@ export function DeliveryWithSocDialog({
       validation: socValidation,
       mismatchConfirmed: socMismatchConfirmed,
       mismatchReason: socMismatchReason,
-      mismatchComment: socMismatchComment,
     });
     resetState();
   };
@@ -84,9 +110,9 @@ export function DeliveryWithSocDialog({
     setSocValue('');
     setSocFile(null);
     setSocValidation(null);
+    setOcrSocReading(null);
     setSocMismatchConfirmed(false);
     setSocMismatchReason(undefined);
-    setSocMismatchComment(undefined);
   };
 
   const handleClose = () => {
@@ -105,37 +131,101 @@ export function DeliveryWithSocDialog({
         </DrawerHeader>
 
         <div className="px-4 pb-4 space-y-4 overflow-y-auto flex-1 min-h-0">
-          {/* Outgoing SOC value */}
-          <div className="space-y-2">
-            <Label htmlFor="out-soc-value" className="flex items-center gap-2">
-              <Battery className="h-4 w-4" />
-              Outgoing SOC (%) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="out-soc-value"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={100}
-              placeholder="e.g. 85"
-              value={socValue}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === '' || (parseInt(v) >= 0 && parseInt(v) <= 100)) {
-                  setSocValue(v);
-                }
-              }}
-              className="h-11"
-            />
-          </div>
-
-          {/* SOC Photo Capture */}
+          {/* Photo-first: capture dashboard photo */}
           <SocPhotoCapture
-            enteredSoc={socValue ? parseInt(socValue) : -1}
             onValidationComplete={handleSocValidation}
             ocrEnabled={ocrEnabled}
             direction="outgoing"
           />
+
+          {/* SOC input: show after photo is captured */}
+          {socFile && (
+            <div className="space-y-2">
+              <Label htmlFor="out-soc-value" className="flex items-center gap-2">
+                <Battery className="h-4 w-4" />
+                Outgoing SOC (%) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="out-soc-value"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={100}
+                placeholder="e.g. 85"
+                value={socValue}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || (parseInt(v) >= 0 && parseInt(v) <= 100)) {
+                    setSocValue(v);
+                  }
+                  setSocMismatchConfirmed(false);
+                  setSocMismatchReason(undefined);
+                }}
+                className="h-11"
+              />
+              {ocrSocReading !== null && (
+                <p className="text-xs text-muted-foreground">
+                  OCR reading: {ocrSocReading}%
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Edit the value if needed (0–100)
+              </p>
+
+              {/* Inline mismatch warning */}
+              {socMismatch?.hasMismatch && !socMismatchConfirmed && (
+                <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
+                  <div className="flex items-center gap-2 text-warning">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      SOC value differs from photo by {socMismatch.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 p-2 bg-muted rounded">
+                    <div>
+                      <p className="text-xs text-muted-foreground">You entered</p>
+                      <p className="text-sm font-bold">{socMismatch.enteredValue}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Photo shows</p>
+                      <p className="text-sm font-bold">{socMismatch.ocrValue}%</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="out-soc-mismatch-reason" className="text-xs">
+                      Explain the discrepancy <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="out-soc-mismatch-reason"
+                      placeholder="e.g., Display reflection, SOC fluctuating..."
+                      value={socMismatchReason || ''}
+                      onChange={(e) => setSocMismatchReason(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!socMismatchReason || socMismatchReason.trim().length < 10}
+                    onClick={() => setSocMismatchConfirmed(true)}
+                  >
+                    Confirm Value
+                  </Button>
+                  {socMismatchReason && socMismatchReason.trim().length > 0 && socMismatchReason.trim().length < 10 && (
+                    <p className="text-xs text-destructive">Minimum 10 characters required</p>
+                  )}
+                </div>
+              )}
+
+              {socMismatch?.hasMismatch && socMismatchConfirmed && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                  <span className="text-xs text-success font-medium">
+                    Mismatch confirmed with reason
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DrawerFooter className="safe-bottom">
