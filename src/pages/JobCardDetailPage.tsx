@@ -39,6 +39,7 @@ import { SubmitAllWarrantySheet } from '@/components/job-card/SubmitAllWarrantyS
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
 import { useChecklistFlag } from '@/hooks/useChecklistFlag';
+import { resolveChecklistTemplate } from '@/lib/resolve-checklist-template';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';
@@ -72,6 +73,7 @@ export default function JobCardDetailPage() {
   // Checklist
   const { value: checklistEnabled } = useChecklistFlag();
   const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
+  const [checklistApplicable, setChecklistApplicable] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -111,14 +113,28 @@ export default function JobCardDetailPage() {
     checkMandatorySpares();
   }, [jobCard?.issue_categories, sparesEnabled]);
 
-  // Check if vehicle checklist is already completed for this JC
+  // Check if vehicle checklist is already completed for this JC + template exists
   useEffect(() => {
-    if (!id || !checklistEnabled) {
+    if (!id || !checklistEnabled || !jobCard) {
       setChecklistCompleted(null);
+      setChecklistApplicable(false);
       return;
     }
     (async () => {
       try {
+        // First check if a template even applies
+        const template = await resolveChecklistTemplate(
+          jobCard.vehicle?.model || null,
+          jobCard.workshop_id,
+          (jobCard as any).workshop?.country || null,
+        );
+        if (!template) {
+          setChecklistApplicable(false);
+          setChecklistCompleted(null);
+          return;
+        }
+        setChecklistApplicable(true);
+
         const { data } = await supabase
           .from('checklist_runs' as any)
           .select('id')
@@ -128,9 +144,10 @@ export default function JobCardDetailPage() {
         setChecklistCompleted(!!data);
       } catch {
         setChecklistCompleted(null);
+        setChecklistApplicable(false);
       }
     })();
-  }, [id, checklistEnabled, showChecklist]);
+  }, [id, checklistEnabled, showChecklist, jobCard?.workshop_id]);
 
   const fetchJobCard = async () => {
     if (!id) return;
@@ -236,7 +253,7 @@ export default function JobCardDetailPage() {
   const handleStartWork = () => {
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
       // If checklist is enabled and not yet completed, show checklist first
-      if (checklistEnabled && !checklistCompleted) {
+      if (checklistEnabled && checklistApplicable && !checklistCompleted) {
         setShowChecklist(true);
         return;
       }
@@ -962,7 +979,7 @@ function ActionButtons({
   }
 
   if (status === 'INWARDED' || status === 'REOPENED') {
-    const needsChecklist = checklistEnabled && !checklistCompleted && status === 'INWARDED';
+    const needsChecklist = checklistEnabled && checklistApplicable && !checklistCompleted && status === 'INWARDED';
     return (
       <Button 
         className="w-full h-12 text-base"
