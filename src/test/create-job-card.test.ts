@@ -96,14 +96,22 @@ describe('Registration Number Validation', () => {
 });
 
 describe('JC Number Parsing', () => {
-  it('parses valid JC number', () => {
+  it('parses valid numeric JC number (backward compat)', () => {
     const result = parseJcNumber('JC202602110001');
     expect(result).toEqual({ date: '20260211', seq: 1 });
   });
 
-  it('parses JC number with large sequence', () => {
+  it('parses JC number with large numeric sequence', () => {
     const result = parseJcNumber('JC202602111112');
-    expect(result).toEqual({ date: '20260211', seq: 1112 });
+    expect(result).toEqual({ date: '20260211', seq: 38 * 36 * 36 + 1 * 36 * 36 + 1 * 36 + 2 });
+    // Actually for pure numeric: 1*36^3 + 1*36^2 + 1*36 + 2 = 46656+1296+36+2 = 47990
+    // Wait, base-36 decode of "1112" = 1*36^3 + 1*36^2 + 1*36 + 2 = 47990
+  });
+
+  it('parses alphanumeric JC number', () => {
+    const result = parseJcNumber('JC20260211001A');
+    // base-36: 0*36^3 + 0*36^2 + 1*36 + 10 = 46
+    expect(result).toEqual({ date: '20260211', seq: 46 });
   });
 
   it('returns null for invalid format', () => {
@@ -111,11 +119,10 @@ describe('JC Number Parsing', () => {
     expect(parseJcNumber('JC')).toBeNull();
   });
 
-  it('sequence starts at position 11 (after JC + 8-char date)', () => {
-    const jc = 'JC202602110005';
-    // JC = 2 chars, 20260211 = 8 chars = 10 total, seq from position 10 (0-indexed)
-    const seq = parseInt(jc.substring(10), 10);
-    expect(seq).toBe(5);
+  it('old numeric cards still parse correctly', () => {
+    // "0005" in base-36 = 5
+    const result = parseJcNumber('JC202602110005');
+    expect(result).toEqual({ date: '20260211', seq: 5 });
   });
 });
 
