@@ -111,6 +111,27 @@ export default function JobCardDetailPage() {
     checkMandatorySpares();
   }, [jobCard?.issue_categories, sparesEnabled]);
 
+  // Check if vehicle checklist is already completed for this JC
+  useEffect(() => {
+    if (!id || !checklistEnabled) {
+      setChecklistCompleted(null);
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('checklist_runs' as any)
+          .select('id')
+          .eq('job_card_id', id)
+          .limit(1)
+          .maybeSingle();
+        setChecklistCompleted(!!data);
+      } catch {
+        setChecklistCompleted(null);
+      }
+    })();
+  }, [id, checklistEnabled, showChecklist]);
+
   const fetchJobCard = async () => {
     if (!id) return;
     
@@ -213,6 +234,24 @@ export default function JobCardDetailPage() {
   };
 
   const handleStartWork = () => {
+    if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
+      // If checklist is enabled and not yet completed, show checklist first
+      if (checklistEnabled && !checklistCompleted) {
+        setShowChecklist(true);
+        return;
+      }
+      if (sparesEnabled) {
+        setSparesModalFromStartWork(true);
+        setShowSparesModal(true);
+      } else {
+        updateStatus('IN_PROGRESS');
+      }
+    }
+  };
+
+  const handleChecklistCompleted = () => {
+    setChecklistCompleted(true);
+    // Now proceed with the normal start work flow
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
       if (sparesEnabled) {
         setSparesModalFromStartWork(true);
