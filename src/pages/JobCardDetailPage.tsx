@@ -47,7 +47,7 @@ export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { resolve: resolveCategoryName } = useServiceCategoryNames();
+  const { resolve: resolveCategoryName, getParentCode } = useServiceCategoryNames();
   
   const [jobCard, setJobCard] = useState<JobCard | null>(null);
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
