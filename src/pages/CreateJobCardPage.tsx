@@ -1392,7 +1392,7 @@ export default function CreateJobCardPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Review & Confirm</CardTitle>
                 <CardDescription>
-                  Please review all details before creating the job card
+                  Please review all details
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
