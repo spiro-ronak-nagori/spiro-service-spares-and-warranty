@@ -142,7 +142,7 @@ export default function JobCardDetailPage() {
           *,
           vehicle:vehicles(*),
           creator:profiles!job_cards_created_by_fkey(full_name, email, phone),
-          workshop:workshops(name)
+          workshop:workshops(id, name, country)
         `)
         .eq('id', id)
         .single();
@@ -907,6 +907,8 @@ export default function JobCardDetailPage() {
           onOpenChange={setShowChecklist}
           jobCardId={jobCard.id}
           vehicleModel={jobCard.vehicle?.model || null}
+          workshopId={jobCard.workshop_id}
+          workshopCountry={(jobCard as any).workshop?.country || null}
           onCompleted={handleChecklistCompleted}
         />
       )}
