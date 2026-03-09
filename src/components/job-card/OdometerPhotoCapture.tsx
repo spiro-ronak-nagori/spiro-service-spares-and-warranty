@@ -131,12 +131,12 @@ export function OdometerPhotoCapture({
         </button> :
 
       <div className={cn('rounded-lg border-2 p-3', getStatusColor())}>
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             {preview &&
           <button
             type="button"
             onClick={() => setShowPreview(true)}
-            className="relative flex-shrink-0 w-20 h-20 rounded overflow-hidden bg-muted">
+            className="relative flex-shrink-0 w-16 h-16 rounded overflow-hidden bg-muted">
             
                 <img
               src={preview}
@@ -144,66 +144,18 @@ export function OdometerPhotoCapture({
               className="w-full h-full object-cover" />
             
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
-                  <Eye className="h-5 w-5 text-white" />
+                  <Eye className="h-4 w-4 text-white" />
                 </div>
               </button>
           }
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                {getStatusIcon()}
-                <span className="text-sm font-medium">
-                  {isValidating && 'Analysing photo...'}
-                  {error && 'Validation Failed'}
-                  {!isValidating && !error && isValid && 'Photo Validated'}
-                </span>
-              </div>
-
-              {isValidating &&
-            <p className="text-xs text-muted-foreground">
-                  Checking quality and reading odometer &amp; SOC...
-                </p>
-            }
-
-              {error &&
-            <p className="text-xs text-destructive">{error}</p>
-            }
-
-              {!isValidating && !error && quality &&
-            <div className="space-y-2 text-xs">
-                  <div>
-                    <span className={quality.passed ? 'text-success' : 'text-destructive'}>
-                      {quality.passed ? '✓' : '✗'} Image quality
-                    </span>
-                    {!quality.passed &&
-                <p className="text-destructive mt-0.5 pl-4">{quality.message}</p>
-                }
-                  </div>
-
-                  {ocr &&
-              <>
-                      <div>
-                        <span className={ocr.clusterDetected ? 'text-success' : 'text-destructive'}>
-                          {ocr.clusterDetected ? '✓' : '✗'} Odometer detected
-                        </span>
-                        {ocr.ocrReading !== null &&
-                  <p className="text-muted-foreground mt-0.5 pl-4">
-                            {ocr.ocrReading.toLocaleString()} km · {ocr.ocrConfidence}% confidence
-                          </p>
-                  }
-                      </div>
-                      {ocr.socDetected && ocr.socReading !== null &&
-                <div>
-                          <span className="text-success">✓ SOC detected</span>
-                          <p className="text-muted-foreground mt-0.5 pl-4">
-                            {ocr.socReading}% · {ocr.socConfidence}% confidence
-                          </p>
-                        </div>
-                }
-                    </>
-              }
-                </div>
-            }
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {getStatusIcon()}
+              <span className="text-sm font-medium">
+                {isValidating && 'Analysing photo...'}
+                {error && 'Validation Failed'}
+                {!isValidating && !error && isValid && 'Photo Validated'}
+              </span>
             </div>
 
             <Button
@@ -218,6 +170,37 @@ export function OdometerPhotoCapture({
               Retake
             </Button>
           </div>
+
+          {isValidating &&
+        <p className="text-xs text-muted-foreground mt-2">
+              Checking quality, reading odometer & SOC...
+            </p>
+        }
+
+          {error &&
+        <p className="text-xs text-destructive mt-2">{error}</p>
+        }
+
+          {!isValidating && !error && quality &&
+        <div className="mt-2 space-y-1 text-xs">
+              <p className={quality.passed ? 'text-success' : 'text-destructive'}>
+                {quality.passed ? '✓' : '✗'} Image quality {!quality.passed && `— ${quality.message}`}
+              </p>
+
+              {ocr &&
+          <>
+                  <p className={ocr.clusterDetected ? 'text-success' : 'text-destructive'}>
+                    {ocr.clusterDetected ? '✓' : '✗'} Odometer detected{ocr.ocrReading !== null && `: ${ocr.ocrReading.toLocaleString()} km`}
+                  </p>
+                  {ocr.socDetected && ocr.socReading !== null &&
+            <p className="text-success">
+                      ✓ SOC detected: {ocr.socReading}%
+                    </p>
+            }
+                </>
+          }
+            </div>
+        }
         </div>
       }
 
