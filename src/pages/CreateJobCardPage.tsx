@@ -1489,7 +1489,10 @@ export default function CreateJobCardPage() {
           {stepIndex < STEPS.length - 1 ? (
             <Button 
               onClick={nextStep}
-              disabled={currentStep === 'odometer' && (!isOdometerStepValid() || !isSocStepValid() || odometerValidation?.isValidating || socValidation?.isValidating)}
+              disabled={
+                (currentStep === 'vehicle' && !vehicle) ||
+                (currentStep === 'odometer' && (!isOdometerStepValid() || !isSocStepValid() || odometerValidation?.isValidating || socValidation?.isValidating))
+              }
               className="flex-1 h-12"
             >
               Continue
