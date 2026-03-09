@@ -1502,47 +1502,6 @@ export default function CreateJobCardPage() {
                   </div>
               }
 
-                {/* Photo Validation Status */}
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">Photo Validation</p>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex items-center gap-2">
-                      
-                      <span>Odometer photo captured and validated</span>
-                    </div>
-                    {odometerValidation?.ocr?.ocrReading != null &&
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                        <span>OCR reading: {odometerValidation.ocr!.ocrReading!.toLocaleString()} km</span>
-                        <span>({odometerValidation.ocr!.ocrConfidence}% confidence)</span>
-                      </div>
-                  }
-                    {odometerMismatchConfirmed && odometerMismatchReason &&
-                  <div className="mt-2 p-2 bg-warning/10 rounded text-xs">
-                        <p className="font-medium text-warning">Odometer mismatch confirmed:</p>
-                        <p className="text-muted-foreground mt-1">{odometerMismatchReason}</p>
-                      </div>
-                  }
-                    <div className="flex items-center gap-2 mt-2">
-                      <CheckCircle2 className="h-3 w-3 text-success" />
-                      <span>SOC photo captured and validated</span>
-                    </div>
-                    {socValidation?.ocr?.socReading != null &&
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                        <span>SOC reading: {socValidation.ocr!.socReading}%</span>
-                        <span>({socValidation.ocr!.confidence}% confidence)</span>
-                      </div>
-                  }
-                    {socMismatchConfirmed && socMismatchReason &&
-                  <div className="mt-2 p-2 bg-warning/10 rounded text-xs">
-                        <p className="font-medium text-warning">SOC mismatch confirmed:</p>
-                        <p className="text-muted-foreground mt-1">Reason: {socMismatchReason}</p>
-                        {socMismatchComment &&
-                    <p className="text-muted-foreground mt-1">{socMismatchComment}</p>
-                    }
-                      </div>
-                  }
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
