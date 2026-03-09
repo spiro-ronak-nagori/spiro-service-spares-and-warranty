@@ -18,21 +18,21 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  Search, 
-  Car, 
-  User, 
-  Phone, 
+  SelectValue } from
+'@/components/ui/select';
+import {
+  Search,
+  Car,
+  User,
+  Phone,
   Gauge,
   Battery,
   ChevronRight,
   ChevronLeft,
   Loader2,
   AlertCircle,
-  CheckCircle2
-} from 'lucide-react';
+  CheckCircle2 } from
+'lucide-react';
 import { Vehicle, ServiceCategory } from '@/types';
 import { toast } from 'sonner';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -49,10 +49,10 @@ import { useVehicleModels } from '@/hooks/useVehicleModels';
 const VEHICLE_COLORS = ['Blue', 'Red', 'Yellow', 'Green', 'Black'] as const;
 
 // Vehicle registration number format validation per country
-const VEHICLE_REG_PATTERNS: Record<string, { regex: RegExp; format: string; example: string }> = {
-  kenya:  { regex: /^K[A-Z]{3}\d{3}[A-Z]$/, format: 'KXXX000X', example: 'KABC123D' },
+const VEHICLE_REG_PATTERNS: Record<string, {regex: RegExp;format: string;example: string;}> = {
+  kenya: { regex: /^K[A-Z]{3}\d{3}[A-Z]$/, format: 'KXXX000X', example: 'KABC123D' },
   uganda: { regex: /^U[A-Z]{2}\d{3}[A-Z]{1,2}$/, format: 'UXX000X or UXX000XX', example: 'UAB123C or UAB123CD' },
-  rwanda: { regex: /^R[A-Z]{2}\d{3}[A-Z]$/, format: 'RXX000X', example: 'RAB123C' },
+  rwanda: { regex: /^R[A-Z]{2}\d{3}[A-Z]$/, format: 'RXX000X', example: 'RAB123C' }
 };
 
 /** Returns validation error message or null if valid / no validation needed */
@@ -70,12 +70,12 @@ function validateRegNo(regNo: string, workshopCountry: string | null | undefined
 
 type CreateStep = 'vehicle' | 'odometer' | 'services' | 'confirm';
 
-const STEPS: { key: CreateStep; label: string }[] = [
-  { key: 'vehicle', label: 'Vehicle' },
-  { key: 'odometer', label: 'Odometer' },
-  { key: 'services', label: 'Services' },
-  { key: 'confirm', label: 'Confirm' },
-];
+const STEPS: {key: CreateStep;label: string;}[] = [
+{ key: 'vehicle', label: 'Vehicle' },
+{ key: 'odometer', label: 'Odometer' },
+{ key: 'services', label: 'Services' },
+{ key: 'confirm', label: 'Confirm' }];
+
 
 export default function CreateJobCardPage() {
   const navigate = useNavigate();
@@ -98,7 +98,7 @@ export default function CreateJobCardPage() {
       navigate('/', { replace: true });
     }
   }, [isElevatedAdmin, selectedWorkshop, authWorkshop]);
-  
+
   const [currentStep, setCurrentStep] = useState<CreateStep>('vehicle');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -113,14 +113,14 @@ export default function CreateJobCardPage() {
   const [unknownModelWarning, setUnknownModelWarning] = useState(false);
   const [selectedColor, setSelectedColor] = useState('');
   const [unknownColorWarning, setUnknownColorWarning] = useState(false);
-  
+
   // New vehicle form
   const [newVehicle, setNewVehicle] = useState({
-    owner_name: '',
+    owner_name: ''
   });
   const [phoneCountry, setPhoneCountry] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  
+
   const [odometer, setOdometer] = useState('');
   const [odometerPhoto, setOdometerPhoto] = useState<File | null>(null);
   const [odometerValidation, setOdometerValidation] = useState<ValidationResult | null>(null);
@@ -140,7 +140,7 @@ export default function CreateJobCardPage() {
   const [socMismatchComment, setSocMismatchComment] = useState<string | undefined>();
   const [socAutoFilled, setSocAutoFilled] = useState(false);
   const [ocrSocReading, setOcrSocReading] = useState<number | null>(null);
-  
+
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
@@ -152,7 +152,7 @@ export default function CreateJobCardPage() {
     rider_phone: '',
     rider_phone_country: '',
     rider_reason: '',
-    rider_reason_notes: '',
+    rider_reason_notes: ''
   });
 
   // Fetch service categories on mount
@@ -163,7 +163,7 @@ export default function CreateJobCardPage() {
   // Pre-select phone country from workshop country
   useEffect(() => {
     if (workshop?.country && dbCountries.length > 0) {
-      const match = dbCountries.find(c => c.name.toLowerCase() === workshop.country?.toLowerCase());
+      const match = dbCountries.find((c) => c.name.toLowerCase() === workshop.country?.toLowerCase());
       if (match && !phoneCountry) {
         setPhoneCountry(match.name);
       }
@@ -172,11 +172,11 @@ export default function CreateJobCardPage() {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('service_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order');
+      const { data, error } = await supabase.
+      from('service_categories').
+      select('*').
+      eq('is_active', true).
+      order('sort_order');
 
       if (error) throw error;
       setCategories(data || []);
@@ -208,12 +208,12 @@ export default function CreateJobCardPage() {
     try {
       // Check if vehicle exists using canonical indexed lookup
       const canonicalRegNo = normalizeRegNo(searchRegNo);
-      const { data: vehicleData, error: vehicleError } = await supabase
-        .from('vehicles')
-        .select('id, reg_no, model, color, owner_name, owner_phone, last_service_odo, purchase_date, last_service_date, created_at, updated_at')
-        .eq('reg_no_canonical', canonicalRegNo)
-        .limit(1)
-        .maybeSingle();
+      const { data: vehicleData, error: vehicleError } = await supabase.
+      from('vehicles').
+      select('id, reg_no, model, color, owner_name, owner_phone, last_service_odo, purchase_date, last_service_date, created_at, updated_at').
+      eq('reg_no_canonical', canonicalRegNo).
+      limit(1).
+      maybeSingle();
 
       if (vehicleError) {
         throw vehicleError;
@@ -221,12 +221,12 @@ export default function CreateJobCardPage() {
 
       if (vehicleData) {
         // Check for active job cards
-        const { data: activeJc, error: jcError } = await supabase
-          .from('job_cards')
-          .select('id, jc_number, status')
-          .eq('vehicle_id', vehicleData.id)
-          .not('status', 'in', '("DELIVERED","CLOSED","COMPLETED")')
-          .limit(1);
+        const { data: activeJc, error: jcError } = await supabase.
+        from('job_cards').
+        select('id, jc_number, status').
+        eq('vehicle_id', vehicleData.id).
+        not('status', 'in', '("DELIVERED","CLOSED","COMPLETED")').
+        limit(1);
 
         if (jcError) throw jcError;
 
@@ -237,13 +237,13 @@ export default function CreateJobCardPage() {
         }
 
         // Fetch the latest JC odometer for this vehicle
-        const { data: latestJc } = await supabase
-          .from('job_cards')
-          .select('odometer')
-          .eq('vehicle_id', vehicleData.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data: latestJc } = await supabase.
+        from('job_cards').
+        select('odometer').
+        eq('vehicle_id', vehicleData.id).
+        order('created_at', { ascending: false }).
+        limit(1).
+        maybeSingle();
 
         const latestOdo = latestJc?.odometer ?? vehicleData.last_service_odo ?? 0;
         setLastServiceOdo(latestOdo);
@@ -279,9 +279,9 @@ export default function CreateJobCardPage() {
   };
 
   const handleSocValidation = (
-    file: File | null,
-    result: SocValidationResult | null,
-  ) => {
+  file: File | null,
+  result: SocValidationResult | null) =>
+  {
     setSocPhoto(file);
     setSocValidation(result);
     setSocMismatchConfirmed(false);
@@ -314,7 +314,7 @@ export default function CreateJobCardPage() {
       hasMismatch: percentage > 0.15,
       percentage: percentage * 100,
       enteredValue: enteredVal,
-      ocrValue: ocrSocReading,
+      ocrValue: ocrSocReading
     };
   })();
 
@@ -325,7 +325,7 @@ export default function CreateJobCardPage() {
     if (!socValidation) return false;
     if (!socValidation.quality?.passed) return false;
     if (socValidation.error) return false;
-    
+
     // OCR checks only when OCR is enabled
     if (ocrEnabled) {
       if (!socValidation.ocr?.dashboardDetected) return false;
@@ -335,9 +335,9 @@ export default function CreateJobCardPage() {
   };
 
   const handleOdometerValidation = (
-    file: File | null,
-    result: ValidationResult | null,
-  ) => {
+  file: File | null,
+  result: ValidationResult | null) =>
+  {
     setOdometerPhoto(file);
     setOdometerValidation(result);
     setOdometerMismatchConfirmed(false);
@@ -367,11 +367,11 @@ export default function CreateJobCardPage() {
 
     // Auto-fill SOC if the odometer image also contains a SOC reading
     if (
-      result?.ocr?.socDetected &&
-      result.ocr.socReading !== null &&
-      result.ocr.socConfidence >= 50 &&
-      file &&
-      !socPhoto // Only auto-fill if SOC photo hasn't been manually set
+    result?.ocr?.socDetected &&
+    result.ocr.socReading !== null &&
+    result.ocr.socConfidence >= 50 &&
+    file &&
+    !socPhoto // Only auto-fill if SOC photo hasn't been manually set
     ) {
       const detectedSoc = result.ocr.socReading;
       setSoc(String(detectedSoc));
@@ -382,11 +382,11 @@ export default function CreateJobCardPage() {
         ocr: {
           socReading: detectedSoc,
           confidence: result.ocr.socConfidence,
-          dashboardDetected: true,
+          dashboardDetected: true
         },
         mismatch: null,
         isValidating: false,
-        error: null,
+        error: null
       };
       setSocPhoto(file);
       setSocValidation(syntheticSocResult);
@@ -407,7 +407,7 @@ export default function CreateJobCardPage() {
       hasMismatch: percentage > 0.10,
       percentage: percentage * 100,
       enteredValue: enteredVal,
-      ocrValue: ocrOdometerReading,
+      ocrValue: ocrOdometerReading
     };
   })();
 
@@ -477,7 +477,7 @@ export default function CreateJobCardPage() {
           }
         }
         return true;
-        
+
       case 'odometer':
         if (!odometer || parseInt(odometer) <= 0) {
           toast.error('Please enter a valid odometer reading');
@@ -501,14 +501,14 @@ export default function CreateJobCardPage() {
           return false;
         }
         return true;
-        
+
       case 'services':
         if (selectedL1.size === 0) {
           toast.error('Please select at least one service category');
           return false;
         }
         return true;
-        
+
       default:
         return true;
     }
@@ -516,15 +516,15 @@ export default function CreateJobCardPage() {
 
   const nextStep = () => {
     if (!validateStep()) return;
-    
-    const currentIndex = STEPS.findIndex(s => s.key === currentStep);
+
+    const currentIndex = STEPS.findIndex((s) => s.key === currentStep);
     if (currentIndex < STEPS.length - 1) {
       setCurrentStep(STEPS[currentIndex + 1].key);
     }
   };
 
   const prevStep = () => {
-    const currentIndex = STEPS.findIndex(s => s.key === currentStep);
+    const currentIndex = STEPS.findIndex((s) => s.key === currentStep);
     if (currentIndex > 0) {
       setCurrentStep(STEPS[currentIndex - 1].key);
     }
@@ -545,17 +545,17 @@ export default function CreateJobCardPage() {
 
       // Create new vehicle if needed
       if (isNewVehicle) {
-        const { data: newVehicleData, error: vehicleError } = await supabase
-          .from('vehicles')
-          .upsert({
-            reg_no: regNo.toUpperCase().trim(),
-            model: selectedModel,
-            color: selectedColor,
-            owner_name: newVehicle.owner_name,
-            owner_phone: phoneNumber ? (getCallingCode(phoneCountry) || '') + phoneNumber : null,
-          }, { onConflict: 'reg_no' })
-          .select()
-          .single();
+        const { data: newVehicleData, error: vehicleError } = await supabase.
+        from('vehicles').
+        upsert({
+          reg_no: regNo.toUpperCase().trim(),
+          model: selectedModel,
+          color: selectedColor,
+          owner_name: newVehicle.owner_name,
+          owner_phone: phoneNumber ? (getCallingCode(phoneCountry) || '') + phoneNumber : null
+        }, { onConflict: 'reg_no' }).
+        select().
+        single();
 
         if (vehicleError) throw vehicleError;
         vehicleId = newVehicleData.id;
@@ -568,7 +568,7 @@ export default function CreateJobCardPage() {
       // Generate JC number and create job card (with retry for race conditions)
       let jobCard: any = null;
       let jcNumber: string = '';
-      
+
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data: generatedJc, error: jcNumError } = await supabase.rpc('generate_jc_number');
         if (jcNumError) throw jcNumError;
@@ -579,32 +579,32 @@ export default function CreateJobCardPage() {
         const detectedSoc = socValidation?.ocr?.socReading ?? null;
         const detectedConfidence = socValidation?.ocr?.confidence ?? null;
 
-        const { data: jcData, error: jcError } = await supabase
-          .from('job_cards')
-          .insert({
-            jc_number: jcNumber,
-            workshop_id: workshop.id,
-            vehicle_id: vehicleId,
-            created_by: profile.id,
-            odometer: parseInt(odometer) || 0,
-            incoming_soc: socValue,
-            service_categories: Array.from(selectedL1),
-            issue_categories: Array.from(selectedL2),
-            status: 'DRAFT',
-            soc_detected_value: detectedSoc,
-            soc_detection_confidence: detectedConfidence,
-            soc_override_reason: socMismatchConfirmed ? socMismatchReason : null,
-            soc_override_comment: socMismatchConfirmed ? socMismatchComment : null,
-            soc_anomaly_flag: false,
-            // Rider / alternate contact fields
-            contact_for_updates: altPhoneEnabled ? contactData.contact_for_updates : 'OWNER',
-            rider_name: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' ? contactData.rider_name : null,
-            rider_phone: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' ? contactData.rider_phone : null,
-            rider_reason: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' ? contactData.rider_reason : null,
-            rider_reason_notes: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' && contactData.rider_reason === 'OTHER' ? contactData.rider_reason_notes : null,
-          } as any)
-          .select()
-          .single();
+        const { data: jcData, error: jcError } = await supabase.
+        from('job_cards').
+        insert({
+          jc_number: jcNumber,
+          workshop_id: workshop.id,
+          vehicle_id: vehicleId,
+          created_by: profile.id,
+          odometer: parseInt(odometer) || 0,
+          incoming_soc: socValue,
+          service_categories: Array.from(selectedL1),
+          issue_categories: Array.from(selectedL2),
+          status: 'DRAFT',
+          soc_detected_value: detectedSoc,
+          soc_detection_confidence: detectedConfidence,
+          soc_override_reason: socMismatchConfirmed ? socMismatchReason : null,
+          soc_override_comment: socMismatchConfirmed ? socMismatchComment : null,
+          soc_anomaly_flag: false,
+          // Rider / alternate contact fields
+          contact_for_updates: altPhoneEnabled ? contactData.contact_for_updates : 'OWNER',
+          rider_name: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' ? contactData.rider_name : null,
+          rider_phone: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' ? contactData.rider_phone : null,
+          rider_reason: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' ? contactData.rider_reason : null,
+          rider_reason_notes: altPhoneEnabled && contactData.contact_for_updates === 'RIDER' && contactData.rider_reason === 'OTHER' ? contactData.rider_reason_notes : null
+        } as any).
+        select().
+        single();
 
         if (jcError) {
           // Retry on duplicate JC number (race condition)
@@ -633,35 +633,35 @@ export default function CreateJobCardPage() {
           imageUpdates.soc_photo_url = socUrl;
         }
         if (Object.keys(imageUpdates).length > 0) {
-          await supabase
-            .from('job_cards')
-            .update(imageUpdates as any)
-            .eq('id', jobCard.id);
+          await supabase.
+          from('job_cards').
+          update(imageUpdates as any).
+          eq('id', jobCard.id);
         }
       } catch (imgErr) {
         console.error('Image upload error (non-fatal):', imgErr);
       }
 
       // Update vehicle's last service odometer
-      await supabase
-        .from('vehicles')
-        .update({
-          last_service_odo: parseInt(odometer),
-          last_service_date: new Date().toISOString().split('T')[0],
-          model: selectedModel,
-          color: selectedColor,
-        })
-        .eq('id', vehicleId);
+      await supabase.
+      from('vehicles').
+      update({
+        last_service_odo: parseInt(odometer),
+        last_service_date: new Date().toISOString().split('T')[0],
+        model: selectedModel,
+        color: selectedColor
+      }).
+      eq('id', vehicleId);
 
       // Create initial audit trail
-      await supabase
-        .from('audit_trail')
-        .insert({
-          job_card_id: jobCard.id,
-          user_id: profile.id,
-          to_status: 'DRAFT',
-          notes: 'Job card created',
-        });
+      await supabase.
+      from('audit_trail').
+      insert({
+        job_card_id: jobCard.id,
+        user_id: profile.id,
+        to_status: 'DRAFT',
+        notes: 'Job card created'
+      });
 
       // Audit rider contact selection
       if (altPhoneEnabled && contactData.contact_for_updates === 'RIDER') {
@@ -671,30 +671,30 @@ export default function CreateJobCardPage() {
           action: 'CONTACT_SET',
           contact_for_updates: 'RIDER',
           phone_last4: contactData.rider_phone.slice(-4),
-          rider_reason: contactData.rider_reason,
+          rider_reason: contactData.rider_reason
         });
       }
 
       // Server-side SOC anomaly detection: flag if SOC jump > 40% from last known
       const finalSocValue = soc !== '' ? parseInt(soc) : null;
       if (finalSocValue !== null && vehicle?.id) {
-        const { data: lastJcWithSoc } = await supabase
-          .from('job_cards')
-          .select('incoming_soc')
-          .eq('vehicle_id', vehicle.id)
-          .not('incoming_soc', 'is', null)
-          .neq('id', jobCard.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data: lastJcWithSoc } = await supabase.
+        from('job_cards').
+        select('incoming_soc').
+        eq('vehicle_id', vehicle.id).
+        not('incoming_soc', 'is', null).
+        neq('id', jobCard.id).
+        order('created_at', { ascending: false }).
+        limit(1).
+        maybeSingle();
 
         if (lastJcWithSoc?.incoming_soc !== null && lastJcWithSoc?.incoming_soc !== undefined) {
           const socJump = Math.abs(finalSocValue - lastJcWithSoc.incoming_soc);
           if (socJump > 40) {
-            await supabase
-              .from('job_cards')
-              .update({ soc_anomaly_flag: true } as any)
-              .eq('id', jobCard.id);
+            await supabase.
+            from('job_cards').
+            update({ soc_anomaly_flag: true } as any).
+            eq('id', jobCard.id);
           }
         }
       }
@@ -710,9 +710,9 @@ export default function CreateJobCardPage() {
     }
   };
 
-  const l1Categories = categories.filter(c => !c.parent_code);
-  const getL2Categories = (parentCode: string) => 
-    categories.filter(c => c.parent_code === parentCode);
+  const l1Categories = categories.filter((c) => !c.parent_code);
+  const getL2Categories = (parentCode: string) =>
+  categories.filter((c) => c.parent_code === parentCode);
 
   const toggleL1 = (code: string) => {
     const newSelected = new Set(selectedL1);
@@ -720,7 +720,7 @@ export default function CreateJobCardPage() {
       newSelected.delete(code);
       // Also remove related L2s
       const newL2 = new Set(selectedL2);
-      getL2Categories(code).forEach(c => newL2.delete(c.code));
+      getL2Categories(code).forEach((c) => newL2.delete(c.code));
       setSelectedL2(newL2);
     } else {
       newSelected.add(code);
@@ -738,48 +738,48 @@ export default function CreateJobCardPage() {
     setSelectedL2(newSelected);
   };
 
-  const stepIndex = STEPS.findIndex(s => s.key === currentStep);
+  const stepIndex = STEPS.findIndex((s) => s.key === currentStep);
 
   return (
     <AppLayout>
-      <PageHeader 
-        title="Create Job Card" 
-        showBack 
-        backTo="/"
-      />
+      <PageHeader
+        title="Create Job Card"
+        showBack
+        backTo="/" />
+      
       
       <div className="p-4 space-y-4">
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
-          {STEPS.map((step, i) => (
-            <div key={step.key} className="flex items-center">
-              <div 
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                  i <= stepIndex 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {i < stepIndex ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  i + 1
-                )}
+          {STEPS.map((step, i) =>
+          <div key={step.key} className="flex items-center">
+              <div
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+              i <= stepIndex ?
+              'bg-primary text-primary-foreground' :
+              'bg-muted text-muted-foreground'}`
+              }>
+              
+                {i < stepIndex ?
+              <CheckCircle2 className="h-4 w-4" /> :
+
+              i + 1
+              }
               </div>
-              {i < STEPS.length - 1 && (
-                <div 
-                  className={`h-0.5 w-8 sm:w-12 ${
-                    i < stepIndex ? 'bg-primary' : 'bg-muted'
-                  }`}
-                />
-              )}
+              {i < STEPS.length - 1 &&
+            <div
+              className={`h-0.5 w-8 sm:w-12 ${
+              i < stepIndex ? 'bg-primary' : 'bg-muted'}`
+              } />
+
+            }
             </div>
-          ))}
+          )}
         </div>
 
         {/* Step 1: Vehicle */}
-        {currentStep === 'vehicle' && (
-          <Card>
+        {currentStep === 'vehicle' &&
+        <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Car className="h-5 w-5" />
@@ -790,12 +790,12 @@ export default function CreateJobCardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {modelsError && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+              {modelsError &&
+            <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{modelsError}</span>
                 </div>
-              )}
+            }
               <div className="space-y-2">
                 <Label>
                   Registration Number <span className="text-destructive">*</span>
@@ -803,71 +803,71 @@ export default function CreateJobCardPage() {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Input
-                      placeholder="e.g., LAG 123 XY"
-                      value={regNo}
-                      onChange={(e) => {
-                        setRegNo(e.target.value.toUpperCase());
-                        setVehicleSearched(false);
-                        setVehicle(null);
-                        setIsNewVehicle(false);
-                        setSelectedModel('');
-                        setUnknownModelWarning(false);
-                        setSelectedColor('');
-                        setUnknownColorWarning(false);
-                      }}
-                      className="h-12 text-base uppercase"
-                    />
-                  </div>
-                  <Button 
-                    onClick={() => searchVehicle()}
-                    disabled={isLoading || !regNo.trim() || !!regNoError}
-                    className="h-12"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                {regNoError && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {regNoError}
-                  </p>
-                )}
-                {!vehicleSearched && regNo.trim() && !regNoError && (
-                  <p className="text-xs text-muted-foreground">
-                    Click search to check if vehicle exists
-                  </p>
-                )}
-                {workshop && (
-                  <PlateScanner
-                    workshopId={workshop.id}
-                    ocrEnabled={ocrEnabled}
-                    onResult={(regNumber) => {
-                      setRegNo(regNumber);
+                    placeholder="e.g., LAG 123 XY"
+                    value={regNo}
+                    onChange={(e) => {
+                      setRegNo(e.target.value.toUpperCase());
+                      setVehicleSearched(false);
                       setVehicle(null);
                       setIsNewVehicle(false);
                       setSelectedModel('');
                       setUnknownModelWarning(false);
                       setSelectedColor('');
                       setUnknownColorWarning(false);
-                      // Auto-search if format is valid
-                      const formatErr = validateRegNo(regNumber, workshop?.country);
-                      if (!formatErr) {
-                        // Use setTimeout to let state updates settle before searching
-                        setTimeout(() => searchVehicle(regNumber), 0);
-                      } else {
-                        setVehicleSearched(false);
-                      }
                     }}
-                  />
-                )}
+                    className="h-12 text-base uppercase" />
+                  
+                  </div>
+                  <Button
+                  onClick={() => searchVehicle()}
+                  disabled={isLoading || !regNo.trim() || !!regNoError}
+                  className="h-12">
+                  
+                    {isLoading ?
+                  <Loader2 className="h-4 w-4 animate-spin" /> :
+
+                  <Search className="h-4 w-4" />
+                  }
+                  </Button>
+                </div>
+                {regNoError &&
+              <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {regNoError}
+                  </p>
+              }
+                {!vehicleSearched && regNo.trim() && !regNoError &&
+              <p className="text-xs text-muted-foreground">
+                    Click search to check if vehicle exists
+                  </p>
+              }
+                {workshop &&
+              <PlateScanner
+                workshopId={workshop.id}
+                ocrEnabled={ocrEnabled}
+                onResult={(regNumber) => {
+                  setRegNo(regNumber);
+                  setVehicle(null);
+                  setIsNewVehicle(false);
+                  setSelectedModel('');
+                  setUnknownModelWarning(false);
+                  setSelectedColor('');
+                  setUnknownColorWarning(false);
+                  // Auto-search if format is valid
+                  const formatErr = validateRegNo(regNumber, workshop?.country);
+                  if (!formatErr) {
+                    // Use setTimeout to let state updates settle before searching
+                    setTimeout(() => searchVehicle(regNumber), 0);
+                  } else {
+                    setVehicleSearched(false);
+                  }
+                }} />
+
+              }
               </div>
 
-              {vehicleSearched && vehicle && (
-                <div className="space-y-4">
+              {vehicleSearched && vehicle &&
+            <div className="space-y-4">
                   {/* Vehicle Found Success Card */}
                   <div className="p-4 rounded-lg bg-muted/50 space-y-3">
                     <div className="flex items-center gap-2 text-success">
@@ -906,25 +906,25 @@ export default function CreateJobCardPage() {
                         <div>
                           <span className="text-muted-foreground block text-xs mb-1">Purchase Date</span>
                           <p className="font-medium">
-                            {vehicle.purchase_date 
-                              ? new Date(vehicle.purchase_date).toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'short', 
-                                  day: 'numeric' 
-                                })
-                              : 'N/A'}
+                            {vehicle.purchase_date ?
+                        new Date(vehicle.purchase_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }) :
+                        'N/A'}
                           </p>
                         </div>
                         <div>
                           <span className="text-muted-foreground block text-xs mb-1">Last Service Date</span>
                           <p className="font-medium">
-                            {vehicle.last_service_date
-                              ? new Date(vehicle.last_service_date).toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'short', 
-                                  day: 'numeric' 
-                                })
-                              : 'N/A'}
+                            {vehicle.last_service_date ?
+                        new Date(vehicle.last_service_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }) :
+                        'N/A'}
                           </p>
                         </div>
                       </div>
@@ -933,43 +933,43 @@ export default function CreateJobCardPage() {
                       <div className="text-sm">
                         <span className="text-muted-foreground block text-xs mb-1">Last Service Odo</span>
                         <p className="font-medium">
-                          {vehicle.last_service_date && lastServiceOdo > 0 
-                            ? lastServiceOdo.toLocaleString() + ' km'
-                            : 'N/A'}
+                          {vehicle.last_service_date && lastServiceOdo > 0 ?
+                      lastServiceOdo.toLocaleString() + ' km' :
+                      'N/A'}
                         </p>
                       </div>
                     </div>
 
-                    {unknownModelWarning && (
-                      <div className="flex items-center gap-2 text-warning text-xs">
+                    {unknownModelWarning &&
+                <div className="flex items-center gap-2 text-warning text-xs">
                         <AlertCircle className="h-3 w-3" />
                         <span>Unknown model detected ({vehicle.model}). Please select the closest match.</span>
                       </div>
-                    )}
-                    {unknownColorWarning && (
-                      <div className="flex items-center gap-2 text-warning text-xs">
+                }
+                    {unknownColorWarning &&
+                <div className="flex items-center gap-2 text-warning text-xs">
                         <AlertCircle className="h-3 w-3" />
                         <span>Unknown colour detected ({vehicle.color}). Please select the closest match.</span>
                       </div>
-                    )}
+                }
                   </div>
 
                   {/* Contact for OTP & Updates — only if feature enabled and vehicle found */}
-                  {altPhoneEnabled && (
-                    <ContactForUpdatesSelector
-                      ownerPhone={vehicle.owner_phone}
-                      ownerName={vehicle.owner_name}
-                      workshopCountry={workshop?.country}
-                      value={contactData}
-                      onChange={setContactData}
-                      isNewVehicle={false}
-                    />
-                  )}
-                </div>
-              )}
+                  {altPhoneEnabled &&
+              <ContactForUpdatesSelector
+                ownerPhone={vehicle.owner_phone}
+                ownerName={vehicle.owner_name}
+                workshopCountry={workshop?.country}
+                value={contactData}
+                onChange={setContactData}
+                isNewVehicle={false} />
 
-              {vehicleSearched && isNewVehicle && (
-                <div className="space-y-4">
+              }
+                </div>
+            }
+
+              {vehicleSearched && isNewVehicle &&
+            <div className="space-y-4">
                   <div className="flex items-center gap-2 text-warning">
                     <AlertCircle className="h-4 w-4" />
                     <span className="font-medium">New Vehicle</span>
@@ -984,11 +984,11 @@ export default function CreateJobCardPage() {
                             <SelectValue placeholder="Select model" />
                           </SelectTrigger>
                           <SelectContent className="bg-background z-50">
-                            {modelsLoading ? (
-                              <SelectItem value="__loading" disabled>Loading…</SelectItem>
-                            ) : vehicleModels.map((model) => (
-                              <SelectItem key={model} value={model}>{model}</SelectItem>
-                            ))}
+                            {modelsLoading ?
+                        <SelectItem value="__loading" disabled>Loading…</SelectItem> :
+                        vehicleModels.map((model) =>
+                        <SelectItem key={model} value={model}>{model}</SelectItem>
+                        )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -999,9 +999,9 @@ export default function CreateJobCardPage() {
                             <SelectValue placeholder="Select colour" />
                           </SelectTrigger>
                           <SelectContent className="bg-background z-50">
-                            {VEHICLE_COLORS.map((color) => (
-                              <SelectItem key={color} value={color}>{color}</SelectItem>
-                            ))}
+                            {VEHICLE_COLORS.map((color) =>
+                        <SelectItem key={color} value={color}>{color}</SelectItem>
+                        )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1012,73 +1012,73 @@ export default function CreateJobCardPage() {
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                          placeholder="Full name"
-                          value={newVehicle.owner_name}
-                          onChange={(e) => setNewVehicle(prev => ({ ...prev, owner_name: e.target.value }))}
-                          className="pl-10"
-                        />
+                      placeholder="Full name"
+                      value={newVehicle.owner_name}
+                      onChange={(e) => setNewVehicle((prev) => ({ ...prev, owner_name: e.target.value }))}
+                      className="pl-10" />
+                    
                       </div>
                     </div>
                     
                     <div className="space-y-2">
                       <Label>Customer Phone <span className="text-destructive">*</span></Label>
                       <div className="grid grid-cols-[140px_1fr] gap-2">
-                        <Select value={phoneCountry} onValueChange={(val) => { setPhoneCountry(val); }}>
+                        <Select value={phoneCountry} onValueChange={(val) => {setPhoneCountry(val);}}>
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder="Select country" />
                           </SelectTrigger>
                           <SelectContent className="bg-background z-50">
-                            {dbCountries.map((c) => (
-                              <SelectItem key={c.name} value={c.name}>{c.name} ({c.calling_code})</SelectItem>
-                            ))}
+                            {dbCountries.map((c) =>
+                        <SelectItem key={c.name} value={c.name}>{c.name} ({c.calling_code})</SelectItem>
+                        )}
                           </SelectContent>
                         </Select>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder={phoneCountry ? 'e.g. 712345678' : 'Select country first'}
-                            value={phoneNumber}
-                            disabled={!phoneCountry}
-                            onChange={(e) => {
-                              const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
-                              setPhoneNumber(digits);
-                            }}
-                            className="pl-10"
-                            maxLength={9}
-                          />
+                        type="text"
+                        inputMode="numeric"
+                        placeholder={phoneCountry ? 'e.g. 712345678' : 'Select country first'}
+                        value={phoneNumber}
+                        disabled={!phoneCountry}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+                          setPhoneNumber(digits);
+                        }}
+                        className="pl-10"
+                        maxLength={9} />
+                      
                         </div>
                       </div>
-                      {phoneNumber.length > 0 && phoneNumber.length !== 9 && (
-                        <p className="text-xs text-destructive flex items-center gap-1">
+                      {phoneNumber.length > 0 && phoneNumber.length !== 9 &&
+                  <p className="text-xs text-destructive flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Phone number must be exactly 9 digits ({phoneNumber.length}/9)
                         </p>
-                      )}
+                  }
                     </div>
                   </div>
 
                   {/* Contact for OTP & Updates — for new vehicles too */}
-                  {altPhoneEnabled && (
-                    <ContactForUpdatesSelector
-                      ownerPhone={phoneNumber}
-                      ownerName={newVehicle.owner_name}
-                      workshopCountry={workshop?.country}
-                      value={contactData}
-                      onChange={setContactData}
-                      isNewVehicle={true}
-                    />
-                  )}
+                  {altPhoneEnabled &&
+              <ContactForUpdatesSelector
+                ownerPhone={phoneNumber}
+                ownerName={newVehicle.owner_name}
+                workshopCountry={workshop?.country}
+                value={contactData}
+                onChange={setContactData}
+                isNewVehicle={true} />
+
+              }
                 </div>
-              )}
+            }
             </CardContent>
           </Card>
-        )}
+        }
 
         {/* Step 2: Odometer */}
-        {currentStep === 'odometer' && (
-          <Card>
+        {currentStep === 'odometer' &&
+        <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Gauge className="h-5 w-5" />
@@ -1091,49 +1091,49 @@ export default function CreateJobCardPage() {
             <CardContent className="space-y-4">
               {/* 1. Photo capture FIRST */}
               <OdometerPhotoCapture
-                onValidationComplete={handleOdometerValidation}
-                ocrEnabled={ocrEnabled}
-              />
+              onValidationComplete={handleOdometerValidation}
+              ocrEnabled={ocrEnabled} />
+            
 
               {/* 2. Odometer text field (prefilled from OCR) */}
-              {odometerPhoto && odometerValidation && !odometerValidation.isValidating && !odometerValidation.error && (
-                <>
+              {odometerPhoto && odometerValidation && !odometerValidation.isValidating && !odometerValidation.error &&
+            <>
                   <div className="space-y-2">
                     <Label>Current Odometer (km) <span className="text-destructive">*</span></Label>
                     <Input
-                      type="number"
-                      placeholder="e.g., 15000"
-                      value={odometer}
-                      onChange={(e) => {
-                        setOdometer(e.target.value);
-                        setOdoLowerConfirmed(false);
-                        setOdometerMismatchConfirmed(false);
-                        setOdometerMismatchReason(undefined);
-                      }}
-                      className="h-12 text-lg"
-                      inputMode="numeric"
-                    />
-                    {ocrOdometerReading !== null && (
-                      <p className="text-xs text-muted-foreground">
+                  type="number"
+                  placeholder="e.g., 15000"
+                  value={odometer}
+                  onChange={(e) => {
+                    setOdometer(e.target.value);
+                    setOdoLowerConfirmed(false);
+                    setOdometerMismatchConfirmed(false);
+                    setOdometerMismatchReason(undefined);
+                  }}
+                  className="h-12 text-lg"
+                  inputMode="numeric" />
+                
+                    {ocrOdometerReading !== null &&
+                <p className="text-xs text-muted-foreground">
                         OCR reading: {ocrOdometerReading.toLocaleString()} km
                       </p>
-                    )}
-                    {lastServiceOdo > 0 && (
-                      <p className="text-xs text-muted-foreground">
+                }
+                    {lastServiceOdo > 0 &&
+                <p className="text-xs text-muted-foreground">
                         Last service odometer: {lastServiceOdo.toLocaleString()} km
                       </p>
-                    )}
-                    {lastServiceOdo > 0 && odometer && parseInt(odometer) < lastServiceOdo && !odoLowerConfirmed && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
+                }
+                    {lastServiceOdo > 0 && odometer && parseInt(odometer) < lastServiceOdo && !odoLowerConfirmed &&
+                <p className="text-xs text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         Reading is lower than last service — justification required
                       </p>
-                    )}
+                }
                   </div>
 
                   {/* Inline mismatch warning when user edits to differ from OCR by >10% */}
-                  {odometerMismatch?.hasMismatch && !odometerMismatchConfirmed && (
-                    <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
+                  {odometerMismatch?.hasMismatch && !odometerMismatchConfirmed &&
+              <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
                       <div className="flex items-center gap-2 text-warning">
                         <AlertCircle className="h-4 w-4" />
                         <span className="text-sm font-medium">
@@ -1155,34 +1155,34 @@ export default function CreateJobCardPage() {
                           Explain the discrepancy <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          id="odo-mismatch-reason"
-                          placeholder="e.g., Partial digits, reflection..."
-                          value={odometerMismatchReason || ''}
-                          onChange={(e) => setOdometerMismatchReason(e.target.value)}
-                        />
+                    id="odo-mismatch-reason"
+                    placeholder="e.g., Partial digits, reflection..."
+                    value={odometerMismatchReason || ''}
+                    onChange={(e) => setOdometerMismatchReason(e.target.value)} />
+                  
                       </div>
                       <Button
-                        type="button"
-                        size="sm"
-                        disabled={!odometerMismatchReason || odometerMismatchReason.trim().length < 10}
-                        onClick={() => setOdometerMismatchConfirmed(true)}
-                      >
+                  type="button"
+                  size="sm"
+                  disabled={!odometerMismatchReason || odometerMismatchReason.trim().length < 10}
+                  onClick={() => setOdometerMismatchConfirmed(true)}>
+                  
                         Confirm Value
                       </Button>
-                      {odometerMismatchReason && odometerMismatchReason.trim().length > 0 && odometerMismatchReason.trim().length < 10 && (
-                        <p className="text-xs text-destructive">Minimum 10 characters required</p>
-                      )}
+                      {odometerMismatchReason && odometerMismatchReason.trim().length > 0 && odometerMismatchReason.trim().length < 10 &&
+                <p className="text-xs text-destructive">Minimum 10 characters required</p>
+                }
                     </div>
-                  )}
+              }
 
-                  {odometerMismatch?.hasMismatch && odometerMismatchConfirmed && (
-                    <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                  {odometerMismatch?.hasMismatch && odometerMismatchConfirmed &&
+              <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
                       <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                       <span className="text-xs text-success font-medium">
                         Mismatch confirmed with reason
                       </span>
                     </div>
-                  )}
+              }
 
                   <Separator className="my-4" />
 
@@ -1193,93 +1193,93 @@ export default function CreateJobCardPage() {
                       Incoming SOC (%) <span className="text-destructive">*</span>
                     </Label>
 
-                    {socAutoFilled && (
-                      <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                    {socAutoFilled &&
+                <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
                         <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                         <span className="text-xs text-success font-medium">
                           SOC auto-detected
                         </span>
                         <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="ml-auto h-6 text-xs px-2"
-                          onClick={() => {
-                            setSocAutoFilled(false);
-                            setSoc('');
-                            setSocPhoto(null);
-                            setSocValidation(null);
-                            setSocMismatchConfirmed(false);
-                            setSocMismatchReason(undefined);
-                            setSocMismatchComment(undefined);
-                            setOcrSocReading(null);
-                          }}
-                        >
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 text-xs px-2"
+                    onClick={() => {
+                      setSocAutoFilled(false);
+                      setSoc('');
+                      setSocPhoto(null);
+                      setSocValidation(null);
+                      setSocMismatchConfirmed(false);
+                      setSocMismatchReason(undefined);
+                      setSocMismatchComment(undefined);
+                      setOcrSocReading(null);
+                    }}>
+                    
                           Override
                         </Button>
                       </div>
-                    )}
+                }
 
                     {/* Photo-first: show SocPhotoCapture before the SOC input when overriding */}
-                    {!socAutoFilled && (
-                      <SocPhotoCapture
-                        onValidationComplete={handleSocValidation}
-                        ocrEnabled={ocrEnabled}
-                      />
-                    )}
+                    {!socAutoFilled &&
+                <SocPhotoCapture
+                  onValidationComplete={handleSocValidation}
+                  ocrEnabled={ocrEnabled} />
+
+                }
 
                     {/* SOC input: show after photo is captured (or when auto-filled) */}
-                    {(socAutoFilled || socPhoto) && (
-                      <>
+                    {(socAutoFilled || socPhoto) &&
+                <>
                         <Input
-                          type="number"
-                          placeholder="e.g., 75"
-                          value={soc}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') {
-                              setSoc('');
-                            } else {
-                              const num = parseInt(val, 10);
-                              if (!isNaN(num) && num >= 0 && num <= 100 && String(num) === val.replace(/^0+(?=\d)/, '')) {
-                                setSoc(String(num));
-                              }
-                            }
-                            setSocMismatchConfirmed(false);
-                            setSocMismatchReason(undefined);
-                          }}
-                          onKeyDown={(e) => {
-                            if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
-                              e.preventDefault();
-                            }
-                          }}
-                          min={0}
-                          max={100}
-                          step={1}
-                          className="h-12 text-lg"
-                          inputMode="numeric"
-                          disabled={socAutoFilled}
-                        />
-                        {ocrSocReading !== null && !socAutoFilled && (
-                          <p className="text-xs text-muted-foreground">
+                    type="number"
+                    placeholder="e.g., 75"
+                    value={soc}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setSoc('');
+                      } else {
+                        const num = parseInt(val, 10);
+                        if (!isNaN(num) && num >= 0 && num <= 100 && String(num) === val.replace(/^0+(?=\d)/, '')) {
+                          setSoc(String(num));
+                        }
+                      }
+                      setSocMismatchConfirmed(false);
+                      setSocMismatchReason(undefined);
+                    }}
+                    onKeyDown={(e) => {
+                      if (['.', ',', '-', 'e', 'E', '+'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="h-12 text-lg"
+                    inputMode="numeric"
+                    disabled={socAutoFilled} />
+                  
+                        {ocrSocReading !== null && !socAutoFilled &&
+                  <p className="text-xs text-muted-foreground">
                             OCR reading: {ocrSocReading}%
                           </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {socAutoFilled
-                            ? 'SOC auto-filled from odometer image. Click "Override" to change.'
-                            : 'Edit the value if needed (0–100)'}
-                        </p>
-                        {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) && (
-                          <p className="text-xs text-destructive flex items-center gap-1">
+                  }
+                        
+
+
+
+                  
+                        {soc !== '' && (isNaN(parseInt(soc)) || parseInt(soc) < 0 || parseInt(soc) > 100 || soc.includes('.')) &&
+                  <p className="text-xs text-destructive flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" />
                             SOC must be a whole number between 0 and 100
                           </p>
-                        )}
+                  }
 
                         {/* Inline SOC mismatch warning */}
-                        {socMismatch?.hasMismatch && !socMismatchConfirmed && (
-                          <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
+                        {socMismatch?.hasMismatch && !socMismatchConfirmed &&
+                  <div className="p-3 rounded-lg border-2 border-warning bg-warning/5 space-y-3">
                             <div className="flex items-center gap-2 text-warning">
                               <AlertCircle className="h-4 w-4" />
                               <span className="text-sm font-medium">
@@ -1301,47 +1301,47 @@ export default function CreateJobCardPage() {
                                 Explain the discrepancy <span className="text-destructive">*</span>
                               </Label>
                               <Input
-                                id="soc-mismatch-reason"
-                                placeholder="e.g., Display reflection, SOC fluctuating..."
-                                value={socMismatchReason || ''}
-                                onChange={(e) => setSocMismatchReason(e.target.value)}
-                              />
+                        id="soc-mismatch-reason"
+                        placeholder="e.g., Display reflection, SOC fluctuating..."
+                        value={socMismatchReason || ''}
+                        onChange={(e) => setSocMismatchReason(e.target.value)} />
+                      
                             </div>
                             <Button
-                              type="button"
-                              size="sm"
-                              disabled={!socMismatchReason || socMismatchReason.trim().length < 10}
-                              onClick={() => setSocMismatchConfirmed(true)}
-                            >
+                      type="button"
+                      size="sm"
+                      disabled={!socMismatchReason || socMismatchReason.trim().length < 10}
+                      onClick={() => setSocMismatchConfirmed(true)}>
+                      
                               Confirm Value
                             </Button>
-                            {socMismatchReason && socMismatchReason.trim().length > 0 && socMismatchReason.trim().length < 10 && (
-                              <p className="text-xs text-destructive">Minimum 10 characters required</p>
-                            )}
+                            {socMismatchReason && socMismatchReason.trim().length > 0 && socMismatchReason.trim().length < 10 &&
+                    <p className="text-xs text-destructive">Minimum 10 characters required</p>
+                    }
                           </div>
-                        )}
+                  }
 
-                        {socMismatch?.hasMismatch && socMismatchConfirmed && (
-                          <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                        {socMismatch?.hasMismatch && socMismatchConfirmed &&
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
                             <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                             <span className="text-xs text-success font-medium">
                               Mismatch confirmed with reason
                             </span>
                           </div>
-                        )}
+                  }
                       </>
-                    )}
+                }
                   </div>
                 </>
-              )}
+            }
             </CardContent>
           </Card>
-        )}
+        }
 
 
         {/* Step 3: Services */}
-        {currentStep === 'services' && (
-          <Card>
+        {currentStep === 'services' &&
+        <Card>
             <CardHeader>
               <CardTitle className="text-lg">Service Categories</CardTitle>
               <CardDescription>
@@ -1349,45 +1349,45 @@ export default function CreateJobCardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {l1Categories.map((cat) => (
-                <div key={cat.id} className="space-y-2">
-                  <div 
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
-                    onClick={() => toggleL1(cat.code)}
-                  >
+              {l1Categories.map((cat) =>
+            <div key={cat.id} className="space-y-2">
+                  <div
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                onClick={() => toggleL1(cat.code)}>
+                
                     <Checkbox
-                      checked={selectedL1.has(cat.code)}
-                      onCheckedChange={() => toggleL1(cat.code)}
-                    />
+                  checked={selectedL1.has(cat.code)}
+                  onCheckedChange={() => toggleL1(cat.code)} />
+                
                     <span className="font-medium">{cat.name}</span>
                   </div>
                   
-                  {selectedL1.has(cat.code) && (
-                    <div className="ml-6 space-y-1">
-                      {getL2Categories(cat.code).map((l2) => (
-                        <div 
-                          key={l2.id}
-                          className="flex items-center gap-3 p-2 rounded hover:bg-muted/50 cursor-pointer"
-                          onClick={() => toggleL2(l2.code)}
-                        >
+                  {selectedL1.has(cat.code) &&
+              <div className="ml-6 space-y-1">
+                      {getL2Categories(cat.code).map((l2) =>
+                <div
+                  key={l2.id}
+                  className="flex items-center gap-3 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                  onClick={() => toggleL2(l2.code)}>
+                  
                           <Checkbox
-                            checked={selectedL2.has(l2.code)}
-                            onCheckedChange={() => toggleL2(l2.code)}
-                          />
+                    checked={selectedL2.has(l2.code)}
+                    onCheckedChange={() => toggleL2(l2.code)} />
+                  
                           <span className="text-sm">{l2.name}</span>
                         </div>
-                      ))}
+                )}
                     </div>
-                  )}
+              }
                 </div>
-              ))}
+            )}
             </CardContent>
           </Card>
-        )}
+        }
 
         {/* Step 4: Confirm */}
-        {currentStep === 'confirm' && (
-          <div className="space-y-4">
+        {currentStep === 'confirm' &&
+        <div className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Review & Confirm</CardTitle>
@@ -1442,8 +1442,8 @@ export default function CreateJobCardPage() {
                   </div>
 
                   {/* Show contact selection in confirm step when feature enabled */}
-                  {altPhoneEnabled && contactData.contact_for_updates === 'RIDER' && (
-                    <div className="mt-3 pt-3 border-t border-border">
+                  {altPhoneEnabled && contactData.contact_for_updates === 'RIDER' &&
+                <div className="mt-3 pt-3 border-t border-border">
                       <p className="text-xs text-muted-foreground mb-1 font-medium">Contact for OTP & Updates: Rider</p>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
@@ -1460,7 +1460,7 @@ export default function CreateJobCardPage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                }
                 </div>
 
                 <Separator />
@@ -1470,37 +1470,37 @@ export default function CreateJobCardPage() {
                   <span className="text-sm text-muted-foreground font-medium">Services Selected</span>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {Array.from(selectedL1).map((code) => {
-                      const cat = l1Categories.find(c => c.code === code);
-                      return (
-                        <span 
-                          key={code}
-                          className="inline-flex items-center rounded-md bg-primary/10 text-primary px-2 py-1 text-xs font-medium"
-                        >
+                    const cat = l1Categories.find((c) => c.code === code);
+                    return (
+                      <span
+                        key={code}
+                        className="inline-flex items-center rounded-md bg-primary/10 text-primary px-2 py-1 text-xs font-medium">
+                        
                           {cat?.name || code}
-                        </span>
-                      );
-                    })}
+                        </span>);
+
+                  })}
                   </div>
                 </div>
 
-                {selectedL2.size > 0 && (
-                  <div>
+                {selectedL2.size > 0 &&
+              <div>
                     <span className="text-sm text-muted-foreground font-medium">Specific Issues</span>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {Array.from(selectedL2).map((code) => {
-                        const cat = categories.find(c => c.code === code);
-                        return (
-                          <span 
-                            key={code}
-                            className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs"
-                          >
+                    const cat = categories.find((c) => c.code === code);
+                    return (
+                      <span
+                        key={code}
+                        className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs">
+                        
                             {cat?.name || code}
-                          </span>
-                        );
-                      })}
+                          </span>);
+
+                  })}
                     </div>
                   </div>
-                )}
+              }
 
                 {/* Photo Validation Status */}
                 <div className="p-3 rounded-lg bg-muted/50">
@@ -1510,37 +1510,37 @@ export default function CreateJobCardPage() {
                       <CheckCircle2 className="h-3 w-3 text-success" />
                       <span>Odometer photo captured and validated</span>
                     </div>
-                    {odometerValidation?.ocr?.ocrReading != null && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                    {odometerValidation?.ocr?.ocrReading != null &&
+                  <div className="flex items-center gap-2 text-muted-foreground">
                         <span>OCR reading: {odometerValidation.ocr!.ocrReading!.toLocaleString()} km</span>
                         <span>({odometerValidation.ocr!.ocrConfidence}% confidence)</span>
                       </div>
-                    )}
-                    {odometerMismatchConfirmed && odometerMismatchReason && (
-                      <div className="mt-2 p-2 bg-warning/10 rounded text-xs">
+                  }
+                    {odometerMismatchConfirmed && odometerMismatchReason &&
+                  <div className="mt-2 p-2 bg-warning/10 rounded text-xs">
                         <p className="font-medium text-warning">Odometer mismatch confirmed:</p>
                         <p className="text-muted-foreground mt-1">{odometerMismatchReason}</p>
                       </div>
-                    )}
+                  }
                     <div className="flex items-center gap-2 mt-2">
                       <CheckCircle2 className="h-3 w-3 text-success" />
                       <span>SOC photo captured and validated</span>
                     </div>
-                    {socValidation?.ocr?.socReading != null && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                    {socValidation?.ocr?.socReading != null &&
+                  <div className="flex items-center gap-2 text-muted-foreground">
                         <span>SOC reading: {socValidation.ocr!.socReading}%</span>
                         <span>({socValidation.ocr!.confidence}% confidence)</span>
                       </div>
-                    )}
-                    {socMismatchConfirmed && socMismatchReason && (
-                      <div className="mt-2 p-2 bg-warning/10 rounded text-xs">
+                  }
+                    {socMismatchConfirmed && socMismatchReason &&
+                  <div className="mt-2 p-2 bg-warning/10 rounded text-xs">
                         <p className="font-medium text-warning">SOC mismatch confirmed:</p>
                         <p className="text-muted-foreground mt-1">Reason: {socMismatchReason}</p>
-                        {socMismatchComment && (
-                          <p className="text-muted-foreground mt-1">{socMismatchComment}</p>
-                        )}
+                        {socMismatchComment &&
+                    <p className="text-muted-foreground mt-1">{socMismatchComment}</p>
+                    }
                       </div>
-                    )}
+                  }
                   </div>
                 </div>
               </CardContent>
@@ -1558,42 +1558,42 @@ export default function CreateJobCardPage() {
               </CardContent>
             </Card>
           </div>
-        )}
+        }
 
         {/* Navigation Buttons */}
         <div className="flex gap-3 pt-4">
-          {stepIndex > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={prevStep}
-              className="flex-1 h-12"
-            >
+          {stepIndex > 0 &&
+          <Button
+            variant="outline"
+            onClick={prevStep}
+            className="flex-1 h-12">
+            
               <ChevronLeft className="h-4 w-4 mr-1" />
               Back
             </Button>
-          )}
+          }
           
-          {stepIndex < STEPS.length - 1 ? (
-            <Button 
-              onClick={nextStep}
-              disabled={
-                (currentStep === 'vehicle' && !vehicle) ||
-                (currentStep === 'odometer' && (!isOdometerStepValid() || !isSocStepValid() || odometerValidation?.isValidating || socValidation?.isValidating))
-              }
-              className="flex-1 h-12"
-            >
+          {stepIndex < STEPS.length - 1 ?
+          <Button
+            onClick={nextStep}
+            disabled={
+            currentStep === 'vehicle' && !vehicle ||
+            currentStep === 'odometer' && (!isOdometerStepValid() || !isSocStepValid() || odometerValidation?.isValidating || socValidation?.isValidating)
+            }
+            className="flex-1 h-12">
+            
               Continue
               <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          ) : (
-            <Button 
-              onClick={() => setShowCreateConfirm(true)}
-              disabled={isSaving}
-              className="flex-1 h-12"
-            >
+            </Button> :
+
+          <Button
+            onClick={() => setShowCreateConfirm(true)}
+            disabled={isSaving}
+            className="flex-1 h-12">
+            
               Create Job Card
             </Button>
-          )}
+          }
         </div>
       </div>
 
@@ -1607,8 +1607,8 @@ export default function CreateJobCardPage() {
         onConfirm={() => {
           setShowCreateConfirm(false);
           saveAsDraft();
-        }}
-      />
+        }} />
+      
 
       <ConfirmationDialog
         open={showOdoLowerConfirm}
@@ -1625,8 +1625,8 @@ export default function CreateJobCardPage() {
           setOdoLowerConfirmed(true);
           setShowOdoLowerConfirm(false);
           toast.info('Lower odometer reading accepted with justification');
-        }}
-      />
-    </AppLayout>
-  );
+        }} />
+      
+    </AppLayout>);
+
 }
