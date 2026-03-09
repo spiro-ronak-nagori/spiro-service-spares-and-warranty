@@ -21,7 +21,7 @@ export function PageHeader({
   backTo,
   onBack,
   rightAction,
-  className,
+  className
 }: PageHeaderProps) {
   const navigate = useNavigate();
 
@@ -40,45 +40,45 @@ export function PageHeader({
       className={cn(
         'sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-top',
         className
-      )}
-    >
+      )}>
+      
       <div className="flex h-14 items-center gap-3 px-4">
-        {showBack && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            className="-ml-2 h-10 w-10"
-          >
+        {showBack &&
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBack}
+          className="-ml-2 h-10 w-10">
+          
             <ArrowLeft className="h-5 w-5" />
             <span className="sr-only">Go back</span>
           </Button>
-        )}
+        }
 
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 min-w-0 flex-1 focus:outline-none"
-        >
+          className="flex items-center gap-2 min-w-0 flex-1 focus:outline-none">
+          
           <img src={spiroLogo} alt="Spiro" className="h-8 w-8 object-contain flex-shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold leading-tight truncate text-left">
+            <h1 className="font-semibold leading-tight truncate text-sm text-left px-[40px]">
               {title}
             </h1>
-            {subtitle && (
-              <p className="text-sm text-muted-foreground truncate text-left">
+            {subtitle &&
+            <p className="text-muted-foreground truncate text-xs px-[40px] text-center">
                 {subtitle}
               </p>
-            )}
+            }
           </div>
         </button>
         
-        {rightAction && (
-          <div className="flex-shrink-0">
+        {rightAction &&
+        <div className="flex-shrink-0">
             {rightAction}
           </div>
-        )}
+        }
       </div>
-    </header>
-  );
+    </header>);
+
 }
