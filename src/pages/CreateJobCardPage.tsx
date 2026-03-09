@@ -281,16 +281,42 @@ export default function CreateJobCardPage() {
   const handleSocValidation = (
     file: File | null,
     result: SocValidationResult | null,
-    mismatchConfirmed: boolean,
-    mismatchReason?: string,
-    mismatchComment?: string
   ) => {
     setSocPhoto(file);
     setSocValidation(result);
-    setSocMismatchConfirmed(mismatchConfirmed);
-    setSocMismatchReason(mismatchReason);
-    setSocMismatchComment(mismatchComment);
+    setSocMismatchConfirmed(false);
+    setSocMismatchReason(undefined);
+    setSocMismatchComment(undefined);
+
+    if (!file) {
+      setSoc('');
+      setOcrSocReading(null);
+      return;
+    }
+
+    // Pre-fill SOC from OCR if detected
+    if (result?.ocr?.socReading !== null && result?.ocr?.socReading !== undefined) {
+      setSoc(String(Math.round(result.ocr.socReading)));
+      setOcrSocReading(result.ocr.socReading);
+    } else {
+      setOcrSocReading(null);
+    }
   };
+
+  // Compute SOC mismatch against OCR reading (same pattern as odometer)
+  const socMismatch = (() => {
+    if (ocrSocReading === null || soc === '') return null;
+    const enteredVal = parseInt(soc);
+    if (isNaN(enteredVal) || enteredVal < 0 || enteredVal > 100) return null;
+    const diff = Math.abs(ocrSocReading - enteredVal);
+    const percentage = diff / Math.max(enteredVal, 1);
+    return {
+      hasMismatch: percentage > 0.15,
+      percentage: percentage * 100,
+      enteredValue: enteredVal,
+      ocrValue: ocrSocReading,
+    };
+  })();
 
   // Check if SOC step is valid
   const isSocStepValid = (): boolean => {
@@ -303,7 +329,7 @@ export default function CreateJobCardPage() {
     // OCR checks only when OCR is enabled
     if (ocrEnabled) {
       if (!socValidation.ocr?.dashboardDetected) return false;
-      if (socValidation.mismatch?.hasMismatch && !socMismatchConfirmed) return false;
+      if (socMismatch?.hasMismatch && !socMismatchConfirmed) return false;
     }
     return true;
   };
