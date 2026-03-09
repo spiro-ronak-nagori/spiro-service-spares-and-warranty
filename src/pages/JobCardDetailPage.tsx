@@ -926,6 +926,8 @@ interface ActionButtonsProps {
   sparesCount?: number;
   mandatorySparesRequired?: boolean;
   onAddSpares?: () => void;
+  checklistEnabled?: boolean;
+  checklistCompleted?: boolean | null;
 }
 
 function ActionButtons({ 
@@ -940,6 +942,8 @@ function ActionButtons({
   sparesCount = 0,
   mandatorySparesRequired,
   onAddSpares,
+  checklistEnabled,
+  checklistCompleted,
 }: ActionButtonsProps) {
   const status = jobCard.status;
 
@@ -956,13 +960,14 @@ function ActionButtons({
   }
 
   if (status === 'INWARDED' || status === 'REOPENED') {
+    const needsChecklist = checklistEnabled && !checklistCompleted && status === 'INWARDED';
     return (
       <Button 
         className="w-full h-12 text-base"
         onClick={onStartWork}
         disabled={isUpdating}
       >
-        Start Work
+        {needsChecklist ? 'Complete Checklist & Start Work' : 'Start Work'}
       </Button>
     );
   }
