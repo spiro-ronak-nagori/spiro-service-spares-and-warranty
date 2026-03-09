@@ -60,7 +60,7 @@ export function PageHeader({
           onClick={() => navigate('/')}
           className="flex items-center gap-2 min-w-0 flex-1 focus:outline-none">
           
-          <img src={spiroLogo} alt="Spiro" className="h-10 w-10 object-cover flex-shrink-0 rounded" />
+          <img src={spiroLogo} alt="Spiro" className="h-10 w-10 object-contain flex-shrink-0" />
           <div className="min-w-0">
             <h1 className="font-semibold leading-tight truncate text-sm text-left px-[40px]">
               {title}
