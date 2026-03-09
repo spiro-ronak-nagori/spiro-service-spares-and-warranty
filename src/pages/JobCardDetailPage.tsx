@@ -573,29 +573,28 @@ export default function JobCardDetailPage() {
           </CardHeader>
           <CardContent>
             {jobCard.service_categories.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {jobCard.service_categories.map((cat, i) => {
                   const mappedIssues = jobCard.issue_categories.filter(
                     (issue) => getParentCode(issue) === cat
                   );
                   return (
-                    <div key={i} className="space-y-2">
-                      <span className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium">
+                    <div key={i} className="space-y-1.5">
+                      <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
                         {resolveCategoryName(cat)}
                       </span>
                       {mappedIssues.length > 0 && (
-                        <div className="ml-4 flex flex-wrap gap-1.5">
+                        <div className="ml-2 flex flex-wrap gap-1.5">
                           {mappedIssues.map((issue, j) => (
                             <span
                               key={j}
-                              className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                              className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
                             >
                               {resolveCategoryName(issue)}
                             </span>
                           ))}
                         </div>
                       )}
-                      {i < jobCard.service_categories.length - 1 && <Separator />}
                     </div>
                   );
                 })}
@@ -612,20 +611,21 @@ export default function JobCardDetailPage() {
               );
               if (orphanIssues.length === 0) return null;
               return (
-                <>
-                  <Separator className="my-3" />
-                  <p className="text-xs text-muted-foreground mb-2">Other Issues</p>
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="mt-4 space-y-1.5">
+                  <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
+                    Other Issues
+                  </span>
+                  <div className="ml-2 flex flex-wrap gap-1.5">
                     {orphanIssues.map((issue, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                        className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
                       >
                         {resolveCategoryName(issue)}
                       </span>
                     ))}
                   </div>
-                </>
+                </div>
               );
             })()}
 
