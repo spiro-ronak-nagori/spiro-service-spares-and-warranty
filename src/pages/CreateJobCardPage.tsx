@@ -1058,7 +1058,7 @@ export default function CreateJobCardPage() {
                 Odometer &amp; Battery SOC
               </CardTitle>
               <CardDescription>
-                Capture the dashboard photo to auto-read odometer and SOC
+                Capture the dashboard photo to read odometer and SOC
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
