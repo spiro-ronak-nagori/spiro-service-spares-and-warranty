@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package } from 'lucide-react';
+import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package, ClipboardCheck } from 'lucide-react';
 import { WarrantySlaConfig } from '@/components/admin/WarrantySlaConfig';
 import { toast } from 'sonner';
 
@@ -72,6 +72,13 @@ const TOGGLE_SETTINGS: SettingItem[] = [
     description: 'Controls warranty/goodwill claim types and old-part evidence.',
     tooltip: 'When enabled, claim types include WARRANTY and GOODWILL with old-part evidence photo requirements. When disabled, all spares default to USER_PAID only. Existing draft warranty/goodwill claims will be auto-converted to User Paid.',
     icon: ListTree,
+  },
+  {
+    key: 'ENABLE_VEHICLE_CHECKLIST',
+    label: 'Enable Vehicle Checklist',
+    description: 'Mandatory intake checklist after inwarding, before Start Work.',
+    tooltip: 'When enabled, technicians must complete a configured vehicle checklist after inwarding before they can proceed to Start Work. When disabled, the flow works as usual with no checklist gate.',
+    icon: ClipboardCheck,
   },
 ];
 
@@ -262,6 +269,17 @@ export default function SystemConfigPage() {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </CardContent>
               </Card>
+
+            <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/vehicle-checklist')}>
+              <CardContent className="p-4 flex items-center gap-4">
+                <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium">Manage Vehicle Checklist</h3>
+                  <p className="text-xs text-muted-foreground">Configure intake checklist templates and items</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
           </>
         )}
       </div>

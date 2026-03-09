@@ -38,10 +38,12 @@ import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
 import { SubmitAllWarrantySheet } from '@/components/job-card/SubmitAllWarrantySheet';
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
+import { useChecklistFlag } from '@/hooks/useChecklistFlag';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 
 export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +69,10 @@ export default function JobCardDetailPage() {
   const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   const [showSubmitAll, setShowSubmitAll] = useState(false);
+  // Checklist
+  const { value: checklistEnabled } = useChecklistFlag();
+  const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
+  const [showChecklist, setShowChecklist] = useState(false);
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
   const [showDeliveryOtp, setShowDeliveryOtp] = useState(false);
@@ -104,6 +110,27 @@ export default function JobCardDetailPage() {
     };
     checkMandatorySpares();
   }, [jobCard?.issue_categories, sparesEnabled]);
+
+  // Check if vehicle checklist is already completed for this JC
+  useEffect(() => {
+    if (!id || !checklistEnabled) {
+      setChecklistCompleted(null);
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('checklist_runs' as any)
+          .select('id')
+          .eq('job_card_id', id)
+          .limit(1)
+          .maybeSingle();
+        setChecklistCompleted(!!data);
+      } catch {
+        setChecklistCompleted(null);
+      }
+    })();
+  }, [id, checklistEnabled, showChecklist]);
 
   const fetchJobCard = async () => {
     if (!id) return;
@@ -207,6 +234,24 @@ export default function JobCardDetailPage() {
   };
 
   const handleStartWork = () => {
+    if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
+      // If checklist is enabled and not yet completed, show checklist first
+      if (checklistEnabled && !checklistCompleted) {
+        setShowChecklist(true);
+        return;
+      }
+      if (sparesEnabled) {
+        setSparesModalFromStartWork(true);
+        setShowSparesModal(true);
+      } else {
+        updateStatus('IN_PROGRESS');
+      }
+    }
+  };
+
+  const handleChecklistCompleted = () => {
+    setChecklistCompleted(true);
+    // Now proceed with the normal start work flow
     if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
       if (sparesEnabled) {
         setSparesModalFromStartWork(true);
@@ -484,6 +529,8 @@ export default function JobCardDetailPage() {
           sparesCount={spares.length}
           mandatorySparesRequired={mandatorySparesRequired}
           onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
+          checklistEnabled={checklistEnabled}
+          checklistCompleted={checklistCompleted}
         />
 
         {/* Vehicle & Customer Info */}
@@ -852,6 +899,17 @@ export default function JobCardDetailPage() {
           onResponded={() => { setNeedsInfoSpare(null); refetchSpares(); }}
         />
       )}
+
+      {/* Vehicle Checklist Sheet */}
+      {checklistEnabled && (
+        <VehicleChecklistSheet
+          open={showChecklist}
+          onOpenChange={setShowChecklist}
+          jobCardId={jobCard.id}
+          vehicleModel={jobCard.vehicle?.model || null}
+          onCompleted={handleChecklistCompleted}
+        />
+      )}
     </AppLayout>
   );
 }
@@ -868,6 +926,8 @@ interface ActionButtonsProps {
   sparesCount?: number;
   mandatorySparesRequired?: boolean;
   onAddSpares?: () => void;
+  checklistEnabled?: boolean;
+  checklistCompleted?: boolean | null;
 }
 
 function ActionButtons({ 
@@ -882,6 +942,8 @@ function ActionButtons({
   sparesCount = 0,
   mandatorySparesRequired,
   onAddSpares,
+  checklistEnabled,
+  checklistCompleted,
 }: ActionButtonsProps) {
   const status = jobCard.status;
 
@@ -898,13 +960,14 @@ function ActionButtons({
   }
 
   if (status === 'INWARDED' || status === 'REOPENED') {
+    const needsChecklist = checklistEnabled && !checklistCompleted && status === 'INWARDED';
     return (
       <Button 
         className="w-full h-12 text-base"
         onClick={onStartWork}
         disabled={isUpdating}
       >
-        Start Work
+        {needsChecklist ? 'Complete Checklist & Start Work' : 'Start Work'}
       </Button>
     );
   }

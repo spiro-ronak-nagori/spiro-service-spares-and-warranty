@@ -62,6 +62,213 @@ export type Database = {
           },
         ]
       }
+      checklist_run_items: {
+        Row: {
+          checklist_run_id: string
+          created_at: string
+          id: string
+          is_mandatory_snapshot: boolean
+          label_snapshot: string
+          photo_url: string | null
+          response_type_snapshot: Database["public"]["Enums"]["checklist_response_type"]
+          template_item_id: string
+          text_response: string | null
+        }
+        Insert: {
+          checklist_run_id: string
+          created_at?: string
+          id?: string
+          is_mandatory_snapshot: boolean
+          label_snapshot: string
+          photo_url?: string | null
+          response_type_snapshot: Database["public"]["Enums"]["checklist_response_type"]
+          template_item_id: string
+          text_response?: string | null
+        }
+        Update: {
+          checklist_run_id?: string
+          created_at?: string
+          id?: string
+          is_mandatory_snapshot?: boolean
+          label_snapshot?: string
+          photo_url?: string | null
+          response_type_snapshot?: Database["public"]["Enums"]["checklist_response_type"]
+          template_item_id?: string
+          text_response?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_run_items_checklist_run_id_fkey"
+            columns: ["checklist_run_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_run_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_runs: {
+        Row: {
+          completed_at: string
+          completed_by: string
+          created_at: string
+          id: string
+          job_card_id: string
+          template_id: string
+          template_name_snapshot: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by: string
+          created_at?: string
+          id?: string
+          job_card_id: string
+          template_id: string
+          template_name_snapshot: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string
+          created_at?: string
+          id?: string
+          job_card_id?: string
+          template_id?: string
+          template_name_snapshot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_runs_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_runs_job_card_id_fkey"
+            columns: ["job_card_id"]
+            isOneToOne: true
+            referencedRelation: "job_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_runs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_template_applicability: {
+        Row: {
+          created_at: string
+          id: string
+          template_id: string
+          vehicle_model_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          template_id: string
+          vehicle_model_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template_id?: string
+          vehicle_model_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_applicability_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_template_applicability_vehicle_model_id_fkey"
+            columns: ["vehicle_model_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_template_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          label: string
+          response_type: Database["public"]["Enums"]["checklist_response_type"]
+          sort_order: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          label: string
+          response_type?: Database["public"]["Enums"]["checklist_response_type"]
+          sort_order?: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          label?: string
+          response_type?: Database["public"]["Enums"]["checklist_response_type"]
+          sort_order?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       countries_master: {
         Row: {
           calling_code: string
@@ -1590,6 +1797,7 @@ export type Database = {
         | "RESUBMITTED"
         | "APPROVED"
         | "REJECTED"
+      checklist_response_type: "none" | "text" | "photo" | "text_photo"
       claim_type: "USER_PAID" | "WARRANTY" | "GOODWILL"
       feedback_question_type: "SCALE_1_5" | "NPS_0_10" | "TEXT"
       feedback_request_status: "PENDING" | "SUBMITTED" | "EXPIRED"
@@ -1757,6 +1965,7 @@ export const Constants = {
         "APPROVED",
         "REJECTED",
       ],
+      checklist_response_type: ["none", "text", "photo", "text_photo"],
       claim_type: ["USER_PAID", "WARRANTY", "GOODWILL"],
       feedback_question_type: ["SCALE_1_5", "NPS_0_10", "TEXT"],
       feedback_request_status: ["PENDING", "SUBMITTED", "EXPIRED"],
