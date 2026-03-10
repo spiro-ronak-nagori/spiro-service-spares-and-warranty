@@ -346,12 +346,26 @@ export default function ManageChecklistPage() {
     if (!deletingItemId) return;
     const item = Object.values(items).flat().find(i => i.id === deletingItemId);
     try {
+      // Try hard delete first; if FK constraint prevents it, soft-delete instead
       const { error } = await supabase
         .from('checklist_template_items' as any)
         .delete()
         .eq('id', deletingItemId);
-      if (error) throw error;
-      toast.success('Item deleted');
+      if (error) {
+        if (error.message?.includes('foreign key constraint') || error.code === '23503') {
+          // Item is referenced by completed checklist runs — soft-delete
+          const { error: softErr } = await supabase
+            .from('checklist_template_items' as any)
+            .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+            .eq('id', deletingItemId);
+          if (softErr) throw softErr;
+          toast.success('Item deactivated (previously used in a checklist run)');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Item deleted');
+      }
       if (item) fetchItems(item.template_id);
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete item');
