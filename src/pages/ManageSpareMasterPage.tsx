@@ -258,8 +258,8 @@ export default function ManageSpareMasterPage() {
 
   const openAppDialog = (partId: string) => {
     setAppPartId(partId);
-    setAppModelId('');
-    setAppColor('ALL');
+    setAppModelIds([]);
+    setAppColors(['ALL']);
     setShowAppDialog(true);
   };
 
