@@ -74,8 +74,8 @@ export default function ManageSpareMasterPage() {
   // Applicability dialog
   const [showAppDialog, setShowAppDialog] = useState(false);
   const [appPartId, setAppPartId] = useState('');
-  const [appModelId, setAppModelId] = useState('');
-  const [appColor, setAppColor] = useState<string>('ALL');
+  const [appModelIds, setAppModelIds] = useState<string[]>([]);
+  const [appColors, setAppColors] = useState<string[]>(['ALL']);
 
   useEffect(() => {
     if (isAdmin) fetchAll();
