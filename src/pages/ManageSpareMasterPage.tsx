@@ -264,51 +264,44 @@ export default function ManageSpareMasterPage() {
   };
 
   const handleAddApplicability = async () => {
-    if (!appModelId) { toast.error('Select a model'); return; }
-    const colorCode = appColor === 'ALL' ? null : appColor;
-
-    const existing = applicability.filter(
-      a => a.spare_part_id === appPartId && a.vehicle_model_id === appModelId
-    );
-    const exactDuplicate = existing.find(a =>
-      (colorCode === null && a.color_code === null) ||
-      (colorCode !== null && a.color_code === colorCode)
-    );
-    if (exactDuplicate) {
-      toast.error('Mapping already exists');
-      return;
-    }
-
-    const hasAllColors = existing.some(a => a.color_code === null);
-    const hasSpecific = existing.some(a => a.color_code !== null);
-
-    if (colorCode !== null && hasAllColors) {
-      toast.warning(
-        `All-colors mapping already exists. ${colorCode} mapping will override it for ${colorCode} vehicles.`,
-        { duration: 5000 }
-      );
-    }
-    if (colorCode === null && hasSpecific) {
-      toast.warning(
-        'Specific color mappings exist. All-colors will apply only when no specific mapping matches.',
-        { duration: 5000 }
-      );
-    }
+    if (appModelIds.length === 0) { toast.error('Select at least one model'); return; }
+    
+    // Build list of color codes to insert
+    const colorCodes = appColors.includes('ALL') ? [null] : appColors.map(c => c);
+    
+    let added = 0;
+    let skipped = 0;
 
     try {
-      const { error } = await supabase.from('spare_parts_applicability' as any)
-        .insert({
-          spare_part_id: appPartId,
-          vehicle_model_id: appModelId,
-          color_code: colorCode,
-        } as any);
-      if (error) {
-        if (error.message.includes('unique') || error.message.includes('duplicate')) {
-          toast.error('This mapping already exists');
-        } else throw error;
-        return;
+      for (const modelId of appModelIds) {
+        for (const colorCode of colorCodes) {
+          const exactDuplicate = applicability.find(a =>
+            a.spare_part_id === appPartId &&
+            a.vehicle_model_id === modelId &&
+            ((colorCode === null && a.color_code === null) ||
+             (colorCode !== null && a.color_code === colorCode))
+          );
+          if (exactDuplicate) { skipped++; continue; }
+
+          const { error } = await supabase.from('spare_parts_applicability' as any)
+            .insert({
+              spare_part_id: appPartId,
+              vehicle_model_id: modelId,
+              color_code: colorCode,
+            } as any);
+          if (error) {
+            if (error.message.includes('unique') || error.message.includes('duplicate')) {
+              skipped++;
+            } else throw error;
+          } else {
+            added++;
+          }
+        }
       }
-      toast.success('Mapping added');
+      
+      if (added > 0) toast.success(`${added} mapping${added > 1 ? 's' : ''} added${skipped > 0 ? ` (${skipped} duplicates skipped)` : ''}`);
+      else toast.warning('All mappings already exist');
+      
       setShowAppDialog(false);
       fetchAll();
     } catch (err: any) {
