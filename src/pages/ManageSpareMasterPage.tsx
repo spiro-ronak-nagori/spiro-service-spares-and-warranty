@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -74,8 +74,8 @@ export default function ManageSpareMasterPage() {
   // Applicability dialog
   const [showAppDialog, setShowAppDialog] = useState(false);
   const [appPartId, setAppPartId] = useState('');
-  const [appModelId, setAppModelId] = useState('');
-  const [appColor, setAppColor] = useState<string>('ALL');
+  const [appModelIds, setAppModelIds] = useState<string[]>([]);
+  const [appColors, setAppColors] = useState<string[]>(['ALL']);
 
   useEffect(() => {
     if (isAdmin) fetchAll();
@@ -258,57 +258,50 @@ export default function ManageSpareMasterPage() {
 
   const openAppDialog = (partId: string) => {
     setAppPartId(partId);
-    setAppModelId('');
-    setAppColor('ALL');
+    setAppModelIds([]);
+    setAppColors(['ALL']);
     setShowAppDialog(true);
   };
 
   const handleAddApplicability = async () => {
-    if (!appModelId) { toast.error('Select a model'); return; }
-    const colorCode = appColor === 'ALL' ? null : appColor;
-
-    const existing = applicability.filter(
-      a => a.spare_part_id === appPartId && a.vehicle_model_id === appModelId
-    );
-    const exactDuplicate = existing.find(a =>
-      (colorCode === null && a.color_code === null) ||
-      (colorCode !== null && a.color_code === colorCode)
-    );
-    if (exactDuplicate) {
-      toast.error('Mapping already exists');
-      return;
-    }
-
-    const hasAllColors = existing.some(a => a.color_code === null);
-    const hasSpecific = existing.some(a => a.color_code !== null);
-
-    if (colorCode !== null && hasAllColors) {
-      toast.warning(
-        `All-colors mapping already exists. ${colorCode} mapping will override it for ${colorCode} vehicles.`,
-        { duration: 5000 }
-      );
-    }
-    if (colorCode === null && hasSpecific) {
-      toast.warning(
-        'Specific color mappings exist. All-colors will apply only when no specific mapping matches.',
-        { duration: 5000 }
-      );
-    }
+    if (appModelIds.length === 0) { toast.error('Select at least one model'); return; }
+    
+    // Build list of color codes to insert
+    const colorCodes = appColors.includes('ALL') ? [null] : appColors.map(c => c);
+    
+    let added = 0;
+    let skipped = 0;
 
     try {
-      const { error } = await supabase.from('spare_parts_applicability' as any)
-        .insert({
-          spare_part_id: appPartId,
-          vehicle_model_id: appModelId,
-          color_code: colorCode,
-        } as any);
-      if (error) {
-        if (error.message.includes('unique') || error.message.includes('duplicate')) {
-          toast.error('This mapping already exists');
-        } else throw error;
-        return;
+      for (const modelId of appModelIds) {
+        for (const colorCode of colorCodes) {
+          const exactDuplicate = applicability.find(a =>
+            a.spare_part_id === appPartId &&
+            a.vehicle_model_id === modelId &&
+            ((colorCode === null && a.color_code === null) ||
+             (colorCode !== null && a.color_code === colorCode))
+          );
+          if (exactDuplicate) { skipped++; continue; }
+
+          const { error } = await supabase.from('spare_parts_applicability' as any)
+            .insert({
+              spare_part_id: appPartId,
+              vehicle_model_id: modelId,
+              color_code: colorCode,
+            } as any);
+          if (error) {
+            if (error.message.includes('unique') || error.message.includes('duplicate')) {
+              skipped++;
+            } else throw error;
+          } else {
+            added++;
+          }
+        }
       }
-      toast.success('Mapping added');
+      
+      if (added > 0) toast.success(`${added} mapping${added > 1 ? 's' : ''} added${skipped > 0 ? ` (${skipped} duplicates skipped)` : ''}`);
+      else toast.warning('All mappings already exist');
+      
       setShowAppDialog(false);
       fetchAll();
     } catch (err: any) {
@@ -613,37 +606,81 @@ export default function ManageSpareMasterPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Applicability Dialog */}
+      {/* Applicability Dialog — Multi-select */}
       <Dialog open={showAppDialog} onOpenChange={setShowAppDialog}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Add Model Mapping</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1">
-              <Label>Vehicle Model *</Label>
-              <Select value={appModelId} onValueChange={setAppModelId}>
-                <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
-                <SelectContent>
-                  {models.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <DialogBody className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Vehicle Models *</Label>
+              <div className="rounded-md border bg-background max-h-48 overflow-y-auto p-1">
+                {models.map(m => {
+                  const checked = appModelIds.includes(m.id);
+                  return (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setAppModelIds(prev =>
+                            checked ? prev.filter(id => id !== m.id) : [...prev, m.id]
+                          )
+                        }
+                        className="rounded border-input"
+                      />
+                      {m.name}
+                    </label>
+                  );
+                })}
+              </div>
+              {appModelIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">{appModelIds.length} selected</p>
+              )}
             </div>
-            <div className="space-y-1">
-              <Label>Color (optional)</Label>
-              <Select value={appColor} onValueChange={setAppColor}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Colors</SelectItem>
-                  {COLOR_OPTIONS.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label>Colors</Label>
+              <div className="rounded-md border bg-background p-1">
+                <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={appColors.includes('ALL')}
+                    onChange={() => setAppColors(['ALL'])}
+                    className="rounded border-input"
+                  />
+                  All Colors
+                </label>
+                {COLOR_OPTIONS.map(c => {
+                  const checked = appColors.includes(c);
+                  return (
+                    <label
+                      key={c}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          if (checked) {
+                            const next = appColors.filter(x => x !== c);
+                            setAppColors(next.length === 0 ? ['ALL'] : next);
+                          } else {
+                            setAppColors(prev => [...prev.filter(x => x !== 'ALL'), c]);
+                          }
+                        }}
+                        className="rounded border-input"
+                      />
+                      {c}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAppDialog(false)}>Cancel</Button>
             <Button onClick={handleAddApplicability}>Add</Button>
