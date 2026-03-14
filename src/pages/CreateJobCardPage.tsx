@@ -144,6 +144,7 @@ export default function CreateJobCardPage() {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
+  const [customerComments, setCustomerComments] = useState('');
 
   // Alternate contact data
   const [contactData, setContactData] = useState<ContactData>({
@@ -590,6 +591,7 @@ export default function CreateJobCardPage() {
           incoming_soc: socValue,
           service_categories: Array.from(selectedL1),
           issue_categories: Array.from(selectedL2),
+          customer_comments: customerComments.trim() || null,
           status: 'DRAFT',
           soc_detected_value: detectedSoc,
           soc_detection_confidence: detectedConfidence,
@@ -1313,6 +1315,7 @@ export default function CreateJobCardPage() {
 
         {/* Step 3: Services */}
         {currentStep === 'services' &&
+        <>
         <Card>
             <CardHeader>
               <CardTitle className="text-lg">Service Categories</CardTitle>
@@ -1355,6 +1358,22 @@ export default function CreateJobCardPage() {
             )}
             </CardContent>
           </Card>
+
+          {/* Customer Comments */}
+          <div className="space-y-2">
+            <Label htmlFor="customer-comments" className="text-sm text-muted-foreground">
+              Additional Customer Comments (optional)
+            </Label>
+            <textarea
+              id="customer-comments"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              rows={3}
+              placeholder="Any additional notes from the customer..."
+              value={customerComments}
+              onChange={(e) => setCustomerComments(e.target.value)}
+            />
+          </div>
+        </>
         }
 
         {/* Step 4: Confirm */}
@@ -1468,6 +1487,13 @@ export default function CreateJobCardPage() {
 
                 })}
                 </div>
+
+                {customerComments.trim() && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-1 font-medium">Customer Comments</p>
+                    <p className="text-sm whitespace-pre-wrap">{customerComments.trim()}</p>
+                  </div>
+                )}
 
               </CardContent>
             </Card>
