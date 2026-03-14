@@ -802,10 +802,7 @@ export default function JobCardDetailPage() {
             {(jobCard as any).customer_comments && (
               <>
                 <Separator className="my-3" />
-                <div className="flex items-center gap-1.5 mb-1">
-                  <p className="text-xs text-muted-foreground">Customer Comments</p>
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                </div>
+                <p className="text-xs text-muted-foreground mb-1">Customer Comments</p>
                 <p className="text-sm whitespace-pre-wrap text-foreground/80">{(jobCard as any).customer_comments}</p>
               </>
             )}
