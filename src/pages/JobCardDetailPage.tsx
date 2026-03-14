@@ -950,6 +950,17 @@ export default function JobCardDetailPage() {
         onReopen={handleReopenJobCard}
       />
 
+      {jobCard && (
+        <EditIssuesSheet
+          open={showEditIssues}
+          onOpenChange={setShowEditIssues}
+          currentServiceCategories={jobCard.service_categories}
+          currentIssueCategories={jobCard.issue_categories}
+          onSave={handleSaveIssues}
+          isSaving={isSavingIssues}
+        />
+      )}
+
       <DeliveryWithSocDialog
         open={showDeliveryConfirm}
         onOpenChange={setShowDeliveryConfirm}
