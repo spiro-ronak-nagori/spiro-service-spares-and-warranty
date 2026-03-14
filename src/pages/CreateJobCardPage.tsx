@@ -777,9 +777,6 @@ export default function CreateJobCardPage() {
         </div>
 
 
-          )}
-        </div>
-
         {/* Step 1: Vehicle */}
         {currentStep === 'vehicle' &&
         <Card>
