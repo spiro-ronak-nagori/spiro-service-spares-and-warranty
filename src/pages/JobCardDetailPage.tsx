@@ -645,6 +645,7 @@ export default function JobCardDetailPage() {
           checklistEnabled={checklistEnabled}
           checklistApplicable={checklistApplicable}
           checklistCompleted={checklistCompleted}
+          checklistLoading={checklistFlagLoading || checklistCheckLoading}
         />
 
         {/* Vehicle & Customer Info */}
