@@ -707,6 +707,7 @@ export type Database = {
           contact_for_updates: string
           created_at: string
           created_by: string
+          customer_comments: string | null
           delivered_at: string | null
           delivery_otp_verified: boolean | null
           id: string
@@ -751,6 +752,7 @@ export type Database = {
           contact_for_updates?: string
           created_at?: string
           created_by: string
+          customer_comments?: string | null
           delivered_at?: string | null
           delivery_otp_verified?: boolean | null
           id?: string
@@ -795,6 +797,7 @@ export type Database = {
           contact_for_updates?: string
           created_at?: string
           created_by?: string
+          customer_comments?: string | null
           delivered_at?: string | null
           delivery_otp_verified?: boolean | null
           id?: string

@@ -694,6 +694,14 @@ export default function JobCardDetailPage() {
               );
             })()}
 
+            {(jobCard as any).customer_comments && (
+              <>
+                <Separator className="my-3" />
+                <p className="text-xs text-muted-foreground mb-1">Customer Comments</p>
+                <p className="text-sm whitespace-pre-wrap">{(jobCard as any).customer_comments}</p>
+              </>
+            )}
+
             {jobCard.completion_remarks && (
               <>
                 <Separator className="my-3" />

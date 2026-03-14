@@ -1,0 +1,1 @@
+ALTER TABLE public.job_cards ADD COLUMN customer_comments text DEFAULT NULL;
