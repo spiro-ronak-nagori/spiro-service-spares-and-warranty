@@ -748,7 +748,7 @@ export default function CreateJobCardPage() {
         backTo="/" />
       
       
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 py-[12px]">
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
           {STEPS.map((step, i) => {}
@@ -1352,7 +1352,7 @@ export default function CreateJobCardPage() {
               {l1Categories.map((cat) =>
             <div key={cat.id} className="space-y-2">
                   <div
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer px-[6px] py-0"
                 onClick={() => toggleL1(cat.code)}>
                 
                     <Checkbox
