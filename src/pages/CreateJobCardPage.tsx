@@ -682,7 +682,7 @@ export default function CreateJobCardPage() {
             contact_for_updates: 'RIDER',
             phone_last4: contactData.rider_phone.slice(-4),
             rider_reason: contactData.rider_reason
-          })
+          }).then()
         );
       }
 
