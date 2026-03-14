@@ -1520,7 +1520,7 @@ export default function CreateJobCardPage() {
           <Button
             onClick={nextStep}
             disabled={
-            currentStep === 'vehicle' && !vehicle ||
+            currentStep === 'vehicle' && (!vehicle && !isNewVehicle) ||
             currentStep === 'odometer' && (!isOdometerStepValid() || !isSocStepValid() || odometerValidation?.isValidating || socValidation?.isValidating)
             }
             className="flex-1 h-12">
