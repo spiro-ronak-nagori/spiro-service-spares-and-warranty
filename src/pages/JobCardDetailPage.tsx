@@ -73,9 +73,10 @@ export default function JobCardDetailPage() {
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   const [showSubmitAll, setShowSubmitAll] = useState(false);
   // Checklist
-  const { value: checklistEnabled } = useChecklistFlag();
+  const { value: checklistEnabled, isLoading: checklistFlagLoading } = useChecklistFlag();
   const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
   const [checklistApplicable, setChecklistApplicable] = useState(false);
+  const [checklistCheckLoading, setChecklistCheckLoading] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
@@ -209,8 +210,10 @@ export default function JobCardDetailPage() {
     if (!id || !checklistEnabled || !jobCard) {
       setChecklistCompleted(null);
       setChecklistApplicable(false);
+      setChecklistCheckLoading(false);
       return;
     }
+    setChecklistCheckLoading(true);
     (async () => {
       try {
         // First check if a template even applies
@@ -236,6 +239,8 @@ export default function JobCardDetailPage() {
       } catch {
         setChecklistCompleted(null);
         setChecklistApplicable(false);
+      } finally {
+        setChecklistCheckLoading(false);
       }
     })();
   }, [id, checklistEnabled, showChecklist, jobCard?.workshop_id]);
@@ -640,6 +645,7 @@ export default function JobCardDetailPage() {
           checklistEnabled={checklistEnabled}
           checklistApplicable={checklistApplicable}
           checklistCompleted={checklistCompleted}
+          checklistLoading={checklistFlagLoading || checklistCheckLoading}
         />
 
         {/* Vehicle & Customer Info */}
@@ -1072,6 +1078,7 @@ interface ActionButtonsProps {
   checklistEnabled?: boolean;
   checklistApplicable?: boolean;
   checklistCompleted?: boolean | null;
+  checklistLoading?: boolean;
 }
 
 function ActionButtons({ 
@@ -1089,6 +1096,7 @@ function ActionButtons({
   checklistEnabled,
   checklistApplicable,
   checklistCompleted,
+  checklistLoading,
 }: ActionButtonsProps) {
   const status = jobCard.status;
 
@@ -1105,12 +1113,13 @@ function ActionButtons({
   }
 
   if (status === 'INWARDED' || status === 'REOPENED') {
+    const stillLoadingChecklist = checklistEnabled && checklistLoading && status === 'INWARDED';
     const needsChecklist = checklistEnabled && checklistApplicable && !checklistCompleted && status === 'INWARDED';
     return (
       <Button 
         className="w-full h-12 text-base"
         onClick={onStartWork}
-        disabled={isUpdating}
+        disabled={isUpdating || stillLoadingChecklist}
       >
         {needsChecklist ? 'Complete Checklist & Start Work' : 'Start Work'}
       </Button>
