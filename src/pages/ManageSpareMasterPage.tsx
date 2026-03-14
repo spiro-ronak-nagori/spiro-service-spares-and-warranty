@@ -44,11 +44,19 @@ export default function ManageSpareMasterPage() {
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'system_admin' || profile?.role === 'super_admin';
 
+  const isMobile = useIsMobile();
+
   const [parts, setParts] = useState<SparePart[]>([]);
   const [models, setModels] = useState<VehicleModel[]>([]);
   const [applicability, setApplicability] = useState<SparePartApplicability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedPart, setExpandedPart] = useState<string | null>(null);
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterModel, setFilterModel] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   // Add/edit dialog
   const [showDialog, setShowDialog] = useState(false);
