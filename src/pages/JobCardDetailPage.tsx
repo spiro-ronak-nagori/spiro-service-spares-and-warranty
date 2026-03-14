@@ -23,8 +23,7 @@ import {
   ChevronDown,
   ChevronUp,
   Package,
-  Pencil,
-  Lock
+  Pencil
 } from 'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
