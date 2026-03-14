@@ -210,8 +210,10 @@ export default function JobCardDetailPage() {
     if (!id || !checklistEnabled || !jobCard) {
       setChecklistCompleted(null);
       setChecklistApplicable(false);
+      setChecklistCheckLoading(false);
       return;
     }
+    setChecklistCheckLoading(true);
     (async () => {
       try {
         // First check if a template even applies
@@ -237,6 +239,8 @@ export default function JobCardDetailPage() {
       } catch {
         setChecklistCompleted(null);
         setChecklistApplicable(false);
+      } finally {
+        setChecklistCheckLoading(false);
       }
     })();
   }, [id, checklistEnabled, showChecklist, jobCard?.workshop_id]);
