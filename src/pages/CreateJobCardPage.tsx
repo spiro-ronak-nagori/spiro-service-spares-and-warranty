@@ -750,32 +750,32 @@ export default function CreateJobCardPage() {
       
       <div className="p-4 space-y-4 py-[12px]">
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-6">
-          {STEPS.map((step, i) => {}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          )}
+        <div className="flex items-center justify-between mb-4">
+          {STEPS.map((step, i) => (
+            <div key={step.key} className="flex items-center flex-1">
+              <div className="flex flex-col items-center flex-1">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                    i <= stepIndex
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {i + 1}
+                </div>
+                <span className="text-[10px] mt-1 text-muted-foreground">{step.label}</span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div
+                  className={`h-0.5 flex-1 mx-1 ${
+                    i < stepIndex ? 'bg-primary' : 'bg-muted'
+                  }`}
+                />
+              )}
+            </div>
+          ))}
         </div>
+
 
         {/* Step 1: Vehicle */}
         {currentStep === 'vehicle' &&
