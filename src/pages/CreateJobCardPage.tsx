@@ -1342,16 +1342,17 @@ export default function CreateJobCardPage() {
 
         {/* Step 3: Services */}
         {currentStep === 'services' &&
-        <Card>
-            <CardHeader>
+        <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 280px)' }}>
+          <Card className="flex-1">
+            <CardHeader className="pb-2">
               <CardTitle className="text-lg">Service Categories</CardTitle>
               <CardDescription>
                 Select service type(s) and specific issues
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {l1Categories.map((cat) =>
-            <div key={cat.id} className="space-y-2">
+            <div key={cat.id} className="space-y-1">
                   <div
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
                 onClick={() => toggleL1(cat.code)}>
@@ -1364,7 +1365,7 @@ export default function CreateJobCardPage() {
                   </div>
                   
                   {selectedL1.has(cat.code) &&
-              <div className="ml-6 space-y-1">
+              <div className="ml-6 space-y-0.5">
                       {getL2Categories(cat.code).map((l2) =>
                 <div
                   key={l2.id}
@@ -1384,6 +1385,42 @@ export default function CreateJobCardPage() {
             )}
             </CardContent>
           </Card>
+
+          {/* Sticky bottom: selected issues summary + customer comments */}
+          {(selectedL1.size > 0 || customerComments) && (
+            <div className="sticky bottom-20 z-10 mt-3 rounded-lg border border-border bg-background shadow-lg p-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Selected Issues</p>
+              <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                {Array.from(selectedL1).map((code) => {
+                  const cat = l1Categories.find((c) => c.code === code);
+                  return (
+                    <span key={code} className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2.5 py-0.5 text-[11px] font-semibold">
+                      {cat?.name || code}
+                    </span>
+                  );
+                })}
+                {Array.from(selectedL2).map((code) => {
+                  const issueCat = categories.find((c) => c.code === code);
+                  return (
+                    <span key={code} className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                      {issueCat?.name || code}
+                    </span>
+                  );
+                })}
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Customer Comments (optional)</Label>
+                <textarea
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                  rows={2}
+                  placeholder="Any additional notes from the customer..."
+                  value={customerComments}
+                  onChange={(e) => setCustomerComments(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
         }
 
         {/* Step 4: Confirm */}
