@@ -17,10 +17,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody,
 } from '@/components/ui/dialog';
 import {
-  Package, Plus, ChevronDown, Pencil, Link2, Trash2, Shield, ShieldCheck,
+  Package, Plus, ChevronDown, Pencil, Link2, Trash2, Shield, ShieldCheck, Search, X, Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SparePart, SparePartApplicability } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VehicleModel {
   id: string;
