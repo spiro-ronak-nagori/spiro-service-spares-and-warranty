@@ -1078,6 +1078,7 @@ interface ActionButtonsProps {
   checklistEnabled?: boolean;
   checklistApplicable?: boolean;
   checklistCompleted?: boolean | null;
+  checklistLoading?: boolean;
 }
 
 function ActionButtons({ 
