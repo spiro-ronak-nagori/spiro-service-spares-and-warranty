@@ -624,7 +624,7 @@ export default function CreateJobCardPage() {
       if (!jobCard) throw new Error('Failed to generate unique job card number');
 
       // Run all post-creation tasks in parallel for speed
-      const postTasks: Promise<any>[] = [];
+      const postTasks: PromiseLike<any>[] = [];
 
       // 1. Upload images and update job card with URLs
       postTasks.push(
