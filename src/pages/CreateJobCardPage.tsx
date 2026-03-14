@@ -659,7 +659,7 @@ export default function CreateJobCardPage() {
           last_service_date: new Date().toISOString().split('T')[0],
           model: selectedModel,
           color: selectedColor
-        }).eq('id', vehicleId)
+        }).eq('id', vehicleId).then()
       );
 
       // 3. Create initial audit trail
