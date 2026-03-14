@@ -7,8 +7,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  DialogTitle } from
+'@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,7 @@ export function WorkshopSelectorDialog({
   onOpenChange,
   onSelect,
   title = 'Select Workshop',
-  description = 'Choose a workshop to continue',
+  description = 'Choose a workshop to continue'
 }: WorkshopSelectorDialogProps) {
   const { profile } = useAuth();
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
@@ -59,7 +59,7 @@ export function WorkshopSelectorDialog({
         (data || []).map((w: any) => ({
           ...w,
           type: w.type as Workshop['type'],
-          grade: w.grade as Workshop['grade'],
+          grade: w.grade as Workshop['grade']
         }))
       );
     } catch (err) {
@@ -74,9 +74,9 @@ export function WorkshopSelectorDialog({
     const q = search.toLowerCase();
     return workshops.filter(
       (w) =>
-        w.name.toLowerCase().includes(q) ||
-        w.city?.toLowerCase().includes(q) ||
-        w.country?.toLowerCase().includes(q)
+      w.name.toLowerCase().includes(q) ||
+      w.city?.toLowerCase().includes(q) ||
+      w.country?.toLowerCase().includes(q)
     );
   }, [workshops, search]);
 
@@ -91,41 +91,41 @@ export function WorkshopSelectorDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="relative">
+        <div className="relative my-[5px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search workshops..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 pr-8 h-10"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
+            className="pl-10 pr-8 h-10" />
+          
+          {search &&
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            
               <X className="h-4 w-4" />
             </button>
-          )}
+          }
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-[50vh]">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))
-          ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
+          {isLoading ?
+          Array.from({ length: 3 }).map((_, i) =>
+          <Skeleton key={i} className="h-16 w-full" />
+          ) :
+          filtered.length === 0 ?
+          <p className="text-sm text-muted-foreground text-center py-8">
               {search ? 'No matching workshops' : 'No workshops available'}
-            </p>
-          ) : (
-            filtered.map((w) => (
-              <Card
-                key={w.id}
-                className="cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent"
-                onClick={() => onSelect(w)}
-              >
+            </p> :
+
+          filtered.map((w) =>
+          <Card
+            key={w.id}
+            className="cursor-pointer hover:bg-accent/50 transition-colors active:bg-accent"
+            onClick={() => onSelect(w)}>
+            
                 <CardContent className="p-3 flex items-center gap-3">
                   <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -137,8 +137,8 @@ export function WorkshopSelectorDialog({
                   </div>
                 </CardContent>
               </Card>
-            ))
-          )}
+          )
+          }
         </div>
 
         <DialogFooter>
@@ -147,6 +147,6 @@ export function WorkshopSelectorDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>);
+
 }
