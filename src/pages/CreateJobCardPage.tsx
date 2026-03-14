@@ -623,86 +623,105 @@ export default function CreateJobCardPage() {
 
       if (!jobCard) throw new Error('Failed to generate unique job card number');
 
-      // Upload images to storage and save URLs
-      const imageUpdates: Record<string, string> = {};
-      try {
-        if (odometerPhoto) {
-          const odoUrl = await uploadJcImage(odometerPhoto, jobCard.id, 'odo');
-          imageUpdates.odometer_photo_url = odoUrl;
-        }
-        if (socPhoto) {
-          const socUrl = await uploadJcImage(socPhoto, jobCard.id, 'incoming_soc');
-          imageUpdates.soc_photo_url = socUrl;
-        }
-        if (Object.keys(imageUpdates).length > 0) {
-          await supabase.
-          from('job_cards').
-          update(imageUpdates as any).
-          eq('id', jobCard.id);
-        }
-      } catch (imgErr) {
-        console.error('Image upload error (non-fatal):', imgErr);
-      }
+      // Run all post-creation tasks in parallel for speed
+      const postTasks: PromiseLike<any>[] = [];
 
-      // Update vehicle's last service odometer
-      await supabase.
-      from('vehicles').
-      update({
-        last_service_odo: parseInt(odometer),
-        last_service_date: new Date().toISOString().split('T')[0],
-        model: selectedModel,
-        color: selectedColor
-      }).
-      eq('id', vehicleId);
+      // 1. Upload images and update job card with URLs
+      postTasks.push(
+        (async () => {
+          const imageUpdates: Record<string, string> = {};
+          try {
+            const uploads: Promise<void>[] = [];
+            if (odometerPhoto) {
+              uploads.push(
+                uploadJcImage(odometerPhoto, jobCard.id, 'odo').then(url => { imageUpdates.odometer_photo_url = url; })
+              );
+            }
+            if (socPhoto) {
+              uploads.push(
+                uploadJcImage(socPhoto, jobCard.id, 'incoming_soc').then(url => { imageUpdates.soc_photo_url = url; })
+              );
+            }
+            await Promise.all(uploads);
+            if (Object.keys(imageUpdates).length > 0) {
+              await supabase.from('job_cards').update(imageUpdates as any).eq('id', jobCard.id);
+            }
+          } catch (imgErr) {
+            console.error('Image upload error (non-fatal):', imgErr);
+          }
+        })()
+      );
 
-      // Create initial audit trail
-      await supabase.
-      from('audit_trail').
-      insert({
-        job_card_id: jobCard.id,
-        user_id: profile.id,
-        to_status: 'DRAFT',
-        notes: 'Job card created'
-      });
+      // 2. Update vehicle's last service odometer
+      postTasks.push(
+        supabase.from('vehicles').update({
+          last_service_odo: parseInt(odometer),
+          last_service_date: new Date().toISOString().split('T')[0],
+          model: selectedModel,
+          color: selectedColor
+        }).eq('id', vehicleId).then()
+      );
 
-      // Audit rider contact selection
-      if (altPhoneEnabled && contactData.contact_for_updates === 'RIDER') {
-        await supabase.from('rider_contact_audit' as any).insert({
+      // 3. Create initial audit trail
+      postTasks.push(
+        supabase.from('audit_trail').insert({
           job_card_id: jobCard.id,
-          actor_user_id: profile.id,
-          action: 'CONTACT_SET',
-          contact_for_updates: 'RIDER',
-          phone_last4: contactData.rider_phone.slice(-4),
-          rider_reason: contactData.rider_reason
-        });
+          user_id: profile.id,
+          to_status: 'DRAFT',
+          notes: 'Job card created'
+        }).then()
+      );
+
+      // 4. Audit rider contact selection
+      if (altPhoneEnabled && contactData.contact_for_updates === 'RIDER') {
+        postTasks.push(
+          supabase.from('rider_contact_audit' as any).insert({
+            job_card_id: jobCard.id,
+            actor_user_id: profile.id,
+            action: 'CONTACT_SET',
+            contact_for_updates: 'RIDER',
+            phone_last4: contactData.rider_phone.slice(-4),
+            rider_reason: contactData.rider_reason
+          }).then()
+        );
       }
 
-      // Server-side SOC anomaly detection: flag if SOC jump > 40% from last known
+      // 5. Server-side SOC anomaly detection
       const finalSocValue = soc !== '' ? parseInt(soc) : null;
       if (finalSocValue !== null && vehicle?.id) {
-        const { data: lastJcWithSoc } = await supabase.
-        from('job_cards').
-        select('incoming_soc').
-        eq('vehicle_id', vehicle.id).
-        not('incoming_soc', 'is', null).
-        neq('id', jobCard.id).
-        order('created_at', { ascending: false }).
-        limit(1).
-        maybeSingle();
+        postTasks.push(
+          (async () => {
+            const { data: lastJcWithSoc } = await supabase
+              .from('job_cards')
+              .select('incoming_soc')
+              .eq('vehicle_id', vehicle.id)
+              .not('incoming_soc', 'is', null)
+              .neq('id', jobCard.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
 
-        if (lastJcWithSoc?.incoming_soc !== null && lastJcWithSoc?.incoming_soc !== undefined) {
-          const socJump = Math.abs(finalSocValue - lastJcWithSoc.incoming_soc);
-          if (socJump > 40) {
-            await supabase.
-            from('job_cards').
-            update({ soc_anomaly_flag: true } as any).
-            eq('id', jobCard.id);
-          }
-        }
+            if (lastJcWithSoc?.incoming_soc !== null && lastJcWithSoc?.incoming_soc !== undefined) {
+              const socJump = Math.abs(finalSocValue - lastJcWithSoc.incoming_soc);
+              if (socJump > 40) {
+                await supabase.from('job_cards').update({ soc_anomaly_flag: true } as any).eq('id', jobCard.id);
+              }
+            }
+          })()
+        );
       }
 
+      // Navigate immediately, let background tasks finish
       toast.success(`Job card ${jcNumber} created`);
       navigate(`/job-card/${jobCard.id}`);
+
+      // Fire-and-forget: let all post tasks complete in background
+      Promise.allSettled(postTasks).then(results => {
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') console.error(`Post-creation task ${i} failed:`, r.reason);
+        });
+      });
+
     } catch (error: any) {
       console.error('Error creating job card:', error);
       const msg = error?.message || error?.details || 'Failed to create job card';
