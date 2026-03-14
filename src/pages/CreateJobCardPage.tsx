@@ -1536,6 +1536,16 @@ export default function CreateJobCardPage() {
                   })}
                 </div>
 
+                {customerComments && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1 font-medium">Customer Comments</p>
+                      <p className="text-sm whitespace-pre-wrap">{customerComments}</p>
+                    </div>
+                  </>
+                )}
+
               </CardContent>
             </Card>
 
