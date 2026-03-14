@@ -738,11 +738,6 @@ export default function JobCardDetailPage() {
                   <Pencil className="h-3.5 w-3.5" />
                   Edit Issues
                 </Button>
-              ) : jobCard.status !== 'DRAFT' ? (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Lock className="h-3 w-3" />
-                  Locked
-                </span>
               ) : null}
             </div>
           </CardHeader>
