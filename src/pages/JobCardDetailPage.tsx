@@ -47,6 +47,7 @@ import { sendSms } from '@/lib/sms';
 import { JobCardSpare } from '@/types';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
+import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 
 export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
