@@ -722,8 +722,6 @@ export default function CreateJobCardPage() {
         });
       });
 
-      toast.success(`Job card ${jcNumber} created`);
-      navigate(`/job-card/${jobCard.id}`);
     } catch (error: any) {
       console.error('Error creating job card:', error);
       const msg = error?.message || error?.details || 'Failed to create job card';
