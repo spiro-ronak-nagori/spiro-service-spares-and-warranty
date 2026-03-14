@@ -73,9 +73,10 @@ export default function JobCardDetailPage() {
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   const [showSubmitAll, setShowSubmitAll] = useState(false);
   // Checklist
-  const { value: checklistEnabled } = useChecklistFlag();
+  const { value: checklistEnabled, isLoading: checklistFlagLoading } = useChecklistFlag();
   const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
   const [checklistApplicable, setChecklistApplicable] = useState(false);
+  const [checklistCheckLoading, setChecklistCheckLoading] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
