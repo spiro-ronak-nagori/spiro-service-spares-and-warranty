@@ -22,7 +22,9 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Package
+  Package,
+  Pencil,
+  Lock
 } from 'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
