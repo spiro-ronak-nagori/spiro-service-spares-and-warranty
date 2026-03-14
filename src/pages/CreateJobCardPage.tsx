@@ -144,6 +144,7 @@ export default function CreateJobCardPage() {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
+  const [customerComments, setCustomerComments] = useState('');
 
   // Alternate contact data
   const [contactData, setContactData] = useState<ContactData>({
