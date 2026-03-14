@@ -1096,6 +1096,7 @@ function ActionButtons({
   checklistEnabled,
   checklistApplicable,
   checklistCompleted,
+  checklistLoading,
 }: ActionButtonsProps) {
   const status = jobCard.status;
 
@@ -1112,12 +1113,13 @@ function ActionButtons({
   }
 
   if (status === 'INWARDED' || status === 'REOPENED') {
+    const stillLoadingChecklist = checklistEnabled && checklistLoading && status === 'INWARDED';
     const needsChecklist = checklistEnabled && checklistApplicable && !checklistCompleted && status === 'INWARDED';
     return (
       <Button 
         className="w-full h-12 text-base"
         onClick={onStartWork}
-        disabled={isUpdating}
+        disabled={isUpdating || stillLoadingChecklist}
       >
         {needsChecklist ? 'Complete Checklist & Start Work' : 'Start Work'}
       </Button>
