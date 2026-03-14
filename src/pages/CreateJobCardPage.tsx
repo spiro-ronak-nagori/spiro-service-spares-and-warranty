@@ -777,21 +777,6 @@ export default function CreateJobCardPage() {
         </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
           )}
         </div>
 
