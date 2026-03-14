@@ -346,6 +346,21 @@ export default function ManageSpareMasterPage() {
     );
   }
 
+  // Filter logic
+  const filteredParts = parts.filter(part => {
+    const q = searchQuery.toLowerCase().trim();
+    if (q && !part.part_name.toLowerCase().includes(q) && !(part.part_code || '').toLowerCase().includes(q)) return false;
+    if (filterStatus === 'active' && !part.active) return false;
+    if (filterStatus === 'inactive' && part.active) return false;
+    if (filterModel !== 'all') {
+      const partApps = getPartApplicability(part.id);
+      if (!partApps.some(a => a.vehicle_model_id === filterModel)) return false;
+    }
+    return true;
+  });
+
+  const hasActiveFilters = filterModel !== 'all' || filterStatus !== 'all';
+
   return (
     <AppLayout>
       <PageHeader
@@ -353,68 +368,136 @@ export default function ManageSpareMasterPage() {
         showBack
         backTo="/console/system-config"
         rightAction={
-          <Button size="sm" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-1" />Add Part
-          </Button>
+          !isMobile ? (
+            <Button size="sm" onClick={openAddDialog}>
+              <Plus className="h-4 w-4 mr-1" />Add Part
+            </Button>
+          ) : undefined
         }
       />
 
-      <div className="p-4 space-y-3">
+      {/* Search & Filters */}
+      <div className="px-4 pt-3 space-y-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search parts..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+          <Button
+            variant={hasActiveFilters ? 'default' : 'outline'}
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {showFilters && (
+          <div className="flex gap-2 flex-wrap">
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+              <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterModel} onValueChange={setFilterModel}>
+              <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
+                <SelectValue placeholder="Model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Models</SelectItem>
+                {models.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterModel('all'); setFilterStatus('all'); }}>
+                Clear
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 space-y-3 pb-24">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}><CardContent className="p-4"><Skeleton className="h-5 w-40" /></CardContent></Card>
           ))
-        ) : parts.length === 0 ? (
+        ) : filteredParts.length === 0 ? (
           <Card><CardContent className="py-12 text-center">
             <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No spare parts yet</p>
+            <p className="text-muted-foreground">{parts.length === 0 ? 'No spare parts yet' : 'No parts match your search'}</p>
           </CardContent></Card>
         ) : (
-          parts.map(part => {
+          filteredParts.map(part => {
             const partApps = getPartApplicability(part.id);
             const p = part as any;
+            const isExpanded = expandedPart === part.id;
             return (
               <Collapsible
                 key={part.id}
-                open={expandedPart === part.id}
+                open={isExpanded}
                 onOpenChange={(open) => setExpandedPart(open ? part.id : null)}
               >
                 <Card className={!part.active ? 'opacity-60' : ''}>
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <CollapsibleTrigger className="w-full text-left">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-sm">{part.part_name}</span>
-                          {part.part_code && (
-                            <span className="text-xs text-muted-foreground">({part.part_code})</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Package className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="min-w-0">
+                            <span className="font-medium text-sm line-clamp-1">{part.part_name}</span>
+                            {part.part_code && (
+                              <span className="text-xs text-muted-foreground block sm:inline sm:ml-1">({part.part_code})</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {!part.active && <Badge variant="outline" className="text-[10px]">Off</Badge>}
+                          {(!isMobile || isExpanded) && (
+                            <Badge variant="secondary" className="text-xs whitespace-nowrap">{partApps.length} model{partApps.length !== 1 ? 's' : ''}</Badge>
                           )}
-                          {!part.active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge variant="secondary" className="text-xs">{partApps.length} models</Badge>
-                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedPart === part.id ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
-                      <div className="flex gap-1.5 mt-1 flex-wrap">
-                        {part.serial_required && <Badge variant="outline" className="text-[10px]">Serial# Req</Badge>}
-                        {part.old_part_srno_required && <Badge variant="outline" className="text-[10px]">Old Serial# Req</Badge>}
-                        {part.usage_proof_photos_required_count > 0 && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {part.usage_proof_photos_required_count} Proof Photo{part.usage_proof_photos_required_count > 1 ? 's' : ''}
-                          </Badge>
-                        )}
-                        {part.warranty_available && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Warranty{p.warranty_approval_needed === false ? '' : ' + Approval'}
-                          </Badge>
-                        )}
-                        {part.goodwill_available && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Goodwill{p.goodwill_approval_needed === false ? '' : ' + Approval'}
-                          </Badge>
-                        )}
-                      </div>
+                      {(!isMobile || isExpanded) && (
+                        <div className="flex gap-1.5 mt-1 flex-wrap">
+                          {part.serial_required && <Badge variant="outline" className="text-[10px]">Serial# Req</Badge>}
+                          {part.old_part_srno_required && <Badge variant="outline" className="text-[10px]">Old Serial# Req</Badge>}
+                          {part.usage_proof_photos_required_count > 0 && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {part.usage_proof_photos_required_count} Proof Photo{part.usage_proof_photos_required_count > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          {part.warranty_available && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Warranty{p.warranty_approval_needed === false ? '' : ' + Approval'}
+                            </Badge>
+                          )}
+                          {part.goodwill_available && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Goodwill{p.goodwill_approval_needed === false ? '' : ' + Approval'}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </CollapsibleTrigger>
 
                     <CollapsibleContent>
@@ -464,6 +547,16 @@ export default function ManageSpareMasterPage() {
           })
         )}
       </div>
+
+      {/* Mobile FAB */}
+      {isMobile && (
+        <button
+          onClick={openAddDialog}
+          className="fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
 
       {/* Add/Edit Part Dialog — Sectioned Layout */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
