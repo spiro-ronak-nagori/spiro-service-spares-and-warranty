@@ -1352,7 +1352,7 @@ export default function CreateJobCardPage() {
               {l1Categories.map((cat) =>
             <div key={cat.id} className="space-y-2">
                   <div
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer px-[6px] py-0"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer px-[6px] py-[3px]"
                 onClick={() => toggleL1(cat.code)}>
                 
                     <Checkbox
