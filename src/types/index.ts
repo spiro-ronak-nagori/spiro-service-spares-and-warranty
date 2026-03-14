@@ -126,6 +126,7 @@ export interface JobCard {
   issue_categories: string[];
   status: JobCardStatus;
   completion_remarks: string | null;
+  customer_comments: string | null;
   inwarding_otp_verified: boolean;
   delivery_otp_verified: boolean;
   created_at: string;
