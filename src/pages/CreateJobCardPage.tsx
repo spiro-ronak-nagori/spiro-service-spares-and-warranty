@@ -1315,6 +1315,7 @@ export default function CreateJobCardPage() {
 
         {/* Step 3: Services */}
         {currentStep === 'services' &&
+        <>
         <Card>
             <CardHeader>
               <CardTitle className="text-lg">Service Categories</CardTitle>
