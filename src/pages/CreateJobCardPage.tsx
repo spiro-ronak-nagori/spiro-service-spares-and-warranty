@@ -591,6 +591,7 @@ export default function CreateJobCardPage() {
           incoming_soc: socValue,
           service_categories: Array.from(selectedL1),
           issue_categories: Array.from(selectedL2),
+          customer_comments: customerComments.trim() || null,
           status: 'DRAFT',
           soc_detected_value: detectedSoc,
           soc_detection_confidence: detectedConfidence,
