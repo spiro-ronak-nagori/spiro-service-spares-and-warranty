@@ -1373,6 +1373,7 @@ export default function CreateJobCardPage() {
               onChange={(e) => setCustomerComments(e.target.value)}
             />
           </div>
+        </>
         }
 
         {/* Step 4: Confirm */}
