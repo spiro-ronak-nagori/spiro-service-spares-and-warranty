@@ -144,7 +144,6 @@ export default function CreateJobCardPage() {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
-  const [customerComments, setCustomerComments] = useState('');
 
   // Alternate contact data
   const [contactData, setContactData] = useState<ContactData>({
@@ -591,7 +590,6 @@ export default function CreateJobCardPage() {
           incoming_soc: socValue,
           service_categories: Array.from(selectedL1),
           issue_categories: Array.from(selectedL2),
-          customer_comments: customerComments.trim() || null,
           status: 'DRAFT',
           soc_detected_value: detectedSoc,
           soc_detection_confidence: detectedConfidence,
@@ -753,29 +751,29 @@ export default function CreateJobCardPage() {
       <div className="p-4 space-y-4">
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
-          {STEPS.map((step, i) =>
-          <div key={step.key} className="flex items-center">
-              <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-              i <= stepIndex ?
-              'bg-primary text-primary-foreground' :
-              'bg-muted text-muted-foreground'}`
-              }>
-              
-                {i < stepIndex ?
-              <CheckCircle2 className="h-4 w-4" /> :
+          {STEPS.map((step, i) => {}
 
-              i + 1
-              }
-              </div>
-              {i < STEPS.length - 1 &&
-            <div
-              className={`h-0.5 w-8 sm:w-12 ${
-              i < stepIndex ? 'bg-primary' : 'bg-muted'}`
-              } />
 
-            }
-            </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           )}
         </div>
 
@@ -1343,17 +1341,16 @@ export default function CreateJobCardPage() {
 
         {/* Step 3: Services */}
         {currentStep === 'services' &&
-        <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 280px)' }}>
-          <Card className="flex-1">
-            <CardHeader className="pb-2">
+        <Card>
+            <CardHeader>
               <CardTitle className="text-lg">Service Categories</CardTitle>
               <CardDescription>
                 Select service type(s) and specific issues
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               {l1Categories.map((cat) =>
-            <div key={cat.id} className="space-y-1">
+            <div key={cat.id} className="space-y-2">
                   <div
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
                 onClick={() => toggleL1(cat.code)}>
@@ -1366,7 +1363,7 @@ export default function CreateJobCardPage() {
                   </div>
                   
                   {selectedL1.has(cat.code) &&
-              <div className="ml-6 space-y-0.5">
+              <div className="ml-6 space-y-1">
                       {getL2Categories(cat.code).map((l2) =>
                 <div
                   key={l2.id}
@@ -1386,42 +1383,6 @@ export default function CreateJobCardPage() {
             )}
             </CardContent>
           </Card>
-
-          {/* Sticky bottom: selected issues summary + customer comments */}
-          {(selectedL1.size > 0 || customerComments) && (
-            <div className="sticky bottom-20 z-10 mt-3 rounded-lg border border-border bg-background shadow-lg p-3 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground">Selected Issues</p>
-              <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                {Array.from(selectedL1).map((code) => {
-                  const cat = l1Categories.find((c) => c.code === code);
-                  return (
-                    <span key={code} className="inline-flex items-center rounded-full bg-primary/15 text-primary px-2.5 py-0.5 text-[11px] font-semibold">
-                      {cat?.name || code}
-                    </span>
-                  );
-                })}
-                {Array.from(selectedL2).map((code) => {
-                  const issueCat = categories.find((c) => c.code === code);
-                  return (
-                    <span key={code} className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
-                      {issueCat?.name || code}
-                    </span>
-                  );
-                })}
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Customer Comments (optional)</Label>
-                <textarea
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
-                  rows={2}
-                  placeholder="Any additional notes from the customer..."
-                  value={customerComments}
-                  onChange={(e) => setCustomerComments(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-        </div>
         }
 
         {/* Step 4: Confirm */}
@@ -1507,44 +1468,34 @@ export default function CreateJobCardPage() {
                 {/* Services grouped by category */}
                 <div className="space-y-4">
                   {Array.from(selectedL1).map((code) => {
-                    const cat = l1Categories.find((c) => c.code === code);
-                    const mappedIssues = Array.from(selectedL2).filter((issueCode) => {
-                      const issueCat = categories.find((c) => c.code === issueCode);
-                      return issueCat?.parent_code === code;
-                    });
-                    return (
-                      <div key={code} className="space-y-1.5">
+                  const cat = l1Categories.find((c) => c.code === code);
+                  const mappedIssues = Array.from(selectedL2).filter((issueCode) => {
+                    const issueCat = categories.find((c) => c.code === issueCode);
+                    return issueCat?.parent_code === code;
+                  });
+                  return (
+                    <div key={code} className="space-y-1.5">
                         <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
                           {cat?.name || code}
                         </span>
-                        {mappedIssues.length > 0 && (
-                          <div className="ml-2 flex flex-wrap gap-1.5">
+                        {mappedIssues.length > 0 &&
+                      <div className="ml-2 flex flex-wrap gap-1.5">
                             {mappedIssues.map((issueCode) => {
-                              const issueCat = categories.find((c) => c.code === issueCode);
-                              return (
-                                <span
-                                  key={issueCode}
-                                  className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                          const issueCat = categories.find((c) => c.code === issueCode);
+                          return (
+                            <span
+                              key={issueCode}
+                              className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
                                   {issueCat?.name || issueCode}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                                </span>);
 
-                {customerComments && (
-                  <>
-                    <Separator />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1 font-medium">Customer Comments</p>
-                      <p className="text-sm whitespace-pre-wrap">{customerComments}</p>
-                    </div>
-                  </>
-                )}
+                        })}
+                          </div>
+                      }
+                      </div>);
+
+                })}
+                </div>
 
               </CardContent>
             </Card>
@@ -1569,7 +1520,7 @@ export default function CreateJobCardPage() {
           <Button
             onClick={nextStep}
             disabled={
-            currentStep === 'vehicle' && (!vehicle && !isNewVehicle) ||
+            currentStep === 'vehicle' && !vehicle && !isNewVehicle ||
             currentStep === 'odometer' && (!isOdometerStepValid() || !isSocStepValid() || odometerValidation?.isValidating || socValidation?.isValidating)
             }
             className="flex-1 h-12">
