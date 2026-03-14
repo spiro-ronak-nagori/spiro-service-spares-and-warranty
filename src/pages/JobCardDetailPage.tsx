@@ -85,6 +85,95 @@ export default function JobCardDetailPage() {
   const [showDeliveryConfirm, setShowDeliveryConfirm] = useState(false);
   const [showReopenDialog, setShowReopenDialog] = useState(false);
   const [pendingOutSocData, setPendingOutSocData] = useState<OutgoingSocData | null>(null);
+  const [showEditIssues, setShowEditIssues] = useState(false);
+  const [isSavingIssues, setIsSavingIssues] = useState(false);
+
+  // Issue editing allowed: after inwarding, before work completed, or after reopen
+  const ISSUE_EDITABLE_STATUSES: JobCardStatus[] = ['INWARDED', 'IN_PROGRESS', 'REOPENED'];
+  const canEditIssues = jobCard ? ISSUE_EDITABLE_STATUSES.includes(jobCard.status) : false;
+
+  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[]) => {
+    if (!jobCard || !profile || !canEditIssues) {
+      toast.error('Issue editing is not allowed in the current status');
+      return;
+    }
+
+    setIsSavingIssues(true);
+    try {
+      // Re-check status server-side to prevent race conditions
+      const { data: freshJc, error: fetchErr } = await supabase
+        .from('job_cards')
+        .select('status, service_categories, issue_categories')
+        .eq('id', jobCard.id)
+        .single();
+
+      if (fetchErr) throw fetchErr;
+      if (!ISSUE_EDITABLE_STATUSES.includes(freshJc.status as JobCardStatus)) {
+        toast.error('Job card status has changed. Issue editing is no longer allowed.');
+        setShowEditIssues(false);
+        fetchJobCard();
+        return;
+      }
+
+      const oldServiceCats = freshJc.service_categories as string[];
+      const oldIssueCats = freshJc.issue_categories as string[];
+
+      // Compute diff
+      const addedIssues = newIssueCategories.filter(c => !oldIssueCats.includes(c));
+      const removedIssues = oldIssueCats.filter(c => !newIssueCategories.includes(c));
+      const addedServices = newServiceCategories.filter(c => !oldServiceCats.includes(c));
+      const removedServices = oldServiceCats.filter(c => !newServiceCategories.includes(c));
+
+      // Skip if nothing changed
+      if (addedIssues.length === 0 && removedIssues.length === 0 && addedServices.length === 0 && removedServices.length === 0) {
+        setShowEditIssues(false);
+        return;
+      }
+
+      // Update job card (only issues, never customer_comments)
+      const { error: updateErr } = await supabase
+        .from('job_cards')
+        .update({
+          service_categories: newServiceCategories,
+          issue_categories: newIssueCategories,
+        } as any)
+        .eq('id', jobCard.id);
+
+      if (updateErr) throw updateErr;
+
+      // Create audit trail entry with detailed notes
+      const auditNotes = JSON.stringify({
+        event: 'ISSUES_UPDATED',
+        status_at_edit: freshJc.status,
+        old_services: oldServiceCats,
+        new_services: newServiceCategories,
+        old_issues: oldIssueCats,
+        new_issues: newIssueCategories,
+        added_issues: addedIssues,
+        removed_issues: removedIssues,
+        added_services: addedServices,
+        removed_services: removedServices,
+      });
+
+      await supabase.from('audit_trail').insert({
+        job_card_id: jobCard.id,
+        user_id: profile.id,
+        from_status: freshJc.status,
+        to_status: freshJc.status,
+        notes: auditNotes,
+      });
+
+      toast.success('Issues updated successfully');
+      setShowEditIssues(false);
+      fetchJobCard();
+      fetchAuditTrail();
+    } catch (error: any) {
+      console.error('Error updating issues:', error);
+      toast.error(error?.message || 'Failed to update issues');
+    } finally {
+      setIsSavingIssues(false);
+    }
+  };
 
   useEffect(() => {
     if (id) {
