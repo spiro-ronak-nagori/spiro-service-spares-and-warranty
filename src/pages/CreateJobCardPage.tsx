@@ -669,7 +669,7 @@ export default function CreateJobCardPage() {
           user_id: profile.id,
           to_status: 'DRAFT',
           notes: 'Job card created'
-        })
+        }).then()
       );
 
       // 4. Audit rider contact selection
