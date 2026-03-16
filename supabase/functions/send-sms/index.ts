@@ -266,9 +266,8 @@ Deno.serve(async (req) => {
     // DELIVERED trigger: create feedback link
     let feedbackLink = "";
     if (trigger === "DELIVERED") {
-      const { data: feedbackSetting } = await supabase
-        .from("system_settings").select("value").eq("key", "ENABLE_FEEDBACK_FORM").maybeSingle();
-      const feedbackEnabled = feedbackSetting?.value?.toLowerCase() !== "false";
+      const feedbackSettingVal = await getSettingValue("ENABLE_FEEDBACK_FORM");
+      const feedbackEnabled = feedbackSettingVal?.toLowerCase() !== "false";
       if (feedbackEnabled) {
         feedbackLink = await createFeedbackLink(supabase, job_card_id, supabaseUrl);
       }

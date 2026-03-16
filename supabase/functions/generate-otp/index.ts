@@ -73,21 +73,46 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Fetch job card (with workshop country for country-level settings)
+    const { data: jobCard, error: jcError } = await supabase
+      .from("job_cards")
+      .select("id, workshop_id, contact_for_updates, rider_phone, rider_phone_locked, vehicle:vehicles(owner_phone), workshop:workshops(country)")
+      .eq("id", job_card_id)
+      .single();
+
+    if (jcError || !jobCard) {
+      return new Response(
+        JSON.stringify({ error: "Job card not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const jcCountry = (jobCard as any).workshop?.country || null;
+
+    // Helper: read setting from country_settings first, fallback to system_settings
+    async function getSettingValue(settingKey: string): Promise<string | null> {
+      if (jcCountry) {
+        const { data: cs } = await supabase
+          .from("country_settings")
+          .select("value")
+          .eq("country_name", jcCountry)
+          .eq("setting_key", settingKey)
+          .maybeSingle();
+        if (cs?.value != null) return cs.value;
+      }
+      const { data: ss } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", settingKey)
+        .maybeSingle();
+      return ss?.value ?? null;
+    }
+
     // Read test mode
-    const { data: settingRow } = await supabase
-      .from("system_settings")
-      .select("value")
-      .eq("key", "ENABLE_SMS_TEST_MODE")
-      .maybeSingle();
-    const isTestMode = settingRow?.value?.toLowerCase() === "true";
+    const isTestMode = (await getSettingValue("ENABLE_SMS_TEST_MODE"))?.toLowerCase() === "true";
 
     // Read alternate phone feature flag
-    const { data: altPhoneSetting } = await supabase
-      .from("system_settings")
-      .select("value")
-      .eq("key", "ENABLE_ALTERNATE_PHONE_NUMBER")
-      .maybeSingle();
-    const altPhoneEnabled = altPhoneSetting?.value?.toLowerCase() === "true";
+    const altPhoneEnabled = (await getSettingValue("ENABLE_ALTERNATE_PHONE_NUMBER"))?.toLowerCase() === "true";
 
     // Fetch job card
     const { data: jobCard, error: jcError } = await supabase
