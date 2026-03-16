@@ -1089,6 +1089,7 @@ export default function JobCardDetailPage() {
         open={showDeliveryConfirm}
         onOpenChange={setShowDeliveryConfirm}
         onProceed={handleOutgoingSocProceed}
+        country={workshopCountry}
       />
 
       {jobCard && sparesEnabled && (
