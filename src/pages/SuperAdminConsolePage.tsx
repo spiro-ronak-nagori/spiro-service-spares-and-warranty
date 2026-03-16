@@ -85,7 +85,7 @@ export default function SuperAdminConsolePage() {
       visible: isSystemAdmin,
     },
     {
-      label: 'Warranty Admin Assignments',
+      label: 'Manage Warranty Admins',
       description: 'Manage warranty admins and their scope assignments',
       icon: ShieldCheck,
       path: '/console/warranty-admins',
