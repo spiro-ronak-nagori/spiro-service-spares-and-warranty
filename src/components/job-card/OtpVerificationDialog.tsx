@@ -32,6 +32,7 @@ export function OtpVerificationDialog({
   jobCard,
   purpose,
   onVerified,
+  country,
 }: OtpVerificationDialogProps) {
   const { profile } = useAuth();
   const [otp, setOtp] = useState('');
