@@ -176,21 +176,8 @@ Deno.serve(async (req) => {
 
     const altPhoneEnabled = (await getSettingValue("ENABLE_ALTERNATE_PHONE_NUMBER"))?.toLowerCase() === "true";
 
-    const { data: jobCard, error: jcError } = await supabase
-      .from("job_cards")
-      .select(`*, vehicle:vehicles(reg_no, owner_name, owner_phone), workshop:workshops(name, country)`)
-      .eq("id", job_card_id)
-      .single();
-
-    if (jcError || !jobCard) {
-      return new Response(JSON.stringify({ error: "Job card not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const vehicle = jobCard.vehicle;
     const workshop = jobCard.workshop;
-    const countryName = workshop?.country || null;
     const { phone: rawPhone, name: customerName } = resolveContact(jobCard, altPhoneEnabled);
 
     if (!rawPhone) {
