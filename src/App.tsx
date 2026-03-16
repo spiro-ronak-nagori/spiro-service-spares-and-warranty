@@ -56,6 +56,7 @@ const App = () => (
             <Route path="/console/workshops" element={<ProtectedRoute><ManageWorkshopsPage /></ProtectedRoute>} />
             <Route path="/console/country-admins" element={<ProtectedRoute><ManageCountryAdminsPage /></ProtectedRoute>} />
             <Route path="/console/system-config" element={<ProtectedRoute><SystemConfigPage /></ProtectedRoute>} />
+            <Route path="/console/manage-toggles" element={<ProtectedRoute><ManageTogglesPage /></ProtectedRoute>} />
             <Route path="/console/service-categories" element={<ProtectedRoute><ManageServiceCategoriesPage /></ProtectedRoute>} />
             <Route path="/console/feedback-editor" element={<ProtectedRoute><FeedbackEditorPage /></ProtectedRoute>} />
             <Route path="/console/spare-parts" element={<ProtectedRoute><ManageSpareMasterPage /></ProtectedRoute>} />

@@ -63,8 +63,11 @@ export default function JobCardDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
   
-  // Spares
-  const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags();
+  // Derive workshop country early (may be null until job card loads)
+  const workshopCountry = (jobCard as any)?.workshop?.country || null;
+
+  // Spares (country-aware)
+  const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags(workshopCountry);
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
   const [mandatorySparesRequired, setMandatorySparesRequired] = useState(false);
@@ -75,13 +78,9 @@ export default function JobCardDetailPage() {
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   const [showSubmitAll, setShowSubmitAll] = useState(false);
 
-  // Country-based feature flags
-  const { isEnabledForCountry: isChecklistEnabledForCountry, isLoading: checklistFlagLoading } = useCountryFeatureSetting('CHECKLIST_ENABLED_COUNTRIES');
-  const { isEnabledForCountry: isMechanicNameEnabledForCountry, isLoading: mechanicFlagLoading } = useCountryFeatureSetting('MECHANIC_NAME_ENABLED_COUNTRIES');
-
-  const workshopCountry = (jobCard as any)?.workshop?.country || null;
-  const checklistEnabledForThisJC = isChecklistEnabledForCountry(workshopCountry);
-  const mechanicNameEnabledForThisJC = isMechanicNameEnabledForCountry(workshopCountry);
+  // Country-based feature flags (reads from country_settings)
+  const { value: checklistEnabledForThisJC, isLoading: checklistFlagLoading } = useCountryBoolSetting('ENABLE_VEHICLE_CHECKLIST', workshopCountry);
+  const { value: mechanicNameEnabledForThisJC, isLoading: mechanicFlagLoading } = useCountryBoolSetting('ENABLE_MECHANIC_NAME', workshopCountry);
 
   // Checklist
   const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
