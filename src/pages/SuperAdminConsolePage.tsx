@@ -92,7 +92,7 @@ export default function SuperAdminConsolePage() {
       visible: isSystemAdmin || isSuperAdmin,
     },
     {
-      label: 'System Configuration',
+      label: 'Manage System Configuration',
       description: isSystemAdmin
         ? 'Feature flag toggles (SMS, OCR, Feedback, Spares)'
         : 'Manage service categories & feedback forms',
