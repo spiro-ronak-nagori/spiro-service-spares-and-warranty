@@ -39,7 +39,7 @@ import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
 import { SubmitAllWarrantySheet } from '@/components/job-card/SubmitAllWarrantySheet';
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
-import { useCountryFeatureSetting } from '@/hooks/useCountryFeatureSetting';
+import { useCountryBoolSetting } from '@/hooks/useCountrySetting';
 import { resolveChecklistTemplate } from '@/lib/resolve-checklist-template';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
