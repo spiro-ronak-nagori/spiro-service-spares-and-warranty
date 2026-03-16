@@ -18,6 +18,7 @@ import SuperAdminConsolePage from "./pages/SuperAdminConsolePage";
 import ManageWorkshopsPage from "./pages/ManageWorkshopsPage";
 import ManageCountryAdminsPage from "./pages/ManageCountryAdminsPage";
 import SystemConfigPage from "./pages/SystemConfigPage";
+import ManageTogglesPage from "./pages/ManageTogglesPage";
 import ManageServiceCategoriesPage from "./pages/ManageServiceCategoriesPage";
 import FeedbackEditorPage from "./pages/FeedbackEditorPage";
 import ManageTeamPage from "./pages/ManageTeamPage";
