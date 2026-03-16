@@ -23,6 +23,7 @@ interface DeliveryWithSocDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onProceed: (socData: OutgoingSocData) => void;
+  country?: string | null;
 }
 
 const SOC_MISMATCH_THRESHOLD = 0.15;
