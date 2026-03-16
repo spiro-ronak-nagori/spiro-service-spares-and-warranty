@@ -114,7 +114,8 @@ Deno.serve(async (req) => {
     // Read alternate phone feature flag
     const altPhoneEnabled = (await getSettingValue("ENABLE_ALTERNATE_PHONE_NUMBER"))?.toLowerCase() === "true";
 
-    // jobCard already fetched above
+    // jobCard already fetched above — set alt phone flag for resolvePhone
+    (jobCard as any)._alt_phone_enabled = altPhoneEnabled;
 
     const phone = resolvePhone(jobCard);
     if (!phone) {
