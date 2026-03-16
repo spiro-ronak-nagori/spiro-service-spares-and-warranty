@@ -38,9 +38,10 @@ export function getBucketForTat(tatMinutes: number, cutoffs: number[]): SlaBucke
 }
 
 /**
- * Hook to read the SLA bucket cutoffs from system_settings.
+ * Hook to read the SLA bucket cutoffs.
+ * If country is provided, reads from country_settings first, falls back to system_settings.
  */
-export function useSlaBuckets(): SlaBuckets {
+export function useSlaBuckets(country?: string | null): SlaBuckets {
   const [cutoffs, setCutoffs] = useState<number[]>(DEFAULT_CUTOFFS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,15 +49,35 @@ export function useSlaBuckets(): SlaBuckets {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'warranty_sla_buckets_hours')
-          .maybeSingle();
-        if (!cancelled && data) {
-          const parsed = JSON.parse(data.value);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setCutoffs(parsed.map(Number));
+        let resolved = false;
+
+        if (country) {
+          const { data } = await supabase
+            .from('country_settings' as any)
+            .select('value')
+            .eq('country_name', country)
+            .eq('setting_key', 'warranty_sla_buckets_hours')
+            .maybeSingle();
+          if (!cancelled && data) {
+            const parsed = JSON.parse((data as any).value);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setCutoffs(parsed.map(Number));
+              resolved = true;
+            }
+          }
+        }
+
+        if (!resolved) {
+          const { data } = await supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'warranty_sla_buckets_hours')
+            .maybeSingle();
+          if (!cancelled && data) {
+            const parsed = JSON.parse(data.value);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setCutoffs(parsed.map(Number));
+            }
           }
         }
       } catch (err) {
@@ -66,7 +87,7 @@ export function useSlaBuckets(): SlaBuckets {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [country]);
 
   return { cutoffs, labels: buildBucketLabels(cutoffs), isLoading };
 }

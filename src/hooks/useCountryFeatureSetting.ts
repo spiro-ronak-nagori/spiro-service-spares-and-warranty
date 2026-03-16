@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Reads a system_settings key that stores a JSON array of country names.
- * Returns whether a given country is in the enabled list.
+ * @deprecated Use useCountryBoolSetting from useCountrySetting.ts instead.
+ * This hook is kept for backward compatibility.
+ * 
+ * Reads a country-level boolean from country_settings.
+ * Falls back to system_settings JSON array approach for legacy keys.
  */
 export function useCountryFeatureSetting(key: string) {
   const [countries, setCountries] = useState<string[]>([]);
