@@ -1054,6 +1054,7 @@ export default function JobCardDetailPage() {
         jobCard={jobCard}
         purpose="delivery"
         onVerified={handleDeliveryVerified}
+        country={workshopCountry}
       />
 
       <CompleteWorkDialog
