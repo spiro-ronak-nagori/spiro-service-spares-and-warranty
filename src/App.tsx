@@ -55,6 +55,7 @@ const App = () => (
             <Route path="/profile/edit" element={<ProtectedRoute><ProfileEditPage /></ProtectedRoute>} />
             <Route path="/console" element={<ProtectedRoute><SuperAdminConsolePage /></ProtectedRoute>} />
             <Route path="/console/workshops" element={<ProtectedRoute><ManageWorkshopsPage /></ProtectedRoute>} />
+            <Route path="/console/admins" element={<ProtectedRoute><ManageAdminsPage /></ProtectedRoute>} />
             <Route path="/console/country-admins" element={<ProtectedRoute><ManageCountryAdminsPage /></ProtectedRoute>} />
             <Route path="/console/system-config" element={<ProtectedRoute><SystemConfigPage /></ProtectedRoute>} />
             <Route path="/console/manage-toggles" element={<ProtectedRoute><ManageTogglesPage /></ProtectedRoute>} />
