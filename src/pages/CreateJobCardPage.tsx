@@ -87,8 +87,9 @@ export default function CreateJobCardPage() {
   const workshop = selectedWorkshop || authWorkshop;
 
   const isElevatedAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin' || profile?.role === 'country_admin';
-  const { value: ocrEnabled } = useSystemSetting('ENABLE_IMAGE_OCR', true);
-  const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false);
+  const workshopCountry = workshop?.country || null;
+  const { value: ocrEnabled } = useSystemSetting('ENABLE_IMAGE_OCR', true, workshopCountry);
+  const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false, workshopCountry);
   const { countries: dbCountries, getCallingCode } = useCountries();
   const { modelNames: vehicleModels, isLoading: modelsLoading, error: modelsError } = useVehicleModels();
 

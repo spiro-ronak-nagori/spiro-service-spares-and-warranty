@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SparePart, SparePartApplicability, JobCardSpare, JobCardSparePhoto } from '@/types';
 
-export function useSparesFeatureFlags() {
+export function useSparesFeatureFlags(country?: string | null) {
   const [sparesEnabled, setSparesEnabled] = useState(false);
   const [warrantyEnabled, setWarrantyEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -10,22 +10,43 @@ export function useSparesFeatureFlags() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase
-          .from('system_settings')
-          .select('key, value')
-          .in('key', ['ENABLE_SPARES_FLOW', 'ENABLE_WARRANTY_FLOW']);
+        let resolved = false;
 
-        (data || []).forEach((row: any) => {
-          if (row.key === 'ENABLE_SPARES_FLOW') setSparesEnabled(row.value === 'true');
-          if (row.key === 'ENABLE_WARRANTY_FLOW') setWarrantyEnabled(row.value === 'true');
-        });
+        if (country) {
+          const { data } = await supabase
+            .from('country_settings' as any)
+            .select('setting_key, value')
+            .eq('country_name', country)
+            .in('setting_key', ['ENABLE_SPARES_FLOW', 'ENABLE_WARRANTY_FLOW']);
+
+          if (data && (data as any[]).length > 0) {
+            (data as any[]).forEach((row: any) => {
+              if (row.setting_key === 'ENABLE_SPARES_FLOW') setSparesEnabled(row.value === 'true');
+              if (row.setting_key === 'ENABLE_WARRANTY_FLOW') setWarrantyEnabled(row.value === 'true');
+            });
+            resolved = true;
+          }
+        }
+
+        if (!resolved) {
+          // Fallback to global system_settings
+          const { data } = await supabase
+            .from('system_settings')
+            .select('key, value')
+            .in('key', ['ENABLE_SPARES_FLOW', 'ENABLE_WARRANTY_FLOW']);
+
+          (data || []).forEach((row: any) => {
+            if (row.key === 'ENABLE_SPARES_FLOW') setSparesEnabled(row.value === 'true');
+            if (row.key === 'ENABLE_WARRANTY_FLOW') setWarrantyEnabled(row.value === 'true');
+          });
+        }
       } catch (err) {
         console.error('Failed to load spares flags:', err);
       } finally {
         setIsLoading(false);
       }
     })();
-  }, []);
+  }, [country]);
 
   return { sparesEnabled, warrantyEnabled, isLoading };
 }

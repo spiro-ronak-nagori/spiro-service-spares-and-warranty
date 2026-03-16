@@ -122,31 +122,7 @@ Deno.serve(async (req) => {
 
     const template = SMS_TEMPLATES[trigger];
 
-    // --- Master SMS sending toggle ---
-    const { data: smsSendingSetting } = await supabase
-      .from("system_settings").select("value").eq("key", "ENABLE_SMS_SENDING").maybeSingle();
-    const smsEnabled = smsSendingSetting?.value?.toLowerCase() === "true";
-
-    if (OTP_TRIGGERS.has(trigger)) {
-      const { data: settingRow } = await supabase
-        .from("system_settings").select("value").eq("key", "ENABLE_SMS_TEST_MODE").maybeSingle();
-      if (settingRow?.value?.toLowerCase() === "true") {
-        console.log(`[send-sms] TEST MODE — skipping OTP SMS for trigger ${trigger}`);
-        return new Response(
-          JSON.stringify({ success: true, test_mode: true, trigger }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    if (!smsEnabled) {
-      console.log(`[send-sms] SMS DISABLED — skipping SMS for trigger ${trigger}`);
-    }
-
-    const { data: altPhoneSetting } = await supabase
-      .from("system_settings").select("value").eq("key", "ENABLE_ALTERNATE_PHONE_NUMBER").maybeSingle();
-    const altPhoneEnabled = altPhoneSetting?.value?.toLowerCase() === "true";
-
+    // --- Fetch job card first to get country for country-level settings ---
     const { data: jobCard, error: jcError } = await supabase
       .from("job_cards")
       .select(`*, vehicle:vehicles(reg_no, owner_name, owner_phone), workshop:workshops(name, country)`)
@@ -159,9 +135,49 @@ Deno.serve(async (req) => {
       });
     }
 
+    const countryName = jobCard.workshop?.country || null;
+
+    // Helper: read setting from country_settings first, fallback to system_settings
+    async function getSettingValue(settingKey: string): Promise<string | null> {
+      if (countryName) {
+        const { data: cs } = await supabase
+          .from("country_settings")
+          .select("value")
+          .eq("country_name", countryName)
+          .eq("setting_key", settingKey)
+          .maybeSingle();
+        if (cs?.value != null) return cs.value;
+      }
+      const { data: ss } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", settingKey)
+        .maybeSingle();
+      return ss?.value ?? null;
+    }
+
+    // --- Master SMS sending toggle ---
+    const smsEnabled = (await getSettingValue("ENABLE_SMS_SENDING"))?.toLowerCase() === "true";
+
+    if (OTP_TRIGGERS.has(trigger)) {
+      const testMode = (await getSettingValue("ENABLE_SMS_TEST_MODE"))?.toLowerCase() === "true";
+      if (testMode) {
+        console.log(`[send-sms] TEST MODE — skipping OTP SMS for trigger ${trigger}`);
+        return new Response(
+          JSON.stringify({ success: true, test_mode: true, trigger }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (!smsEnabled) {
+      console.log(`[send-sms] SMS DISABLED — skipping SMS for trigger ${trigger}`);
+    }
+
+    const altPhoneEnabled = (await getSettingValue("ENABLE_ALTERNATE_PHONE_NUMBER"))?.toLowerCase() === "true";
+
     const vehicle = jobCard.vehicle;
     const workshop = jobCard.workshop;
-    const countryName = workshop?.country || null;
     const { phone: rawPhone, name: customerName } = resolveContact(jobCard, altPhoneEnabled);
 
     if (!rawPhone) {
@@ -250,9 +266,8 @@ Deno.serve(async (req) => {
     // DELIVERED trigger: create feedback link
     let feedbackLink = "";
     if (trigger === "DELIVERED") {
-      const { data: feedbackSetting } = await supabase
-        .from("system_settings").select("value").eq("key", "ENABLE_FEEDBACK_FORM").maybeSingle();
-      const feedbackEnabled = feedbackSetting?.value?.toLowerCase() !== "false";
+      const feedbackSettingVal = await getSettingValue("ENABLE_FEEDBACK_FORM");
+      const feedbackEnabled = feedbackSettingVal?.toLowerCase() !== "false";
       if (feedbackEnabled) {
         feedbackLink = await createFeedbackLink(supabase, job_card_id, supabaseUrl);
       }

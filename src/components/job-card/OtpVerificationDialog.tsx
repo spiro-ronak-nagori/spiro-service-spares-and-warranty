@@ -23,6 +23,7 @@ interface OtpVerificationDialogProps {
   jobCard: JobCard;
   purpose: 'inwarding' | 'delivery';
   onVerified: () => void;
+  country?: string | null;
 }
 
 export function OtpVerificationDialog({
@@ -31,6 +32,7 @@ export function OtpVerificationDialog({
   jobCard,
   purpose,
   onVerified,
+  country,
 }: OtpVerificationDialogProps) {
   const { profile } = useAuth();
   const [otp, setOtp] = useState('');
@@ -41,7 +43,7 @@ export function OtpVerificationDialog({
   const [testModeOtp, setTestModeOtp] = useState<string | null>(null);
   const [showEditContact, setShowEditContact] = useState(false);
 
-  const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false);
+  const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false, country);
 
   // Determine the active contact phone
   const jcAny = jobCard as any;

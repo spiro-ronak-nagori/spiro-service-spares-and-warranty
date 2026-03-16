@@ -23,6 +23,7 @@ interface DeliveryWithSocDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onProceed: (socData: OutgoingSocData) => void;
+  country?: string | null;
 }
 
 const SOC_MISMATCH_THRESHOLD = 0.15;
@@ -30,9 +31,10 @@ const SOC_MISMATCH_THRESHOLD = 0.15;
 export function DeliveryWithSocDialog({
   open,
   onOpenChange,
-  onProceed
+  onProceed,
+  country,
 }: DeliveryWithSocDialogProps) {
-  const { value: ocrEnabled } = useSystemSetting('ENABLE_IMAGE_OCR', true);
+  const { value: ocrEnabled } = useSystemSetting('ENABLE_IMAGE_OCR', true, country);
 
   const [socValue, setSocValue] = useState('');
   const [socFile, setSocFile] = useState<File | null>(null);

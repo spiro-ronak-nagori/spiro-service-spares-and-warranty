@@ -326,6 +326,33 @@ export type Database = {
         }
         Relationships: []
       }
+      country_settings: {
+        Row: {
+          country_name: string
+          id: string
+          setting_key: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          country_name: string
+          id?: string
+          setting_key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Update: {
+          country_name?: string
+          id?: string
+          setting_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       export_audit_log: {
         Row: {
           created_at: string
