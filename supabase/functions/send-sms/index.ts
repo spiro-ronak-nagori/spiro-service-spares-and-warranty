@@ -122,15 +122,46 @@ Deno.serve(async (req) => {
 
     const template = SMS_TEMPLATES[trigger];
 
+    // --- Fetch job card first to get country for country-level settings ---
+    const { data: jobCard, error: jcError } = await supabase
+      .from("job_cards")
+      .select(`*, vehicle:vehicles(reg_no, owner_name, owner_phone), workshop:workshops(name, country)`)
+      .eq("id", job_card_id)
+      .single();
+
+    if (jcError || !jobCard) {
+      return new Response(JSON.stringify({ error: "Job card not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const countryName = jobCard.workshop?.country || null;
+
+    // Helper: read setting from country_settings first, fallback to system_settings
+    async function getSettingValue(settingKey: string): Promise<string | null> {
+      if (countryName) {
+        const { data: cs } = await supabase
+          .from("country_settings")
+          .select("value")
+          .eq("country_name", countryName)
+          .eq("setting_key", settingKey)
+          .maybeSingle();
+        if (cs?.value != null) return cs.value;
+      }
+      const { data: ss } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", settingKey)
+        .maybeSingle();
+      return ss?.value ?? null;
+    }
+
     // --- Master SMS sending toggle ---
-    const { data: smsSendingSetting } = await supabase
-      .from("system_settings").select("value").eq("key", "ENABLE_SMS_SENDING").maybeSingle();
-    const smsEnabled = smsSendingSetting?.value?.toLowerCase() === "true";
+    const smsEnabled = (await getSettingValue("ENABLE_SMS_SENDING"))?.toLowerCase() === "true";
 
     if (OTP_TRIGGERS.has(trigger)) {
-      const { data: settingRow } = await supabase
-        .from("system_settings").select("value").eq("key", "ENABLE_SMS_TEST_MODE").maybeSingle();
-      if (settingRow?.value?.toLowerCase() === "true") {
+      const testMode = (await getSettingValue("ENABLE_SMS_TEST_MODE"))?.toLowerCase() === "true";
+      if (testMode) {
         console.log(`[send-sms] TEST MODE — skipping OTP SMS for trigger ${trigger}`);
         return new Response(
           JSON.stringify({ success: true, test_mode: true, trigger }),
@@ -143,9 +174,7 @@ Deno.serve(async (req) => {
       console.log(`[send-sms] SMS DISABLED — skipping SMS for trigger ${trigger}`);
     }
 
-    const { data: altPhoneSetting } = await supabase
-      .from("system_settings").select("value").eq("key", "ENABLE_ALTERNATE_PHONE_NUMBER").maybeSingle();
-    const altPhoneEnabled = altPhoneSetting?.value?.toLowerCase() === "true";
+    const altPhoneEnabled = (await getSettingValue("ENABLE_ALTERNATE_PHONE_NUMBER"))?.toLowerCase() === "true";
 
     const { data: jobCard, error: jcError } = await supabase
       .from("job_cards")
