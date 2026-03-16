@@ -1045,6 +1045,7 @@ export default function JobCardDetailPage() {
         jobCard={jobCard}
         purpose="inwarding"
         onVerified={handleInwardingVerified}
+        country={workshopCountry}
       />
 
       <OtpVerificationDialog
