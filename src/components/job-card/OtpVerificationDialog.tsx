@@ -23,6 +23,7 @@ interface OtpVerificationDialogProps {
   jobCard: JobCard;
   purpose: 'inwarding' | 'delivery';
   onVerified: () => void;
+  country?: string | null;
 }
 
 export function OtpVerificationDialog({
