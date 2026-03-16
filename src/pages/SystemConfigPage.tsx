@@ -11,8 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package, ClipboardCheck } from 'lucide-react';
+import { MessageSquare, Camera, ClipboardList, ListTree, Info, ChevronRight, UserCheck, Send, Package, ClipboardCheck, Wrench } from 'lucide-react';
 import { WarrantySlaConfig } from '@/components/admin/WarrantySlaConfig';
+import { CountryFeatureConfig } from '@/components/admin/CountryFeatureConfig';
 import { toast } from 'sonner';
 
 interface SettingItem {
@@ -235,6 +236,26 @@ export default function SystemConfigPage() {
 
             {/* Warranty SLA Bucket Config — system_admin only */}
             {isSystemAdmin && <WarrantySlaConfig />}
+
+            {/* Country-based feature configs — system_admin only */}
+            {isSystemAdmin && (
+              <>
+                <CountryFeatureConfig
+                  settingKey="CHECKLIST_ENABLED_COUNTRIES"
+                  label="Vehicle Checklist (Country)"
+                  description="Enable the vehicle intake checklist for selected countries."
+                  tooltip="When enabled for a country, technicians must complete a vehicle checklist after inwarding and before Start Work. Countries not selected will skip the checklist."
+                  icon={ClipboardCheck}
+                />
+                <CountryFeatureConfig
+                  settingKey="MECHANIC_NAME_ENABLED_COUNTRIES"
+                  label="Mechanic Name Capture (Country)"
+                  description="Require mechanic name entry on Start Work for selected countries."
+                  tooltip="When enabled for a country, the technician must enter the assigned mechanic name when starting work. The name is shown on the job card and editable until work is completed."
+                  icon={Wrench}
+                />
+              </>
+            )}
 
             {/* Navigation Cards */}
             <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate('/console/service-categories')}>

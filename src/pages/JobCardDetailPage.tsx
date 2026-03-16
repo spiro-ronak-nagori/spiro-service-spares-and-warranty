@@ -39,7 +39,7 @@ import { SubmitWarrantySheet } from '@/components/job-card/SubmitWarrantySheet';
 import { SubmitAllWarrantySheet } from '@/components/job-card/SubmitAllWarrantySheet';
 import { NeedsInfoResponseSheet } from '@/components/job-card/NeedsInfoResponseSheet';
 import { useSparesFeatureFlags, useJobCardSpares, deleteJobCardSpare, withdrawSpare, convertToUserPaid } from '@/hooks/useSparesFlow';
-import { useChecklistFlag } from '@/hooks/useChecklistFlag';
+import { useCountryFeatureSetting } from '@/hooks/useCountryFeatureSetting';
 import { resolveChecklistTemplate } from '@/lib/resolve-checklist-template';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { sendSms } from '@/lib/sms';
@@ -47,6 +47,9 @@ import { JobCardSpare } from '@/types';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
+import { ChecklistStatusSection } from '@/components/job-card/ChecklistStatusSection';
+import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
+import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
 
 export default function JobCardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -65,19 +68,32 @@ export default function JobCardDetailPage() {
   const { spares, isLoading: sparesLoading, refetch: refetchSpares } = useJobCardSpares(id);
   const [showSparesModal, setShowSparesModal] = useState(false);
   const [mandatorySparesRequired, setMandatorySparesRequired] = useState(false);
-  const [sparesModalFromStartWork, setSparesModalFromStartWork] = useState(false);
   const [editingSpare, setEditingSpare] = useState<JobCardSpare | null>(null);
   const [deletingSpareId, setDeletingSpareId] = useState<string | null>(null);
   const [warrantySpare, setWarrantySpare] = useState<JobCardSpare | null>(null);
   const [withdrawingSpare, setWithdrawingSpare] = useState<JobCardSpare | null>(null);
   const [needsInfoSpare, setNeedsInfoSpare] = useState<JobCardSpare | null>(null);
   const [showSubmitAll, setShowSubmitAll] = useState(false);
+
+  // Country-based feature flags
+  const { isEnabledForCountry: isChecklistEnabledForCountry, isLoading: checklistFlagLoading } = useCountryFeatureSetting('CHECKLIST_ENABLED_COUNTRIES');
+  const { isEnabledForCountry: isMechanicNameEnabledForCountry, isLoading: mechanicFlagLoading } = useCountryFeatureSetting('MECHANIC_NAME_ENABLED_COUNTRIES');
+
+  const workshopCountry = (jobCard as any)?.workshop?.country || null;
+  const checklistEnabledForThisJC = isChecklistEnabledForCountry(workshopCountry);
+  const mechanicNameEnabledForThisJC = isMechanicNameEnabledForCountry(workshopCountry);
+
   // Checklist
-  const { value: checklistEnabled, isLoading: checklistFlagLoading } = useChecklistFlag();
   const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
   const [checklistApplicable, setChecklistApplicable] = useState(false);
   const [checklistCheckLoading, setChecklistCheckLoading] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+
+  // Mechanic name
+  const [showMechanicSheet, setShowMechanicSheet] = useState(false);
+  const [mechanicSheetForStartWork, setMechanicSheetForStartWork] = useState(false);
+  const [isSavingMechanic, setIsSavingMechanic] = useState(false);
+
   // Dialog states
   const [showInwardingOtp, setShowInwardingOtp] = useState(false);
   const [showDeliveryOtp, setShowDeliveryOtp] = useState(false);
@@ -92,6 +108,11 @@ export default function JobCardDetailPage() {
   const ISSUE_EDITABLE_STATUSES: JobCardStatus[] = ['DRAFT', 'INWARDED', 'IN_PROGRESS', 'REOPENED'];
   const canEditIssues = jobCard ? ISSUE_EDITABLE_STATUSES.includes(jobCard.status) : false;
 
+  // Mechanic name editability: editable from INWARDED until READY, and again if REOPENED
+  const MECHANIC_EDITABLE_STATUSES: JobCardStatus[] = ['INWARDED', 'IN_PROGRESS', 'REOPENED'];
+  const canEditMechanic = jobCard ? mechanicNameEnabledForThisJC && MECHANIC_EDITABLE_STATUSES.includes(jobCard.status) : false;
+  const mechanicLocked = jobCard ? ['READY', 'DELIVERED', 'COMPLETED', 'CLOSED'].includes(jobCard.status) : false;
+
   const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[]) => {
     if (!jobCard || !profile || !canEditIssues) {
       toast.error('Issue editing is not allowed in the current status');
@@ -100,7 +121,6 @@ export default function JobCardDetailPage() {
 
     setIsSavingIssues(true);
     try {
-      // Re-check status server-side to prevent race conditions
       const { data: freshJc, error: fetchErr } = await supabase
         .from('job_cards')
         .select('status, service_categories, issue_categories')
@@ -117,20 +137,16 @@ export default function JobCardDetailPage() {
 
       const oldServiceCats = freshJc.service_categories as string[];
       const oldIssueCats = freshJc.issue_categories as string[];
-
-      // Compute diff
       const addedIssues = newIssueCategories.filter(c => !oldIssueCats.includes(c));
       const removedIssues = oldIssueCats.filter(c => !newIssueCategories.includes(c));
       const addedServices = newServiceCategories.filter(c => !oldServiceCats.includes(c));
       const removedServices = oldServiceCats.filter(c => !newServiceCategories.includes(c));
 
-      // Skip if nothing changed
       if (addedIssues.length === 0 && removedIssues.length === 0 && addedServices.length === 0 && removedServices.length === 0) {
         setShowEditIssues(false);
         return;
       }
 
-      // Update job card (only issues, never customer_comments)
       const { error: updateErr } = await supabase
         .from('job_cards')
         .update({
@@ -141,7 +157,6 @@ export default function JobCardDetailPage() {
 
       if (updateErr) throw updateErr;
 
-      // Create audit trail entry with detailed notes
       const auditNotes = JSON.stringify({
         event: 'ISSUES_UPDATED',
         status_at_edit: freshJc.status,
@@ -182,7 +197,7 @@ export default function JobCardDetailPage() {
     }
   }, [id]);
 
-  // Check if any selected issues require spares (child rows with requires_spares = true)
+  // Check if any selected issues require spares
   useEffect(() => {
     const checkMandatorySpares = async () => {
       if (!jobCard || !sparesEnabled || jobCard.issue_categories.length === 0) {
@@ -205,9 +220,9 @@ export default function JobCardDetailPage() {
     checkMandatorySpares();
   }, [jobCard?.issue_categories, sparesEnabled]);
 
-  // Check if vehicle checklist is already completed for this JC + template exists
+  // Check if vehicle checklist is applicable and completed
   useEffect(() => {
-    if (!id || !checklistEnabled || !jobCard) {
+    if (!id || !checklistEnabledForThisJC || !jobCard) {
       setChecklistCompleted(null);
       setChecklistApplicable(false);
       setChecklistCheckLoading(false);
@@ -216,15 +231,38 @@ export default function JobCardDetailPage() {
     setChecklistCheckLoading(true);
     (async () => {
       try {
-        // First check if a template even applies
         const template = await resolveChecklistTemplate(
           jobCard.vehicle?.model || null,
           jobCard.workshop_id,
-          (jobCard as any).workshop?.country || null,
+          workshopCountry,
         );
         if (!template) {
           setChecklistApplicable(false);
           setChecklistCompleted(null);
+
+          // Audit: checklist not applicable (no matching template)
+          // Only audit once per JC — check if already audited
+          if (jobCard.status === 'INWARDED' && profile) {
+            const { data: existing } = await supabase
+              .from('audit_trail')
+              .select('id')
+              .eq('job_card_id', id)
+              .like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%')
+              .limit(1);
+            if (!existing || existing.length === 0) {
+              await supabase.from('audit_trail').insert({
+                job_card_id: id,
+                user_id: profile.id,
+                from_status: jobCard.status,
+                to_status: jobCard.status,
+                notes: JSON.stringify({
+                  event: 'VEHICLE_CHECKLIST_NOT_APPLICABLE',
+                  country: workshopCountry,
+                  reason: 'no_matching_template',
+                }),
+              });
+            }
+          }
           return;
         }
         setChecklistApplicable(true);
@@ -243,7 +281,36 @@ export default function JobCardDetailPage() {
         setChecklistCheckLoading(false);
       }
     })();
-  }, [id, checklistEnabled, showChecklist, jobCard?.workshop_id]);
+  }, [id, checklistEnabledForThisJC, showChecklist, jobCard?.workshop_id]);
+
+  // Audit when checklist feature is OFF for this country (once per JC)
+  useEffect(() => {
+    if (!id || !jobCard || !profile || checklistFlagLoading) return;
+    if (checklistEnabledForThisJC) return; // feature is on, no skip audit needed
+    if (jobCard.status !== 'INWARDED') return;
+
+    (async () => {
+      const { data: existing } = await supabase
+        .from('audit_trail')
+        .select('id')
+        .eq('job_card_id', id)
+        .like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%')
+        .limit(1);
+      if (!existing || existing.length === 0) {
+        await supabase.from('audit_trail').insert({
+          job_card_id: id,
+          user_id: profile.id,
+          from_status: jobCard.status,
+          to_status: jobCard.status,
+          notes: JSON.stringify({
+            event: 'VEHICLE_CHECKLIST_NOT_APPLICABLE',
+            country: workshopCountry,
+            reason: 'feature_flag_off',
+          }),
+        });
+      }
+    })();
+  }, [id, jobCard?.status, checklistEnabledForThisJC, checklistFlagLoading]);
 
   const fetchJobCard = async () => {
     if (!id) return;
@@ -299,18 +366,18 @@ export default function JobCardDetailPage() {
     }
   };
 
-  const updateStatus = async (newStatus: JobCardStatus, additionalData?: Partial<JobCard>, auditNotes?: string) => {
+  const updateStatus = async (newStatus: JobCardStatus, additionalData?: Record<string, any>, auditNotes?: string) => {
     if (!jobCard || !profile) return;
     
     setIsUpdating(true);
     try {
-      // Build additional data payload for the RPC
       const additionalPayload: Record<string, any> = {};
       if (additionalData?.inwarding_otp_verified !== undefined) additionalPayload.inwarding_otp_verified = additionalData.inwarding_otp_verified;
       if (additionalData?.delivery_otp_verified !== undefined) additionalPayload.delivery_otp_verified = additionalData.delivery_otp_verified;
       if (additionalData?.completion_remarks !== undefined) additionalPayload.completion_remarks = additionalData.completion_remarks;
       if (additionalData?.service_categories) additionalPayload.service_categories = additionalData.service_categories;
       if (additionalData?.issue_categories) additionalPayload.issue_categories = additionalData.issue_categories;
+      if (additionalData?.assigned_mechanic_name !== undefined) additionalPayload.assigned_mechanic_name = additionalData.assigned_mechanic_name;
 
       const { data, error } = await supabase.rpc('transition_job_card_status', {
         p_job_card_id: jobCard.id,
@@ -320,9 +387,10 @@ export default function JobCardDetailPage() {
       });
 
       if (error) {
-        // Surface user-safe messages for known error types
         const msg = error.message || '';
-        if (msg.includes('INVALID_TRANSITION')) {
+        if (msg.includes('CHECKLIST_REQUIRED')) {
+          toast.error('Please complete the vehicle checklist before starting work.');
+        } else if (msg.includes('INVALID_TRANSITION')) {
           toast.error('This status change is not allowed from the current state.');
         } else if (msg.includes('UNAUTHORIZED')) {
           toast.error('You are not authorized to update this job card.');
@@ -347,31 +415,74 @@ export default function JobCardDetailPage() {
   };
 
   const handleStartWork = () => {
-    if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
-      // If checklist is enabled and not yet completed, show checklist first
-      if (checklistEnabled && checklistApplicable && !checklistCompleted) {
-        setShowChecklist(true);
-        return;
-      }
-      if (sparesEnabled) {
-        setSparesModalFromStartWork(true);
-        setShowSparesModal(true);
-      } else {
-        updateStatus('IN_PROGRESS');
-      }
+    if (!jobCard || !canTransitionTo(jobCard.status, 'IN_PROGRESS')) return;
+
+    // Gate 1: Checklist must be completed if required
+    if (checklistEnabledForThisJC && checklistApplicable && !checklistCompleted) {
+      toast.error('Please complete the vehicle checklist before starting work.');
+      setShowChecklist(true);
+      return;
     }
+
+    // Gate 2: Mechanic name capture if enabled
+    if (mechanicNameEnabledForThisJC) {
+      setMechanicSheetForStartWork(true);
+      setShowMechanicSheet(true);
+      return;
+    }
+
+    // No gates — proceed directly
+    updateStatus('IN_PROGRESS');
   };
 
   const handleChecklistCompleted = () => {
     setChecklistCompleted(true);
-    // Now proceed with the normal start work flow
-    if (jobCard && canTransitionTo(jobCard.status, 'IN_PROGRESS')) {
-      if (sparesEnabled) {
-        setSparesModalFromStartWork(true);
-        setShowSparesModal(true);
+    // Do NOT auto-start work. User must tap Start Work manually.
+  };
+
+  const handleMechanicNameSave = async (name: string) => {
+    if (!jobCard || !profile) return;
+    setIsSavingMechanic(true);
+    try {
+      const oldName = (jobCard as any).assigned_mechanic_name || null;
+
+      // Save mechanic name on job card
+      const { error } = await supabase
+        .from('job_cards')
+        .update({ assigned_mechanic_name: name } as any)
+        .eq('id', jobCard.id);
+      if (error) throw error;
+
+      // Audit mechanic name change
+      await supabase.from('audit_trail').insert({
+        job_card_id: jobCard.id,
+        user_id: profile.id,
+        from_status: jobCard.status,
+        to_status: jobCard.status,
+        notes: JSON.stringify({
+          event: 'MECHANIC_NAME_UPDATED',
+          old_mechanic_name: oldName,
+          new_mechanic_name: name,
+          status_at_change: jobCard.status,
+        }),
+      });
+
+      setShowMechanicSheet(false);
+
+      // If this was triggered from Start Work, proceed
+      if (mechanicSheetForStartWork) {
+        setMechanicSheetForStartWork(false);
+        await updateStatus('IN_PROGRESS', { assigned_mechanic_name: name });
       } else {
-        updateStatus('IN_PROGRESS');
+        toast.success('Mechanic name updated');
+        fetchJobCard();
+        fetchAuditTrail();
       }
+    } catch (err: any) {
+      console.error('Error saving mechanic name:', err);
+      toast.error(err?.message || 'Failed to save mechanic name');
+    } finally {
+      setIsSavingMechanic(false);
     }
   };
 
@@ -380,7 +491,6 @@ export default function JobCardDetailPage() {
   };
 
   const handleEditSpare = (spare: JobCardSpare) => {
-    // Block editing non-DRAFT spares
     if (spare.approval_state !== 'DRAFT') {
       toast.error('Claim submitted. Withdraw to make changes.');
       return;
@@ -391,7 +501,6 @@ export default function JobCardDetailPage() {
 
   const handleDeleteSpare = async () => {
     if (!deletingSpareId) return;
-    // Find the spare to check state
     const spare = spares.find(s => s.id === deletingSpareId);
     if (spare && spare.approval_state !== 'DRAFT') {
       toast.error('Cannot delete a submitted spare. Withdraw first.');
@@ -435,7 +544,6 @@ export default function JobCardDetailPage() {
 
   const handleCompleteWork = async (remarks: string) => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
-
     updateStatus('READY', { completion_remarks: remarks });
     sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
     setShowCompleteWork(false);
@@ -449,14 +557,21 @@ export default function JobCardDetailPage() {
     setShowInwardingOtp(false);
   };
 
+  const handleInwardingAction = () => {
+    if (!jobCard) return;
+    if (profile?.role === 'super_admin') {
+      updateStatus('INWARDED', { inwarding_otp_verified: true }, 'Super admin bypass – OTP skipped');
+      sendSms({ jobCardId: jobCard.id, trigger: 'INWARDED' });
+    } else {
+      setShowInwardingOtp(true);
+    }
+  };
+
   const handleDeliveryVerified = async () => {
     if (jobCard && pendingOutSocData) {
       setIsUpdating(true);
       try {
-        // Upload outgoing SOC image
         const outSocUrl = await uploadJcImage(pendingOutSocData.file, jobCard.id, 'outgoing_soc');
-
-        // Save outgoing SOC data
         await supabase
           .from('job_cards')
           .update({
@@ -487,33 +602,14 @@ export default function JobCardDetailPage() {
     setShowDeliveryOtp(false);
   };
 
-  // ONLY Super admins bypass OTP for inwarding (country_admin cannot skip)
-  const handleInwardingAction = () => {
-    if (profile?.role === 'super_admin') {
-      if (jobCard) {
-        updateStatus('INWARDED', { inwarding_otp_verified: true }, 'Super admin bypass – OTP skipped');
-        sendSms({ jobCardId: jobCard.id, trigger: 'INWARDED' });
-      }
-    } else {
-      setShowInwardingOtp(true);
-    }
-  };
-
-  // Delivery: always go through outgoing SOC dialog first, then OTP
   const handleDeliveryAction = () => {
-    if (profile?.role === 'super_admin') {
-      // Super admin still needs to capture outgoing SOC
-      setShowDeliveryConfirm(true);
-    } else {
-      setShowDeliveryConfirm(true);
-    }
+    setShowDeliveryConfirm(true);
   };
 
   const handleOutgoingSocProceed = (socData: OutgoingSocData) => {
     setPendingOutSocData(socData);
     setShowDeliveryConfirm(false);
     if (profile?.role === 'super_admin') {
-      // Super admin bypasses OTP — go straight to delivery
       handleSuperAdminDeliveryWithSoc(socData);
     } else {
       setShowDeliveryOtp(true);
@@ -598,6 +694,18 @@ export default function JobCardDetailPage() {
 
   const vehicle = jobCard.vehicle;
 
+  // Compute checklist section status
+  const checklistSectionStatus = (() => {
+    if (checklistFlagLoading || checklistCheckLoading) return 'loading' as const;
+    if (!checklistEnabledForThisJC) return 'not_applicable' as const;
+    if (!checklistApplicable) return 'not_applicable' as const;
+    if (checklistCompleted) return 'completed' as const;
+    return 'pending' as const;
+  })();
+
+  // Show checklist section on INWARDED status (and IN_PROGRESS to show completed state)
+  const showChecklistSection = ['INWARDED', 'IN_PROGRESS', 'REOPENED', 'READY', 'DELIVERED', 'COMPLETED', 'CLOSED'].includes(jobCard.status);
+
   return (
     <AppLayout>
       <PageHeader 
@@ -629,6 +737,27 @@ export default function JobCardDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Vehicle Checklist Section */}
+        {showChecklistSection && (
+          <ChecklistStatusSection
+            status={checklistSectionStatus}
+            onComplete={() => setShowChecklist(true)}
+          />
+        )}
+
+        {/* Assigned Mechanic Section */}
+        {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name && (
+          <MechanicNameSection
+            name={(jobCard as any).assigned_mechanic_name}
+            canEdit={canEditMechanic}
+            locked={mechanicLocked}
+            onEdit={() => {
+              setMechanicSheetForStartWork(false);
+              setShowMechanicSheet(true);
+            }}
+          />
+        )}
+
         {/* Action Buttons */}
         <ActionButtons 
           jobCard={jobCard}
@@ -642,7 +771,7 @@ export default function JobCardDetailPage() {
           sparesCount={spares.length}
           mandatorySparesRequired={mandatorySparesRequired}
           onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
-          checklistEnabled={checklistEnabled}
+          checklistEnabled={checklistEnabledForThisJC}
           checklistApplicable={checklistApplicable}
           checklistCompleted={checklistCompleted}
           checklistLoading={checklistFlagLoading || checklistCheckLoading}
@@ -699,7 +828,6 @@ export default function JobCardDetailPage() {
                 </div>
               )}
 
-              {/* Show rider contact when alternate phone is active */}
               {(jobCard as any).contact_for_updates === 'RIDER' && (jobCard as any).rider_name && (
                 <>
                   <Separator className="my-2" />
@@ -778,7 +906,6 @@ export default function JobCardDetailPage() {
               <p className="text-sm text-muted-foreground">No services selected</p>
             )}
 
-            {/* Show any orphan issues not mapped to a selected category */}
             {(() => {
               const mappedCats = new Set(jobCard.service_categories);
               const orphanIssues = jobCard.issue_categories.filter(
@@ -893,7 +1020,6 @@ export default function JobCardDetailPage() {
                   </div>
                 ))}
                 
-                {/* Creation entry */}
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
@@ -971,10 +1097,6 @@ export default function JobCardDetailPage() {
             setShowSparesModal(open);
             if (!open) {
               setEditingSpare(null);
-              if (sparesModalFromStartWork) {
-                setSparesModalFromStartWork(false);
-                updateStatus('IN_PROGRESS');
-              }
             }
           }}
           jobCardId={jobCard.id}
@@ -987,7 +1109,6 @@ export default function JobCardDetailPage() {
         />
       )}
 
-      {/* Submit Warranty Sheet */}
       {warrantySpare && (
         <SubmitWarrantySheet
           open={!!warrantySpare}
@@ -1000,7 +1121,6 @@ export default function JobCardDetailPage() {
         />
       )}
 
-      {/* Submit All Warranty Sheet */}
       {warrantyEnabled && (
         <SubmitAllWarrantySheet
           open={showSubmitAll}
@@ -1012,7 +1132,6 @@ export default function JobCardDetailPage() {
         />
       )}
 
-      {/* Delete spare confirmation */}
       <ConfirmationDialog
         open={!!deletingSpareId}
         onOpenChange={(open) => { if (!open) setDeletingSpareId(null); }}
@@ -1023,7 +1142,6 @@ export default function JobCardDetailPage() {
         variant="destructive"
       />
 
-      {/* Withdraw spare confirmation */}
       <ConfirmationDialog
         open={!!withdrawingSpare}
         onOpenChange={(open) => { if (!open) setWithdrawingSpare(null); }}
@@ -1034,7 +1152,6 @@ export default function JobCardDetailPage() {
         variant="destructive"
       />
 
-      {/* Needs Info Response Sheet */}
       {needsInfoSpare && profile && (
         <NeedsInfoResponseSheet
           open={!!needsInfoSpare}
@@ -1048,17 +1165,29 @@ export default function JobCardDetailPage() {
       )}
 
       {/* Vehicle Checklist Sheet */}
-      {checklistEnabled && (
+      {checklistEnabledForThisJC && (
         <VehicleChecklistSheet
           open={showChecklist}
           onOpenChange={setShowChecklist}
           jobCardId={jobCard.id}
           vehicleModel={jobCard.vehicle?.model || null}
           workshopId={jobCard.workshop_id}
-          workshopCountry={(jobCard as any).workshop?.country || null}
+          workshopCountry={workshopCountry}
           onCompleted={handleChecklistCompleted}
         />
       )}
+
+      {/* Mechanic Name Sheet */}
+      <MechanicNameSheet
+        open={showMechanicSheet}
+        onOpenChange={(open) => {
+          setShowMechanicSheet(open);
+          if (!open) setMechanicSheetForStartWork(false);
+        }}
+        currentName={(jobCard as any).assigned_mechanic_name || null}
+        onSave={handleMechanicNameSave}
+        isSaving={isSavingMechanic}
+      />
     </AppLayout>
   );
 }
@@ -1114,14 +1243,13 @@ function ActionButtons({
 
   if (status === 'INWARDED' || status === 'REOPENED') {
     const stillLoadingChecklist = checklistEnabled && checklistLoading && status === 'INWARDED';
-    const needsChecklist = checklistEnabled && checklistApplicable && !checklistCompleted && status === 'INWARDED';
     return (
       <Button 
         className="w-full h-12 text-base"
         onClick={onStartWork}
         disabled={isUpdating || stillLoadingChecklist}
       >
-        {needsChecklist ? 'Complete Checklist & Start Work' : 'Start Work'}
+        Start Work
       </Button>
     );
   }

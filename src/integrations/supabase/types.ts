@@ -701,6 +701,7 @@ export type Database = {
       }
       job_cards: {
         Row: {
+          assigned_mechanic_name: string | null
           assigned_to: string | null
           closed_at: string | null
           completion_remarks: string | null
@@ -746,6 +747,7 @@ export type Database = {
           workshop_id: string
         }
         Insert: {
+          assigned_mechanic_name?: string | null
           assigned_to?: string | null
           closed_at?: string | null
           completion_remarks?: string | null
@@ -791,6 +793,7 @@ export type Database = {
           workshop_id: string
         }
         Update: {
+          assigned_mechanic_name?: string | null
           assigned_to?: string | null
           closed_at?: string | null
           completion_remarks?: string | null
