@@ -43,7 +43,7 @@ export function OtpVerificationDialog({
   const [testModeOtp, setTestModeOtp] = useState<string | null>(null);
   const [showEditContact, setShowEditContact] = useState(false);
 
-  const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false);
+  const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false, country);
 
   // Determine the active contact phone
   const jcAny = jobCard as any;
