@@ -89,7 +89,7 @@ export default function JobCardDetailPage() {
   const [isSavingIssues, setIsSavingIssues] = useState(false);
 
   // Issue editing allowed: after inwarding, before work completed, or after reopen
-  const ISSUE_EDITABLE_STATUSES: JobCardStatus[] = ['INWARDED', 'IN_PROGRESS', 'REOPENED'];
+  const ISSUE_EDITABLE_STATUSES: JobCardStatus[] = ['DRAFT', 'INWARDED', 'IN_PROGRESS', 'REOPENED'];
   const canEditIssues = jobCard ? ISSUE_EDITABLE_STATUSES.includes(jobCard.status) : false;
 
   const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[]) => {
