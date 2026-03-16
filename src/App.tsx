@@ -17,6 +17,7 @@ import ProfileEditPage from "./pages/ProfileEditPage";
 import SuperAdminConsolePage from "./pages/SuperAdminConsolePage";
 import ManageWorkshopsPage from "./pages/ManageWorkshopsPage";
 import ManageCountryAdminsPage from "./pages/ManageCountryAdminsPage";
+import ManageAdminsPage from "./pages/ManageAdminsPage";
 import SystemConfigPage from "./pages/SystemConfigPage";
 import ManageTogglesPage from "./pages/ManageTogglesPage";
 import ManageServiceCategoriesPage from "./pages/ManageServiceCategoriesPage";
