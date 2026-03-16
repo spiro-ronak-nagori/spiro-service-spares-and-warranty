@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, Globe, Settings, ChevronRight, ShieldCheck, Loader2, Sheet, CheckCircle2, XCircle } from 'lucide-react';
+import { Building2, Settings, ChevronRight, ShieldCheck, Loader2, Sheet, CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -71,25 +71,11 @@ export default function SuperAdminConsolePage() {
       visible: true,
     },
     {
-      label: 'Manage Country Admins',
-      description: 'Invite and manage country-level administrators',
-      icon: Globe,
-      path: '/console/country-admins',
+      label: 'Manage Admins',
+      description: 'Manage system and country-level administrator roles',
+      icon: ShieldCheck,
+      path: '/console/admins',
       visible: isSuperAdmin || isSystemAdmin,
-    },
-    {
-      label: 'Manage Super Admins',
-      description: 'Invite and manage super administrators',
-      icon: ShieldCheck,
-      path: '/console/super-admins',
-      visible: isSystemAdmin,
-    },
-    {
-      label: 'Manage Warranty Admins',
-      description: 'Manage warranty admins and their scope assignments',
-      icon: ShieldCheck,
-      path: '/console/warranty-admins',
-      visible: isSystemAdmin || isSuperAdmin,
     },
     {
       label: 'Manage System Configuration',
