@@ -46,6 +46,7 @@ import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistShe
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 import { ChecklistStatusSection } from '@/components/job-card/ChecklistStatusSection';
+import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
 
