@@ -224,15 +224,18 @@ export default function RoleDetailPage() {
   const handleAddOverride = () => {
     if (!newOverridePermKey || !role) return;
     const tempId = `new_${Date.now()}_${Math.random()}`;
+    const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
     setPendingNewOverrides(prev => [...prev, {
       id: tempId,
       policy_type: newOverridePolicyType,
       permission_key: newOverridePermKey,
       enabled: newOverrideEnabled,
+      country: resolvedCountry,
     }]);
     setShowAddOverride(false);
     setNewOverridePermKey('');
     setNewOverrideEnabled(false);
+    setNewOverrideCountry('__GLOBAL__');
   };
 
   const handleDeleteOverride = (id: string) => {
