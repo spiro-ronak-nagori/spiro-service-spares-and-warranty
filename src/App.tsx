@@ -45,6 +45,7 @@ const App = () => (
       <Sonner position="top-center" />
       <BrowserRouter>
         <AuthProvider>
+          <PermissionProvider>
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<AuthPage />} />
