@@ -296,10 +296,10 @@ export function CompleteWorkDialog({
         </div>
 
         <DrawerFooter className="safe-bottom">
-          <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12">
-            Complete Work
+          <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="h-12">
+            {isSubmitting ? 'Completing…' : 'Complete Work'}
           </Button>
-          <Button variant="outline" onClick={handleClose} className="h-12">
+          <Button type="button" variant="outline" onClick={handleClose} className="h-12" disabled={isSubmitting}>
             Cancel
           </Button>
         </DrawerFooter>
