@@ -16,11 +16,8 @@ interface EditIssuesSheetProps {
   onOpenChange: (open: boolean) => void;
   currentServiceCategories: string[];
   currentIssueCategories: string[];
-  onSave: (serviceCategories: string[], issueCategories: string[], mechanicName?: string) => void;
+  onSave: (serviceCategories: string[], issueCategories: string[]) => void;
   isSaving?: boolean;
-  /** Mechanic name editing — pass null/undefined to hide the field */
-  mechanicName?: string | null;
-  showMechanicFields?: boolean;
 }
 
 export function EditIssuesSheet({

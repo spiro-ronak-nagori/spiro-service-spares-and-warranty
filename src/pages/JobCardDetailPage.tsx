@@ -872,13 +872,21 @@ export default function JobCardDetailPage() {
           onEditIssues={() => setShowEditIssues(true)}
           customerComments={(jobCard as any).customer_comments}
           completionRemarks={jobCard.completion_remarks}
-          assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
-          mechanicNotes={(jobCard as any).mechanic_notes}
-          canAddMechanicNote={canAddMechanicNote}
-          onAddMechanicNote={handleAddMechanicNote}
           isExpanded={expandedSection === 'service'}
           onToggle={() => toggleSection('service')}
         />
+
+        {/* 3. Work Execution — only after work has started */}
+        {(jobCard.work_started_at || jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED' || jobCard.status === 'READY' || jobCard.status === 'DELIVERED' || jobCard.status === 'COMPLETED' || jobCard.status === 'CLOSED') && (
+          <WorkExecutionSection
+            assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
+            mechanicNotes={(jobCard as any).mechanic_notes}
+            canAddNote={canAddMechanicNote}
+            onAddNote={handleAddMechanicNote}
+            isExpanded={expandedSection === 'execution'}
+            onToggle={() => toggleSection('execution')}
+          />
+        )}
 
         {/* 4. Spares Used Section */}
         {sparesEnabled &&
