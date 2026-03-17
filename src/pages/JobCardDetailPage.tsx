@@ -772,6 +772,29 @@ export default function JobCardDetailPage() {
       
       <div className={`p-4 space-y-4 ${hasStickyCta ? 'pb-24' : ''}`}>
 
+        {/* Status context banner */}
+        {jobCard.status === 'DRAFT' && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Incomplete — complete inwarding to proceed</p>
+          </div>
+        )}
+        {jobCard.status === 'DELIVERED' && (
+          <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-4 py-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            <p className="text-sm font-medium text-green-800 dark:text-green-400">Vehicle Delivered</p>
+          </div>
+        )}
+        {jobCard.status === 'REOPENED' && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Reopened — Work resumed</p>
+          </div>
+        )}
+        {(jobCard.status === 'COMPLETED' || jobCard.status === 'CLOSED') && (
+          <div className="rounded-lg bg-muted border border-border px-4 py-3">
+            <p className="text-sm font-medium text-muted-foreground">{jobCard.status === 'COMPLETED' ? 'Completed' : 'Closed'}</p>
+          </div>
+        )}
+
         {/* 1. Vehicle Details */}
         <Card>
           <CardHeader className="pb-3">
