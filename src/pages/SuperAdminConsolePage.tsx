@@ -70,14 +70,14 @@ export default function SuperAdminConsolePage() {
       description: 'Create, edit, and manage workshops and their teams',
       icon: Building2,
       path: '/console/workshops',
-      visible: true,
+      visible: can('config.manage_workshops'),
     },
     {
       label: 'Manage Users',
       description: 'Manage system and country-level administrator roles',
       icon: ShieldCheck,
       path: '/console/admins',
-      visible: isSuperAdmin || isSystemAdmin,
+      visible: can('nav.manage_users'),
     },
     {
       label: 'Manage System Configuration',
@@ -86,7 +86,7 @@ export default function SuperAdminConsolePage() {
         : 'Manage service categories & feedback forms',
       icon: Settings,
       path: '/console/system-config',
-      visible: isSystemAdmin || isSuperAdmin,
+      visible: can('config.view'),
     },
   ];
 
