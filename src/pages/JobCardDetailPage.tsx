@@ -763,7 +763,7 @@ export default function JobCardDetailPage() {
       <PageHeader
         title={jobCard.jc_number}
         showBack
-        rightAction={<StatusPill status={jobCard.status} size="md" />} />
+        rightAction={<StatusPill status={jobCard.status} size="sm" />} />
       
       
       <div className={`p-4 space-y-4 ${hasStickyCta ? 'pb-24' : ''}`}>
