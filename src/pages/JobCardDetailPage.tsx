@@ -370,8 +370,9 @@ export default function JobCardDetailPage() {
   const handleStartWork = () => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'IN_PROGRESS')) return;
 
+    const clStatus = (jobCard as any).checklist_status;
     // Gate 1: Checklist must be completed if required
-    if (checklistEnabledForThisJC && checklistApplicable && !checklistCompleted) {
+    if (clStatus === 'PENDING') {
       toast.error('Please complete the vehicle checklist before starting work.');
       setShowChecklist(true);
       return;
@@ -389,7 +390,8 @@ export default function JobCardDetailPage() {
   };
 
   const handleChecklistCompleted = () => {
-    setChecklistCompleted(true);
+    // Update local job card state with COMPLETED status
+    setJobCard(prev => prev ? { ...prev, checklist_status: 'COMPLETED' } as any : prev);
     // Do NOT auto-start work. User must tap Start Work manually.
   };
 
