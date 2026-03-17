@@ -44,20 +44,14 @@ const PHOTO_KIND_LABEL: Record<SparePhotoKind, string> = {
   ADDITIONAL: 'Additional',
 };
 
-const WARRANTY_STATE_CONFIG: Record<WarrantyDisplayState, { label: string; className: string }> = {
-  SUBMISSION_PENDING: { label: 'Submission Pending', className: 'bg-amber-100 text-amber-800 border-amber-200' },
-  READY_TO_SUBMIT: { label: 'Ready to Submit', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-  SUBMITTED: { label: 'Submitted', className: 'bg-green-100 text-green-800 border-green-200' },
-  NEEDS_INFO: { label: 'Needs Info', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-  RESUBMITTED: { label: 'Resubmitted', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-  APPROVED: { label: 'Approved', className: 'bg-green-600 text-white border-green-600' },
-  REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200' },
-};
-
-const CLAIM_TYPE_CLASS: Record<string, string> = {
-  WARRANTY: 'bg-blue-600 text-white hover:bg-blue-600',
-  GOODWILL: 'bg-pink-600 text-white hover:bg-pink-600',
-  USER_PAID: 'bg-muted text-muted-foreground hover:bg-muted',
+const WARRANTY_STATE_LABEL: Record<WarrantyDisplayState, string> = {
+  SUBMISSION_PENDING: 'Submission Pending',
+  READY_TO_SUBMIT: 'Ready to Submit',
+  SUBMITTED: 'Submitted',
+  NEEDS_INFO: 'Needs Info',
+  RESUBMITTED: 'Resubmitted',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
 };
 
 function isLocked(spare: JobCardSpare): boolean {
