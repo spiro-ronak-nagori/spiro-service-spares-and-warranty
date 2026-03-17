@@ -670,8 +670,21 @@ export default function JobCardDetailPage() {
     }
   };
 
-  const handleReopenJobCard = (serviceCategories: string[], issueCategories: string[], comments: string) => {
+  const handleReopenJobCard = async (serviceCategories: string[], issueCategories: string[], comments: string) => {
     if (jobCard && canTransitionTo(jobCard.status, 'REOPENED')) {
+      // Append reopen remarks as a work note with type qualifier
+      if (comments) {
+        const existing = (jobCard as any).mechanic_notes as string | null;
+        const timestamp = format(new Date(), 'dd MMM HH:mm');
+        const entry = `[${timestamp}] 🔄 Job reopened — ${comments}`;
+        const updatedNotes = existing ? `${existing}\n${entry}` : entry;
+
+        await supabase
+          .from('job_cards')
+          .update({ mechanic_notes: updatedNotes } as any)
+          .eq('id', jobCard.id);
+      }
+
       updateStatus('REOPENED', {
         service_categories: [...jobCard.service_categories, ...serviceCategories],
         issue_categories: [...jobCard.issue_categories, ...issueCategories]
