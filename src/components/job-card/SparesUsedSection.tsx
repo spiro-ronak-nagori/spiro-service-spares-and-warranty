@@ -338,6 +338,12 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
         <CardContent className="pt-3">
           {spares.length === 0 ? (
             <div className="py-3">
+              {showWarningIndicator && (
+                <p className="text-xs text-amber-700 flex items-center gap-1 mb-3">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  Spares required for selected issues
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">No spares added yet</p>
               {canEdit && onAddSpares && (
                 <button
