@@ -180,23 +180,39 @@ export default function RoleDetailPage() {
     }
   };
 
-  const orderedGroupKeys = useMemo(() => {
-    const discoveredGroups = Array.from(new Set(permissions.map((p) => p.permission_group)));
-    return [
+  const permissionSections = useMemo(() => {
+    const groups = permissions.reduce<Record<string, Permission[]>>((acc, permission) => {
+      const groupKey = permission.permission_group || 'UNGROUPED';
+      if (!acc[groupKey]) acc[groupKey] = [];
+      acc[groupKey].push(permission);
+      return acc;
+    }, {});
+
+    const discoveredGroups = Object.keys(groups);
+    const orderedKeys = [
       ...GROUP_ORDER.filter((groupKey) => discoveredGroups.includes(groupKey)),
       ...discoveredGroups.filter((groupKey) => !GROUP_ORDER.includes(groupKey)).sort(),
     ];
+
+    return orderedKeys.map((groupKey) => ({
+      groupKey,
+      perms: groups[groupKey] || [],
+    }));
   }, [permissions]);
 
-  const groupedPerms = useMemo(() => {
-    const groups: Record<string, Permission[]> = {};
-    orderedGroupKeys.forEach((groupKey) => { groups[groupKey] = []; });
-    permissions.forEach((p) => {
-      if (!groups[p.permission_group]) groups[p.permission_group] = [];
-      groups[p.permission_group].push(p);
-    });
-    return groups;
-  }, [orderedGroupKeys, permissions]);
+  useEffect(() => {
+    const renderedCount = permissionSections.reduce((total, section) => total + section.perms.length, 0);
+    if (permissions.length > 0 && renderedCount !== permissions.length) {
+      console.warn('RBAC permission section mismatch', {
+        totalPermissions: permissions.length,
+        renderedCount,
+        groups: permissionSections.map((section) => ({
+          groupKey: section.groupKey,
+          count: section.perms.length,
+        })),
+      });
+    }
+  }, [permissionSections, permissions]);
 
   const togglePerm = (id: string) => {
     setPermissions((prev) =>
