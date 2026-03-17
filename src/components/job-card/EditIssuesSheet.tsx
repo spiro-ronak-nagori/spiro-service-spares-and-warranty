@@ -102,7 +102,7 @@ export function EditIssuesSheet({
         <DrawerHeader>
           <DrawerTitle>Edit Service Details</DrawerTitle>
           <DrawerDescription>
-            Update service issues{showMechanicFields ? ' and mechanic' : ''} for this job card
+            Update service issues for this job card
           </DrawerDescription>
         </DrawerHeader>
 
