@@ -55,8 +55,8 @@ export function WorkExecutionSection({
   canEditLabour = false,
   canRemoveLabour = false,
   onAddLabour,
-  onEditLabour,
-  onRemoveLabour,
+  onEditAggregated,
+  onRemoveAggregated,
 }: WorkExecutionSectionProps) {
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState('');
