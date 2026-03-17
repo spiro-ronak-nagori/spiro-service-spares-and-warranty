@@ -127,7 +127,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-9 min-w-0">
+            <SelectTrigger className="h-9 min-w-0 px-2 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
