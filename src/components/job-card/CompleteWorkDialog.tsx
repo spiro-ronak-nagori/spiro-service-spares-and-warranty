@@ -182,7 +182,7 @@ export function CompleteWorkDialog({
                     </ul>
                   </div>
                   {onOpenSparesModal && (
-                    <Button variant="destructive" size="sm" onClick={handleAddSparesNow} className="mt-2 h-11">
+                      <Button type="button" variant="destructive" size="sm" onClick={handleAddSparesNow} className="mt-2 h-11">
                       <Package className="h-3.5 w-3.5 mr-1.5" />
                       Add Spares Now
                     </Button>
