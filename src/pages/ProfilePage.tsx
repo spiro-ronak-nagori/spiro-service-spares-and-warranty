@@ -48,7 +48,7 @@ export default function ProfilePage() {
     }
   };
 
-  const canManageTeam = profile?.role === 'workshop_admin' || profile?.role === 'super_admin' || profile?.role === 'country_admin' || profile?.role === 'system_admin';
+  const canManageTeam = ['workshop_admin', 'super_admin', 'country_admin', 'system_admin'].includes(profile?.role || '');
 
   // Fetch warranty admin assignments with resolved workshop names
   const { data: warrantyAssignments } = useQuery({
