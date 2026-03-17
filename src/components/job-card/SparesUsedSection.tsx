@@ -459,7 +459,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               <div>
                 {Array.from(groups.entries()).map(([claimType, groupSpares], idx) => (
                   <div key={claimType}>
-                    {idx > 0 && <div className="border-t border-border/40 mt-3 mb-2" />}
+                    {idx > 0 && <div className="border-t border-border mt-3 mb-2" />}
                     <SpareGroup
                       claimType={claimType}
                       spares={groupSpares}
