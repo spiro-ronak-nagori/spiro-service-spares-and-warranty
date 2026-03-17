@@ -57,6 +57,7 @@ export default function JobCardDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [hasSetDefaultSection, setHasSetDefaultSection] = useState(false);
+  const toggleSection = (section: string) => setExpandedSection(prev => prev === section ? null : section);
   // Auto-expand service details if few items
   useEffect(() => {
     if (jobCard && !hasSetDefaultSection) {
