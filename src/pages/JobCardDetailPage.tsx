@@ -861,9 +861,6 @@ export default function JobCardDetailPage() {
                 }
                 </>
               }
-            </div>
-          </CardContent>
-        </Card>
 
         {/* 2. Service Details */}
         <ServiceDetailsSection
