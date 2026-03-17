@@ -330,6 +330,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
       </CardHeader>
 
       {!lockedCollapsed && isExpanded && (
+        <CardContent className="pt-3">
           {spares.length === 0 ? (
             <div className="py-3">
               {showWarningIndicator && (
