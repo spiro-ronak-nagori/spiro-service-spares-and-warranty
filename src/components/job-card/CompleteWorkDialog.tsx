@@ -127,8 +127,6 @@ export function CompleteWorkDialog({
   const handleSubmit = () => {
     if (canSubmit) {
       onComplete(remarks.trim());
-      setRemarks('');
-      setCheckedItems(new Set());
     }
   };
 
