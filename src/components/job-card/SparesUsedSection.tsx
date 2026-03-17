@@ -311,21 +311,15 @@ function SpareGroup({
   onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
   onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
 }) {
-  const claimColor = claimType === 'WARRANTY'
-    ? 'text-blue-600'
-    : claimType === 'GOODWILL'
-      ? 'text-purple-600'
-      : 'text-muted-foreground';
-
   return (
     <div>
-      <div className="flex items-center gap-2 py-1.5">
-        <span className={`text-xs font-semibold uppercase tracking-wide ${claimColor}`}>
+      <div className="flex items-center gap-1.5 pb-1">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           {CLAIM_LABEL[claimType]}
         </span>
-        <span className="text-[10px] text-muted-foreground">({spares.length})</span>
+        <span className="text-[10px] text-muted-foreground/60">({spares.length})</span>
       </div>
-      <div className="divide-y divide-border">
+      <div className="space-y-0.5">
         {spares.map((spare) => (
           <SpareItem
             key={spare.id}
