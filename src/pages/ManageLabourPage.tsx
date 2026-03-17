@@ -28,10 +28,18 @@ export default function ManageLabourPage() {
   const isAdmin = profile?.role === 'system_admin' || profile?.role === 'super_admin';
   const { countries, isLoading: countriesLoading } = useCountries();
   const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [labourEnabledLocal, setLabourEnabledLocal] = useState<boolean | null>(null);
 
   // Labour feature depends on Spares Flow
   const { value: sparesEnabled, isLoading: sparesLoading } = useCountryBoolSetting('ENABLE_SPARES_FLOW', selectedCountry || null);
-  const { value: labourEnabled, isLoading: labourFlagLoading } = useCountryBoolSetting('ENABLE_LABOUR', selectedCountry || null);
+  const { value: labourEnabledFromDb, isLoading: labourFlagLoading } = useCountryBoolSetting('ENABLE_LABOUR', selectedCountry || null);
+
+  // Sync DB value into local state when it loads or country changes
+  useEffect(() => {
+    if (!labourFlagLoading) {
+      setLabourEnabledLocal(labourEnabledFromDb);
+    }
+  }, [labourEnabledFromDb, labourFlagLoading, selectedCountry]);
 
   const { items, isLoading: labourLoading, refetch } = useLabourMaster(selectedCountry || null);
 
