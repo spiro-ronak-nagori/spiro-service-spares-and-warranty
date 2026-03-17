@@ -98,7 +98,7 @@ export function LabourSubsection({
       ) : rows.length === 0 ? (
         <p className="text-xs text-muted-foreground/60 mt-0.5 ml-[22px]">No labour added yet</p>
       ) : (
-        <div className="mt-1.5 ml-[22px] space-y-1">
+        <div className="mt-1 ml-[22px] space-y-1">
           {rows.map((row) => (
             <button
               key={row.labourMasterId}

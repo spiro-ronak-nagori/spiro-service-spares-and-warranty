@@ -116,7 +116,7 @@ export function WorkExecutionSection({
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">Assigned Mechanic</p>
               </div>
-              <p className="text-sm text-foreground/90 mt-0.5 ml-[22px]">{assignedMechanicName}</p>
+              <p className="text-sm text-foreground/90 mt-1 ml-[22px]">{assignedMechanicName}</p>
               <Separator className="my-3" />
             </>
           )}
