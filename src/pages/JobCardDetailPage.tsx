@@ -802,8 +802,8 @@ export default function JobCardDetailPage() {
           className="w-full h-12 text-sm font-semibold"
           onClick={() => {
             if (sparesBlocking) {
-              if (expandedSection !== 'spares') toggleSection('spares');
-              document.getElementById('spares-used-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setEditingSpare(null);
+              setShowSparesModal(true);
               return;
             }
             setShowCompleteWork(true);
