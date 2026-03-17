@@ -379,6 +379,9 @@ export default function RoleDetailPage() {
         }
       }
 
+      // Bump RBAC permission version to invalidate caches
+      await supabase.from('system_settings').update({ value: String(Date.now()), updated_at: new Date().toISOString() }).eq('key', 'RBAC_PERMISSION_VERSION');
+
       toast.success(`Saved ${changedItems.length} change${changedItems.length !== 1 ? 's' : ''}`);
       await loadData();
     } catch (err: any) {
