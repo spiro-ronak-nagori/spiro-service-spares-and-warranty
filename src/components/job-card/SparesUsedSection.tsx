@@ -456,7 +456,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
           ) : (
             <>
               {/* Grouped spare list */}
-              <div className="divide-y divide-border/50">
+              <div>
                 {Array.from(groups.entries()).map(([claimType, groupSpares], idx) => (
                   <div key={claimType}>
                     {idx > 0 && <div className="border-t border-border/40 mt-3 mb-2" />}
