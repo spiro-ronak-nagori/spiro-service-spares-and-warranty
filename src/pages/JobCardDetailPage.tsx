@@ -110,6 +110,39 @@ export default function JobCardDetailPage() {
   const [showEditIssues, setShowEditIssues] = useState(false);
   const [isSavingIssues, setIsSavingIssues] = useState(false);
 
+  // Mechanic notes: can add when mechanic is assigned and status is editable
+  const MECHANIC_NOTE_STATUSES: JobCardStatus[] = ['IN_PROGRESS', 'REOPENED'];
+  const canAddMechanicNote = jobCard ? mechanicNameEnabledForThisJC && !!(jobCard as any).assigned_mechanic_name && MECHANIC_NOTE_STATUSES.includes(jobCard.status) : false;
+
+  const handleAddMechanicNote = async (note: string) => {
+    if (!jobCard || !profile) return;
+    const existing = (jobCard as any).mechanic_notes as string | null;
+    const timestamp = format(new Date(), 'dd MMM HH:mm');
+    const entry = `[${timestamp}] ${note}`;
+    const updated = existing ? `${existing}\n${entry}` : entry;
+
+    const { error } = await supabase
+      .from('job_cards')
+      .update({ mechanic_notes: updated } as any)
+      .eq('id', jobCard.id);
+
+    if (error) {
+      toast.error('Failed to save note');
+      throw error;
+    }
+
+    await supabase.from('audit_trail').insert({
+      job_card_id: jobCard.id,
+      user_id: profile.id,
+      from_status: jobCard.status,
+      to_status: jobCard.status,
+      notes: JSON.stringify({ event: 'MECHANIC_NOTE_ADDED', note }),
+    });
+
+    toast.success('Note added');
+    fetchJobCard();
+  };
+
   // Issue editing allowed: after inwarding, before work completed, or after reopen
   const ISSUE_EDITABLE_STATUSES: JobCardStatus[] = ['DRAFT', 'INWARDED', 'IN_PROGRESS', 'REOPENED'];
   const canEditIssues = jobCard ? ISSUE_EDITABLE_STATUSES.includes(jobCard.status) : false;
@@ -119,7 +152,7 @@ export default function JobCardDetailPage() {
   const canEditMechanic = jobCard ? mechanicNameEnabledForThisJC && MECHANIC_EDITABLE_STATUSES.includes(jobCard.status) : false;
   const showMechanicFieldsInEdit = canEditMechanic && !!(jobCard as any)?.assigned_mechanic_name;
 
-  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[], newMechanicName?: string, newMechanicNotes?: string) => {
+  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[], newMechanicName?: string) => {
     if (!jobCard || !profile || !canEditIssues) {
       toast.error('Issue editing is not allowed in the current status');
       return;
@@ -157,13 +190,9 @@ export default function JobCardDetailPage() {
       if (newMechanicName !== undefined) {
         updatePayload.assigned_mechanic_name = newMechanicName || null;
       }
-      if (newMechanicNotes !== undefined) {
-        updatePayload.mechanic_notes = newMechanicNotes || null;
-      }
 
       const hasIssueChanges = addedIssues.length > 0 || removedIssues.length > 0 || addedServices.length > 0 || removedServices.length > 0;
-      const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || '')) ||
-        (newMechanicNotes !== undefined && newMechanicNotes !== ((jobCard as any).mechanic_notes || ''));
+      const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || ''));
 
       if (!hasIssueChanges && !hasMechanicChanges) {
         setShowEditIssues(false);
@@ -192,7 +221,6 @@ export default function JobCardDetailPage() {
         } : {}),
         ...(hasMechanicChanges ? {
           mechanic_name_changed: newMechanicName !== undefined,
-          mechanic_notes_changed: newMechanicNotes !== undefined,
         } : {}),
       });
 
@@ -834,7 +862,7 @@ export default function JobCardDetailPage() {
         <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} isExpanded={expandedSection === 'vehicle'} onToggle={() => toggleSection('vehicle')} />
 
         {/* 2. Service Details */}
-        <ServiceDetailsSection
+          <ServiceDetailsSection
           serviceCategories={jobCard.service_categories}
           issueCategories={jobCard.issue_categories}
           resolveCategoryName={resolveCategoryName}
@@ -845,6 +873,8 @@ export default function JobCardDetailPage() {
           completionRemarks={jobCard.completion_remarks}
           assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
           mechanicNotes={(jobCard as any).mechanic_notes}
+          canAddMechanicNote={canAddMechanicNote}
+          onAddMechanicNote={handleAddMechanicNote}
           isExpanded={expandedSection === 'service'}
           onToggle={() => toggleSection('service')}
         />
@@ -1000,7 +1030,7 @@ export default function JobCardDetailPage() {
         isSaving={isSavingIssues}
         mechanicName={(jobCard as any).assigned_mechanic_name}
         showMechanicFields={showMechanicFieldsInEdit}
-        mechanicNotes={(jobCard as any).mechanic_notes} />
+        />
 
       }
 
