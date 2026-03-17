@@ -155,7 +155,7 @@ function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled }: SparesUsedSectionProps) {
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus }: SparesUsedSectionProps) {
   // Compute whether Submit All CTA should show
   const showSubmitAll = useMemo(() => {
     if (!warrantyEnabled || !canEdit || !onSubmitAll) return false;
