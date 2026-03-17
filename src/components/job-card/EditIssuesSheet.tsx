@@ -4,6 +4,9 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ServiceCategory } from '@/types';
@@ -13,8 +16,10 @@ interface EditIssuesSheetProps {
   onOpenChange: (open: boolean) => void;
   currentServiceCategories: string[];
   currentIssueCategories: string[];
-  onSave: (serviceCategories: string[], issueCategories: string[]) => void;
+  onSave: (serviceCategories: string[], issueCategories: string[], mechanicName?: string) => void;
   isSaving?: boolean;
+  mechanicName?: string | null;
+  showMechanicField?: boolean;
 }
 
 export function EditIssuesSheet({
@@ -24,19 +29,23 @@ export function EditIssuesSheet({
   currentIssueCategories,
   onSave,
   isSaving = false,
+  mechanicName: currentMechanicName,
+  showMechanicField = false,
 }: EditIssuesSheetProps) {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [mechanicName, setMechanicName] = useState('');
 
   useEffect(() => {
     if (open) {
       fetchCategories();
       setSelectedL1(new Set(currentServiceCategories));
       setSelectedL2(new Set(currentIssueCategories));
+      setMechanicName(currentMechanicName || '');
     }
-  }, [open, currentServiceCategories, currentIssueCategories]);
+  }, [open, currentServiceCategories, currentIssueCategories, currentMechanicName]);
 
   const fetchCategories = async () => {
     setIsLoadingCategories(true);
@@ -89,6 +98,7 @@ export function EditIssuesSheet({
       onSave(
         Array.from(selectedL1),
         Array.from(selectedL2),
+        showMechanicField ? mechanicName.trim() || undefined : undefined,
       );
     }
   };
@@ -99,7 +109,7 @@ export function EditIssuesSheet({
         <DrawerHeader>
           <DrawerTitle>Edit Service Details</DrawerTitle>
           <DrawerDescription>
-            Update service issues for this job card
+            Update service issues{showMechanicField ? ' and mechanic' : ''} for this job card
           </DrawerDescription>
         </DrawerHeader>
 
@@ -147,6 +157,24 @@ export function EditIssuesSheet({
             </div>
           )}
 
+          {/* Mechanic field */}
+          {showMechanicField && (
+            <>
+              <Separator className="my-4" />
+              <div>
+                <Label htmlFor="edit-mechanic-name" className="text-sm font-medium">
+                  Assigned Mechanic
+                </Label>
+                <Input
+                  id="edit-mechanic-name"
+                  value={mechanicName}
+                  onChange={(e) => setMechanicName(e.target.value)}
+                  placeholder="Enter mechanic name"
+                  className="mt-1.5"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <DrawerFooter className="safe-bottom">
