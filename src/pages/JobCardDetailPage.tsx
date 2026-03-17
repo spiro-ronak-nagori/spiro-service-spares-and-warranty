@@ -21,7 +21,6 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Package,
   Pencil,
   Loader2 } from
 'lucide-react';
