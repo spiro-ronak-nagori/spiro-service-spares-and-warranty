@@ -79,8 +79,21 @@ export function ServiceDetailsSection({
               <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}</p>
             )}
           </div>
-          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
+            {canEditIssues && (
+              <span
+                role="button"
+                tabIndex={0}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => { e.stopPropagation(); onEditIssues(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onEditIssues(); } }}
+              >
+                Edit
+              </span>
+            )}
+            <span className="text-muted-foreground">
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </span>
           </div>
         </button>
       </CardHeader>
