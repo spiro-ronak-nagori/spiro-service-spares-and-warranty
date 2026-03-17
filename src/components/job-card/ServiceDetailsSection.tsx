@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Wrench, ChevronDown, ChevronUp, MessageSquareText } from 'lucide-react';
+import { Wrench, ChevronDown, ChevronUp, MessageSquareText, Pencil } from 'lucide-react';
 
 interface ServiceDetailsSectionProps {
   serviceCategories: string[];
@@ -89,21 +89,8 @@ export function ServiceDetailsSection({
               <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}</p>
             )}
           </div>
-          <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
-            {canEditIssues && isExpanded && (
-              <span
-                role="button"
-                tabIndex={0}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={(e) => { e.stopPropagation(); onEditIssues(); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onEditIssues(); } }}
-              >
-                Edit
-              </span>
-            )}
-            <span className="text-muted-foreground">
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </span>
+          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </button>
       </CardHeader>
@@ -156,6 +143,21 @@ export function ServiceDetailsSection({
               <Separator className="my-3" />
               <p className="text-xs text-muted-foreground mb-1">Completion Remarks</p>
               <p className="text-sm">{completionRemarks}</p>
+            </>
+          )}
+
+          {/* 4. Edit CTA at bottom */}
+          {canEditIssues && (
+            <>
+              <Separator className="my-3" />
+              <button
+                type="button"
+                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={onEditIssues}
+              >
+                <Pencil className="h-3 w-3" />
+                Edit Service Details
+              </button>
             </>
           )}
         </CardContent>
