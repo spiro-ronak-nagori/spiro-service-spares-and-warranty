@@ -997,7 +997,10 @@ export default function JobCardDetailPage() {
         currentServiceCategories={jobCard.service_categories}
         currentIssueCategories={jobCard.issue_categories}
         onSave={handleSaveIssues}
-        isSaving={isSavingIssues} />
+        isSaving={isSavingIssues}
+        mechanicName={(jobCard as any).assigned_mechanic_name}
+        showMechanicFields={showMechanicFieldsInEdit}
+        mechanicNotes={(jobCard as any).mechanic_notes} />
 
       }
 
