@@ -27,7 +27,7 @@ export default function SuperAdminConsolePage() {
   const isSystemAdmin = profile?.role === 'system_admin';
   const isSuperAdmin = profile?.role === 'super_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
-  const hasAccess = isSystemAdmin || isSuperAdmin || isCountryAdmin;
+  const hasAccess = can('nav.console');
 
   useEffect(() => {
     if (!isSystemAdmin) return;
