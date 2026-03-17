@@ -188,7 +188,6 @@ export default function JobCardDetailPage() {
         } : {}),
         ...(hasMechanicChanges ? {
           mechanic_name_changed: newMechanicName !== undefined,
-          mechanic_notes_changed: newMechanicNotes !== undefined,
         } : {}),
       });
 
