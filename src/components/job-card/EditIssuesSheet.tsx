@@ -27,14 +27,11 @@ export function EditIssuesSheet({
   currentIssueCategories,
   onSave,
   isSaving = false,
-  mechanicName: currentMechanicName,
-  showMechanicFields = false,
 }: EditIssuesSheetProps) {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [mechanicName, setMechanicName] = useState('');
 
   useEffect(() => {
     if (open) {
