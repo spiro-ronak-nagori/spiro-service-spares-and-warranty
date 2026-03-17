@@ -565,25 +565,30 @@ export default function JobCardDetailPage() {
       return;
     }
 
+    // Close dialog immediately for perceived speed
+    setShowCompleteWork(false);
+
     // Append closure remarks as a work note with type qualifier
     const existing = (jobCard as any).mechanic_notes as string | null;
     const timestamp = format(new Date(), 'dd MMM HH:mm');
     const entry = `[${timestamp}] 🔒 Work completed — ${remarks}`;
     const updatedNotes = existing ? `${existing}\n${entry}` : entry;
 
-    const { error } = await supabase
-      .from('job_cards')
-      .update({ mechanic_notes: updatedNotes } as any)
-      .eq('id', jobCard.id);
+    // Run notes update + status transition concurrently
+    const [notesResult] = await Promise.all([
+      supabase
+        .from('job_cards')
+        .update({ mechanic_notes: updatedNotes } as any)
+        .eq('id', jobCard.id),
+      updateStatus('READY'),
+    ]);
 
-    if (error) {
-      toast.error('Failed to save work note');
-      return;
+    if (notesResult.error) {
+      console.error('Failed to save work note:', notesResult.error);
     }
 
-    await updateStatus('READY');
-    await sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
-    setShowCompleteWork(false);
+    // Fire SMS in background — don't block UI
+    sendSms({ jobCardId: jobCard.id, trigger: 'READY' }).catch(console.error);
   };
 
   const handleInwardingVerified = () => {
