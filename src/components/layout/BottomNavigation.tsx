@@ -20,7 +20,7 @@ export function BottomNavigation() {
     }
 
     // Warranty admin dedicated nav
-    if (profile?.role === 'warranty_admin') {
+    if ((profile?.role as string) === 'warranty_admin') {
       if (can('nav.warranty_approvals')) {
         items.push({ to: '/warranty-approvals', icon: ShieldCheck, label: 'Approvals' });
       }
