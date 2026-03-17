@@ -80,7 +80,7 @@ export function ServiceDetailsSection({
             )}
           </div>
           <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
-            {canEditIssues && (
+            {canEditIssues && isExpanded && (
               <span
                 role="button"
                 tabIndex={0}
