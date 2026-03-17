@@ -1,0 +1,1 @@
+ALTER TABLE public.job_cards ADD COLUMN mechanic_notes text DEFAULT null;
