@@ -266,26 +266,28 @@ export default function RoleDetailPage() {
       }
     });
     overrides.forEach((o) => {
+      const countryTag = o.country ? ` [${o.country}]` : ' [Global]';
       if (pendingDeleteIds.has(o.id)) {
         const perm = permissions.find((p) => p.permission_key === o.permission_key);
         items.push({
-          label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+          label: `${o.policy_type}${countryTag}: ${perm?.display_label || o.permission_key}`,
           from: 'Exists',
           to: 'Deleted',
         });
       } else if (originalOverrides[o.id] !== o.enabled) {
         const perm = permissions.find((p) => p.permission_key === o.permission_key);
         items.push({
-          label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+          label: `${o.policy_type}${countryTag}: ${perm?.display_label || o.permission_key}`,
           from: originalOverrides[o.id] ? 'Enabled' : 'Disabled',
           to: o.enabled ? 'Enabled' : 'Disabled',
         });
       }
     });
     pendingNewOverrides.forEach((o) => {
+      const countryTag = o.country ? ` [${o.country}]` : ' [Global]';
       const perm = permissions.find((p) => p.permission_key === o.permission_key);
       items.push({
-        label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+        label: `${o.policy_type}${countryTag}: ${perm?.display_label || o.permission_key}`,
         from: '—',
         to: o.enabled ? 'Enabled' : 'Disabled',
       });
