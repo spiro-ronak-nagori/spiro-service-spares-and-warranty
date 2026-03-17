@@ -133,7 +133,7 @@ export default function RoleDetailPage() {
       const { count } = await supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
-        .eq('role', roleKey)
+        .eq('role', roleKey as any)
         .eq('is_active', true);
 
       setUserCount(count || 0);

@@ -76,7 +76,7 @@ export default function ManageRolesPage() {
       const { data: userCountData } = await supabase
         .from('profiles')
         .select('role')
-        .eq('is_active', true);
+        .eq('is_active', true) as any;
 
       const summaries: RoleSummary[] = rolesData.map((r: any) => {
         const perms = (permData || []).filter((p: any) => p.role_id === r.id);
