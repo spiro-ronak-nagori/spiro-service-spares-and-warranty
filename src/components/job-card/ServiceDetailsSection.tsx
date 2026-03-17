@@ -33,6 +33,8 @@ export function ServiceDetailsSection({
   onEditIssues,
   customerComments,
   completionRemarks,
+  isExpanded: controlledExpanded,
+  onToggle,
 }: ServiceDetailsSectionProps) {
   const grouped = useMemo<GroupedCategory[]>(() => {
     const cats = serviceCategories.map((cat) => {
