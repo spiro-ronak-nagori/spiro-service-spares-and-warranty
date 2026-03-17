@@ -47,6 +47,7 @@ interface PolicyOverride {
   policy_type: string;
   permission_key: string;
   enabled: boolean;
+  country: string | null;
 }
 
 interface RoleData {
@@ -106,17 +107,24 @@ export default function RoleDetailPage() {
   const [newOverridePolicyType, setNewOverridePolicyType] = useState('FOFO');
   const [newOverridePermKey, setNewOverridePermKey] = useState('');
   const [newOverrideEnabled, setNewOverrideEnabled] = useState(false);
+  const [newOverrideCountry, setNewOverrideCountry] = useState<string>('__GLOBAL__');
   const [deletingOverrideId, setDeletingOverrideId] = useState<string | null>(null);
   // Track overrides to delete on save
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   // Track new overrides added locally (not yet persisted)
   const [pendingNewOverrides, setPendingNewOverrides] = useState<PolicyOverride[]>([]);
+  // Countries list
+  const [countries, setCountries] = useState<{ name: string }[]>([]);
 
   const isSystemAdmin = profile?.role === 'system_admin';
 
   useEffect(() => {
     if (!isSystemAdmin || !roleKey) return;
     loadData();
+    // Load countries for override scoping
+    supabase.from('countries_master').select('name').eq('is_active', true).order('sort_order').then(({ data }) => {
+      setCountries(data || []);
+    });
   }, [isSystemAdmin, roleKey]);
 
   const loadData = async () => {
@@ -204,26 +212,30 @@ export default function RoleDetailPage() {
 
   // Available permission keys for new override (exclude already overridden for same policy type)
   const availablePermKeysForOverride = useMemo(() => {
+    const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
     const existingKeys = new Set(
       allOverrides
-        .filter(o => o.policy_type === newOverridePolicyType)
+        .filter(o => o.policy_type === newOverridePolicyType && o.country === resolvedCountry)
         .map(o => o.permission_key)
     );
     return permissions.filter(p => !existingKeys.has(p.permission_key));
-  }, [permissions, allOverrides, newOverridePolicyType]);
+  }, [permissions, allOverrides, newOverridePolicyType, newOverrideCountry]);
 
   const handleAddOverride = () => {
     if (!newOverridePermKey || !role) return;
     const tempId = `new_${Date.now()}_${Math.random()}`;
+    const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
     setPendingNewOverrides(prev => [...prev, {
       id: tempId,
       policy_type: newOverridePolicyType,
       permission_key: newOverridePermKey,
       enabled: newOverrideEnabled,
+      country: resolvedCountry,
     }]);
     setShowAddOverride(false);
     setNewOverridePermKey('');
     setNewOverrideEnabled(false);
+    setNewOverrideCountry('__GLOBAL__');
   };
 
   const handleDeleteOverride = (id: string) => {
@@ -254,26 +266,28 @@ export default function RoleDetailPage() {
       }
     });
     overrides.forEach((o) => {
+      const countryTag = o.country ? ` [${o.country}]` : ' [Global]';
       if (pendingDeleteIds.has(o.id)) {
         const perm = permissions.find((p) => p.permission_key === o.permission_key);
         items.push({
-          label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+          label: `${o.policy_type}${countryTag}: ${perm?.display_label || o.permission_key}`,
           from: 'Exists',
           to: 'Deleted',
         });
       } else if (originalOverrides[o.id] !== o.enabled) {
         const perm = permissions.find((p) => p.permission_key === o.permission_key);
         items.push({
-          label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+          label: `${o.policy_type}${countryTag}: ${perm?.display_label || o.permission_key}`,
           from: originalOverrides[o.id] ? 'Enabled' : 'Disabled',
           to: o.enabled ? 'Enabled' : 'Disabled',
         });
       }
     });
     pendingNewOverrides.forEach((o) => {
+      const countryTag = o.country ? ` [${o.country}]` : ' [Global]';
       const perm = permissions.find((p) => p.permission_key === o.permission_key);
       items.push({
-        label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+        label: `${o.policy_type}${countryTag}: ${perm?.display_label || o.permission_key}`,
         from: '—',
         to: o.enabled ? 'Enabled' : 'Disabled',
       });
@@ -310,7 +324,8 @@ export default function RoleDetailPage() {
             policy_type: o.policy_type as any,
             permission_key: o.permission_key,
             enabled: o.enabled,
-          });
+            country: o.country,
+          } as any);
         }
       }
 
@@ -481,8 +496,14 @@ export default function RoleDetailPage() {
                   const perm = permissions.find((p) => p.permission_key === o.permission_key);
                   return (
                     <div key={o.id} className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">{o.policy_type}</Badge>
+                        {o.country && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{o.country}</Badge>
+                        )}
+                        {!o.country && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 opacity-50">Global</Badge>
+                        )}
                         <span className="text-xs truncate">{perm?.display_label || o.permission_key}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -541,6 +562,21 @@ export default function RoleDetailPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Country Scope</label>
+              <Select value={newOverrideCountry} onValueChange={setNewOverrideCountry}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__GLOBAL__">All Countries (Global)</SelectItem>
+                  {countries.map(c => (
+                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Country-specific overrides take precedence over global ones.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-medium">Permission</label>
