@@ -1015,6 +1015,15 @@ export default function JobCardDetailPage() {
             onAddNote={handleAddMechanicNote}
             isExpanded={expandedSection === 'execution'}
             onToggle={() => toggleSection('execution')}
+            labourEnabled={labourActive && can('labour.view')}
+            labourEntries={labourEntries}
+            labourLoading={labourLoading}
+            canAddLabour={labourActive && canEditLabourInJc && can('labour.add')}
+            canEditLabour={labourActive && canEditLabourInJc && can('labour.edit')}
+            canRemoveLabour={labourActive && canEditLabourInJc && can('labour.remove')}
+            onAddLabour={() => { setEditingLabour(null); setShowLabourSheet(true); }}
+            onEditLabour={(entry) => { setEditingLabour(entry); setShowLabourSheet(true); }}
+            onRemoveLabour={(id) => setDeletingLabourId(id)}
           />
         )}
 
