@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Wrench, Plus, Loader2 } from 'lucide-react';
+import { Wrench, Plus, Loader2, Pencil } from 'lucide-react';
 import { JobCardLabourEntry } from '@/hooks/useLabour';
 
 /** Aggregated labour row: one per labour_master_id */
@@ -112,8 +112,9 @@ export function LabourSubsection({
               <span className="text-sm text-foreground/90 truncate mr-3">
                 {row.labourName}
               </span>
-              <span className="text-sm text-muted-foreground tabular-nums shrink-0">
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums shrink-0">
                 {formatDuration(row.totalMinutes)}
+                {(canEdit || canRemove) && <Pencil className="h-3 w-3 text-muted-foreground/60" />}
               </span>
             </button>
           ))}
