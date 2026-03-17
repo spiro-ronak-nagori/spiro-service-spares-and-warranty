@@ -730,6 +730,7 @@ export type Database = {
         Row: {
           assigned_mechanic_name: string | null
           assigned_to: string | null
+          checklist_status: string | null
           closed_at: string | null
           completion_remarks: string | null
           contact_for_updates: string
@@ -776,6 +777,7 @@ export type Database = {
         Insert: {
           assigned_mechanic_name?: string | null
           assigned_to?: string | null
+          checklist_status?: string | null
           closed_at?: string | null
           completion_remarks?: string | null
           contact_for_updates?: string
@@ -822,6 +824,7 @@ export type Database = {
         Update: {
           assigned_mechanic_name?: string | null
           assigned_to?: string | null
+          checklist_status?: string | null
           closed_at?: string | null
           completion_remarks?: string | null
           contact_for_updates?: string

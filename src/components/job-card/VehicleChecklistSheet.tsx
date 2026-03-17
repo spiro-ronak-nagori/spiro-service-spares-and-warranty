@@ -205,6 +205,12 @@ export function VehicleChecklistSheet({ open, onOpenChange, jobCardId, vehicleMo
         if (itemErr) throw itemErr;
       }
 
+      // Persist checklist_status on job card
+      await supabase
+        .from('job_cards')
+        .update({ checklist_status: 'COMPLETED' } as any)
+        .eq('id', jobCardId);
+
       toast.success('Checklist completed');
       onCompleted();
       onOpenChange(false);
