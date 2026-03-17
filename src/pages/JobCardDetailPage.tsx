@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRbacPermissions } from '@/hooks/useRbacPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -73,6 +74,10 @@ export default function JobCardDetailPage() {
 
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
+  const workshopType = (jobCard as any)?.workshop?.type || null;
+
+  // RBAC permissions — scoped to the JC's workshop type for COCO/FOFO overlays
+  const { can } = useRbacPermissions(workshopType);
 
   // Spares (country-aware)
   const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags(workshopCountry);
@@ -750,58 +755,53 @@ export default function JobCardDetailPage() {
   const renderStickyCta = () => {
     const status = jobCard.status;
 
-    if (status === 'DRAFT') {
+    if (status === 'DRAFT' && can('jc.inward_vehicle')) {
       return (
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={handleInwardingAction}
           disabled={isUpdating}>
-          
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Complete Inwarding
         </Button>);
-
     }
 
-    if (status === 'INWARDED') {
+    if (status === 'INWARDED' && can('jc.start_work')) {
       if (checklistStillLoading) {
         return (
           <Button className="w-full h-12 text-sm font-semibold" disabled>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Checking…
           </Button>);
-
       }
-      if (inwardedNeedsChecklist) {
+      if (inwardedNeedsChecklist && can('jc.complete_checklist')) {
         return (
           <Button
             className="w-full h-12 text-sm font-semibold"
             onClick={() => setShowChecklist(true)}
             disabled={isUpdating}>
-            
             Complete Inward Checklist
           </Button>);
-
       }
-      return (
-        <Button
-          className="w-full h-12 text-sm font-semibold"
-          onClick={handleStartWork}
-          disabled={isUpdating}>
-          
-          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Start Work
-        </Button>);
-
+      if (!inwardedNeedsChecklist) {
+        return (
+          <Button
+            className="w-full h-12 text-sm font-semibold"
+            onClick={handleStartWork}
+            disabled={isUpdating}>
+            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Start Work
+          </Button>);
+      }
     }
 
-    if (status === 'IN_PROGRESS') {
+    if (status === 'IN_PROGRESS' && can('jc.mark_completed')) {
       const sparesBlocking = sparesEnabled && mandatorySparesRequired && spares.length === 0;
       return (
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={() => {
-            if (sparesBlocking) {
+            if (sparesBlocking && can('spares.add')) {
               setEditingSpare(null);
               setShowSparesModal(true);
               return;
@@ -810,47 +810,47 @@ export default function JobCardDetailPage() {
           }}
           disabled={isUpdating}
           variant="default">
-          
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           {sparesBlocking ? 'Add Required Spares' : 'Mark Work Completed'}
         </Button>);
-
     }
 
-    if (status === 'REOPENED') {
+    if (status === 'REOPENED' && can('jc.start_work')) {
       return (
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={handleStartWork}
           disabled={isUpdating}>
-          
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Start Work
         </Button>);
-
     }
 
     if (status === 'READY') {
+      const canReopen = can('jc.reopen');
+      const canDeliver = can('jc.deliver');
+      if (!canReopen && !canDeliver) return null;
       return (
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            className="flex-1 h-12 text-sm font-semibold"
-            onClick={() => setShowReopenDialog(true)}
-            disabled={isUpdating}>
-            
-            Reopen
-          </Button>
-          <Button
-            className="flex-1 h-12 text-sm font-semibold"
-            onClick={handleDeliveryAction}
-            disabled={isUpdating}>
-            
-            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Deliver Vehicle
-          </Button>
+          {canReopen && (
+            <Button
+              variant="outline"
+              className="flex-1 h-12 text-sm font-semibold"
+              onClick={() => setShowReopenDialog(true)}
+              disabled={isUpdating}>
+              Reopen
+            </Button>
+          )}
+          {canDeliver && (
+            <Button
+              className="flex-1 h-12 text-sm font-semibold"
+              onClick={handleDeliveryAction}
+              disabled={isUpdating}>
+              {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Deliver Vehicle
+            </Button>
+          )}
         </div>);
-
     }
 
     // DELIVERED / COMPLETED / CLOSED → no CTA
@@ -927,26 +927,25 @@ export default function JobCardDetailPage() {
         )}
 
         {/* 4. Spares Used Section */}
-        {sparesEnabled &&
+        {sparesEnabled && can('spares.view') &&
         <SparesUsedSection
           spares={spares}
           isLoading={sparesLoading}
-          onAddSpares={() => {setEditingSpare(null);setShowSparesModal(true);}}
-          onEditSpare={handleEditSpare}
-          onDeleteSpare={(id) => setDeletingSpareId(id)}
-          onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
+          onAddSpares={can('spares.add') ? () => {setEditingSpare(null);setShowSparesModal(true);} : undefined}
+          onEditSpare={can('spares.edit') ? handleEditSpare : undefined}
+          onDeleteSpare={can('spares.remove') ? (id) => setDeletingSpareId(id) : undefined}
+          onSubmitWarranty={warrantyEnabled && can('spares.submit_warranty') ? (spare) => setWarrantySpare(spare) : undefined}
           onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
           onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
           onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
-          onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
-          canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
+          onSubmitAll={warrantyEnabled && can('spares.submit_warranty') ? () => setShowSubmitAll(true) : undefined}
+          canEdit={(jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') && can('spares.edit')}
           warrantyEnabled={warrantyEnabled}
           mandatorySparesRequired={mandatorySparesRequired}
           jobCardStatus={jobCard.status}
           isExpanded={expandedSection === 'spares'}
           onToggle={() => toggleSection('spares')}
         />
-
         }
 
         {/* 5. Timeline */}
