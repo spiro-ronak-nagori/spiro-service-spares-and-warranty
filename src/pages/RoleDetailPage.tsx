@@ -565,9 +565,9 @@ export default function RoleDetailPage() {
               <Select value={newOverridePolicyType} onValueChange={setNewOverridePolicyType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {POLICY_TYPES.map(pt => (
-                    <SelectItem key={pt} value={pt}>{pt}</SelectItem>
-                  ))}
+                  <SelectItem value="ALL">All (COCO + FOFO)</SelectItem>
+                  <SelectItem value="COCO">COCO only</SelectItem>
+                  <SelectItem value="FOFO">FOFO only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
