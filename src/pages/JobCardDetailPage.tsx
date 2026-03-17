@@ -219,6 +219,7 @@ export default function JobCardDetailPage() {
           added_services: addedServices,
           removed_services: removedServices,
         } : {}),
+        ...(hasMechanicChanges ? { mechanic_name_changed: true } : {}),
       });
 
       await supabase.from('audit_trail').insert({
