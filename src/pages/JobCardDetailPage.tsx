@@ -21,7 +21,6 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Package,
   Pencil,
   Loader2 } from
 'lucide-react';
@@ -61,7 +60,7 @@ export default function JobCardDetailPage() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(true);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
@@ -702,7 +701,7 @@ export default function JobCardDetailPage() {
             onClick={() => setShowChecklist(true)}
             disabled={isUpdating}>
             
-            Complete Checklist
+            Complete Inward Checklist
           </Button>);
 
       }
@@ -771,6 +770,29 @@ export default function JobCardDetailPage() {
       
       
       <div className={`p-4 space-y-4 ${hasStickyCta ? 'pb-24' : ''}`}>
+
+        {/* Status context banner */}
+        {jobCard.status === 'DRAFT' && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Incomplete — complete inwarding to proceed</p>
+          </div>
+        )}
+        {jobCard.status === 'DELIVERED' && (
+          <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-4 py-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            <p className="text-sm font-medium text-green-800 dark:text-green-400">Vehicle Delivered</p>
+          </div>
+        )}
+        {jobCard.status === 'REOPENED' && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Reopened — Work resumed</p>
+          </div>
+        )}
+        {(jobCard.status === 'COMPLETED' || jobCard.status === 'CLOSED') && (
+          <div className="rounded-lg bg-muted border border-border px-4 py-3">
+            <p className="text-sm font-medium text-muted-foreground">{jobCard.status === 'COMPLETED' ? 'Completed' : 'Closed'}</p>
+          </div>
+        )}
 
         {/* 1. Vehicle Details */}
         <Card>
@@ -858,9 +880,9 @@ export default function JobCardDetailPage() {
               </CardTitle>
               {canEditIssues ?
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-xs text-primary"
+                className="h-8 gap-1.5 text-xs font-medium"
                 onClick={() => setShowEditIssues(true)}>
                 
                   <Pencil className="h-3.5 w-3.5" />
@@ -964,20 +986,6 @@ export default function JobCardDetailPage() {
 
         }
 
-        {/* Spares required alert (inline, not a CTA) */}
-        {sparesEnabled && mandatorySparesRequired && spares.length === 0 && (jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') &&
-        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-sm text-destructive flex-1">
-              Spares required for selected issues. Please add spares to complete work.
-            </p>
-            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={() => {setEditingSpare(null);setShowSparesModal(true);}}>
-              <Package className="h-3.5 w-3.5 mr-1" />
-              Add Spares
-            </Button>
-          </div>
-        }
-
         {/* 4. Spares Used Section */}
         {sparesEnabled &&
         <SparesUsedSection
@@ -992,7 +1000,9 @@ export default function JobCardDetailPage() {
           onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
           onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
           canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
-          warrantyEnabled={warrantyEnabled} />
+          warrantyEnabled={warrantyEnabled}
+          mandatorySparesRequired={mandatorySparesRequired}
+          jobCardStatus={jobCard.status} />
 
         }
 
