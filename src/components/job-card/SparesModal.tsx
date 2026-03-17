@@ -234,20 +234,16 @@ export function SparesModal({
           if (error) throw error;
           spareId = editingSpare.id;
         } else {
+          // Check if same part already exists on this job card (any claim type)
           const { data: existing } = await supabase
             .from('job_card_spares' as any)
-            .select('id, qty, serial_number')
+            .select('id, qty, claim_type, serial_number')
             .eq('job_card_id', jobCardId)
-            .eq('spare_part_id', line.spare_part_id)
-            .eq('claim_type', line.claim_type);
+            .eq('spare_part_id', line.spare_part_id);
 
           const existingRows = (existing || []) as any[];
 
-          const shouldMerge = existingRows.length > 0 &&
-            !(line.part?.serial_required && line.serial_number &&
-              existingRows[0].serial_number !== line.serial_number);
-
-          if (shouldMerge && existingRows.length > 0) {
+          if (existingRows.length > 0) {
             const row = existingRows[0];
             const newQty = row.qty + line.qty;
             const maxQty = line.part?.max_qty_allowed || 50;
@@ -258,11 +254,14 @@ export function SparesModal({
               return;
             }
 
+            // Merge into existing row — update qty and optionally claim_type
             const { error } = await supabase
               .from('job_card_spares' as any)
               .update({
                 qty: newQty,
+                claim_type: line.claim_type,
                 updated_by: profileId,
+                serial_number: line.serial_number || row.serial_number || null,
                 technician_comment: line.comment || row.technician_comment,
               } as any)
               .eq('id', row.id);
