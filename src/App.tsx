@@ -69,6 +69,8 @@ const App = () => (
             <Route path="/warranty-approvals" element={<ProtectedRoute><WarrantyApprovalsPage /></ProtectedRoute>} />
             <Route path="/console/warranty-admins" element={<ProtectedRoute><ManageWarrantyAdminsPage /></ProtectedRoute>} />
             <Route path="/console/vehicle-checklist" element={<ProtectedRoute><ManageChecklistPage /></ProtectedRoute>} />
+            <Route path="/console/roles" element={<ProtectedRoute><ManageRolesPage /></ProtectedRoute>} />
+            <Route path="/console/roles/:roleKey" element={<ProtectedRoute><RoleDetailPage /></ProtectedRoute>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
