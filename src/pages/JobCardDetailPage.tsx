@@ -552,7 +552,13 @@ export default function JobCardDetailPage() {
   };
 
   const handleCompleteWork = async (remarks: string) => {
-    if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
+    if (!jobCard) return;
+    if (!canTransitionTo(jobCard.status, 'READY')) {
+      if (jobCard.status === 'REOPENED') {
+        toast.error('Start work again before completing a reopened job card.');
+      }
+      return;
+    }
 
     // Append closure remarks as a work note with type qualifier
     const existing = (jobCard as any).mechanic_notes as string | null;
