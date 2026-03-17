@@ -143,14 +143,17 @@ function SpareItem({
   const hasDetails = spare.serial_number || spare.old_part_serial_number ||
     (spare.photos && spare.photos.length > 0) || spare.technician_comment || canEdit;
 
-  // Build meta line: "Qty: X • Warranty • Submitted"
-  const metaParts: string[] = [`Qty: ${spare.qty}`, CLAIM_LABEL[spare.claim_type]];
-  if (statusText) metaParts.push(statusText);
-  const metaLine = metaParts.join(' · ');
+  // Claim type text color
+  const claimColor = spare.claim_type === 'WARRANTY'
+    ? 'text-blue-600'
+    : spare.claim_type === 'GOODWILL'
+      ? 'text-purple-600'
+      : 'text-muted-foreground';
+
+  const metaText = `Qty: ${spare.qty}`;
 
   return (
     <div className="py-3">
-      {/* Summary row */}
       <button
         type="button"
         className="w-full flex items-start justify-between text-left gap-2"
@@ -161,7 +164,18 @@ function SpareItem({
             {partName}
             {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">{metaLine}</p>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <span className="text-xs text-muted-foreground">{metaText}</span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className={`text-xs font-medium ${claimColor}`}>{CLAIM_LABEL[spare.claim_type]}</span>
+            {statusText && (
+              <>
+                <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                  {statusText}
+                </span>
+              </>
+            )}
+          </div>
         </div>
         {hasDetails && (
           <div className="shrink-0 text-muted-foreground mt-0.5">
