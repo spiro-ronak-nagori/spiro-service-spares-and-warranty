@@ -1037,8 +1037,6 @@ export default function JobCardDetailPage() {
         currentIssueCategories={jobCard.issue_categories}
         onSave={handleSaveIssues}
         isSaving={isSavingIssues}
-        mechanicName={(jobCard as any).assigned_mechanic_name}
-        showMechanicFields={showMechanicFieldsInEdit}
         />
 
       }
