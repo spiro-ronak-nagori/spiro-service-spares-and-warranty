@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Wrench, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -31,7 +30,6 @@ export function ServiceDetailsSection({
   customerComments,
   completionRemarks,
 }: ServiceDetailsSectionProps) {
-  // Build grouped data
   const grouped = useMemo<GroupedCategory[]>(() => {
     const cats = serviceCategories.map((cat) => {
       const issues = issueCategories
@@ -40,7 +38,6 @@ export function ServiceDetailsSection({
       return { code: cat, name: resolveCategoryName(cat), issues };
     });
 
-    // Orphan issues
     const mappedCats = new Set(serviceCategories);
     const orphans = issueCategories
       .filter((issue) => !mappedCats.has(getParentCode(issue) ?? ''))
@@ -57,86 +54,75 @@ export function ServiceDetailsSection({
   const totalIssues = issueCategories.length;
   const isLargeDataset = totalCategories > 5 || totalIssues > 10;
 
-  // Adaptive: auto-expand if small dataset
-  const [isExpanded, setIsExpanded] = useState(totalIssues <= 5);
+  // Default: always collapsed
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (serviceCategories.length === 0 && issueCategories.length === 0) {
     return (
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              Service Details
-            </CardTitle>
-            {canEditIssues && (
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-medium" onClick={onEditIssues}>
-                <Pencil className="h-3.5 w-3.5" />
-                Edit Issues
-              </Button>
-            )}
-          </div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wrench className="h-4 w-4" />
+            Service Details
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No services selected</p>
+          {canEditIssues && (
+            <button
+              type="button"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary"
+              onClick={onEditIssues}
+            >
+              <Pencil className="h-3 w-3" />
+              Edit Issues
+            </button>
+          )}
         </CardContent>
       </Card>
     );
   }
 
-  // Build collapsed summary
+  // Collapsed summary
   const summaryLine = (() => {
     const catNames = grouped.filter((g) => g.code !== '__orphan__').map((g) => g.name);
     const maxShow = 3;
-    if (catNames.length <= maxShow) {
-      return catNames.join(', ');
-    }
+    if (catNames.length <= maxShow) return catNames.join(', ');
     return `${catNames.slice(0, maxShow).join(', ')} +${catNames.length - maxShow} more`;
   })();
 
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            Service Details
-          </CardTitle>
-          {canEditIssues && (
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-medium" onClick={onEditIssues}>
-              <Pencil className="h-3.5 w-3.5" />
-              Edit Issues
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-0">
-        {/* Summary bar — always visible */}
+      <CardHeader className="pb-0">
         <button
           type="button"
-          className="w-full flex items-center justify-between py-2 text-left group"
+          className="w-full flex items-center justify-between text-left"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">
-              {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} • {totalIssues} {totalIssues === 1 ? 'issue' : 'issues'}
-            </p>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              Service Details
+              <span className="text-xs font-normal text-muted-foreground">
+                {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} • {totalIssues} {totalIssues === 1 ? 'issue' : 'issues'}
+              </span>
+            </CardTitle>
             {!isExpanded && (
-              <p className="text-sm text-foreground/80 truncate mt-0.5">{summaryLine}</p>
+              <p className="text-sm text-muted-foreground truncate mt-1 ml-6">{summaryLine}</p>
             )}
           </div>
           <div className="shrink-0 ml-2 text-muted-foreground">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </button>
+      </CardHeader>
 
-        {/* Expanded content */}
-        {isExpanded && (
-          <div className={`pt-1 ${isLargeDataset ? 'space-y-2' : 'space-y-3'}`}>
+      {isExpanded && (
+        <CardContent className="pt-3 space-y-0">
+          <div className={isLargeDataset ? 'space-y-2' : 'space-y-3'}>
             {grouped.map((group) => (
               <div key={group.code}>
                 {isLargeDataset ? (
-                  // Compact mode: single line per category
                   <div className="text-sm">
                     <span className="font-semibold text-foreground">{group.name}</span>
                     {group.issues.length > 0 && (
@@ -144,13 +130,11 @@ export function ServiceDetailsSection({
                         {' '}({group.issues.length}) •{' '}
                         {group.issues.length <= 3
                           ? group.issues.map((i) => i.name).join(', ')
-                          : `${group.issues.slice(0, 2).map((i) => i.name).join(', ')} +${group.issues.length - 2}`
-                        }
+                          : `${group.issues.slice(0, 2).map((i) => i.name).join(', ')} +${group.issues.length - 2}`}
                       </span>
                     )}
                   </div>
                 ) : (
-                  // Normal expanded mode: category heading + bullet list
                   <div>
                     <p className="text-sm font-semibold text-foreground">
                       {group.name}
@@ -173,25 +157,38 @@ export function ServiceDetailsSection({
               </div>
             ))}
           </div>
-        )}
 
-        {/* Customer comments & completion remarks */}
-        {customerComments && (
-          <>
-            <Separator className="my-3" />
-            <p className="text-xs text-muted-foreground mb-1">Customer Comments</p>
-            <p className="text-sm whitespace-pre-wrap text-foreground/80">{customerComments}</p>
-          </>
-        )}
+          {/* Secondary CTA inside expanded view */}
+          {canEditIssues && (
+            <div className="pt-3 border-t border-border mt-3">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
+                onClick={onEditIssues}
+              >
+                <Pencil className="h-3 w-3" />
+                Edit Issues
+              </button>
+            </div>
+          )}
 
-        {completionRemarks && (
-          <>
-            <Separator className="my-3" />
-            <p className="text-xs text-muted-foreground mb-1">Completion Remarks</p>
-            <p className="text-sm">{completionRemarks}</p>
-          </>
-        )}
-      </CardContent>
+          {customerComments && (
+            <>
+              <Separator className="my-3" />
+              <p className="text-xs text-muted-foreground mb-1">Customer Comments</p>
+              <p className="text-sm whitespace-pre-wrap text-foreground/80">{customerComments}</p>
+            </>
+          )}
+
+          {completionRemarks && (
+            <>
+              <Separator className="my-3" />
+              <p className="text-xs text-muted-foreground mb-1">Completion Remarks</p>
+              <p className="text-sm">{completionRemarks}</p>
+            </>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
