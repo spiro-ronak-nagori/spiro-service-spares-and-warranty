@@ -798,69 +798,6 @@ export default function JobCardDetailPage() {
 
         {/* 1. Vehicle Details */}
         <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} />
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Registration</span>
-                <p className="font-medium">{vehicle?.reg_no || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Model</span>
-                <p className="font-medium">{vehicle?.model || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Color</span>
-                <p className="font-medium">{vehicle?.color || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Odometer</span>
-                <p className="font-medium flex items-center gap-1">
-                  <Gauge className="h-3 w-3" />
-                  {jobCard.odometer.toLocaleString()} km
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{vehicle?.owner_name || 'Unknown'}</span>
-                <span className="text-xs text-muted-foreground">(Owner)</span>
-              </div>
-              {vehicle?.owner_phone &&
-              <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a
-                  href={`tel:${vehicle.owner_phone}`}
-                  className="text-primary hover:underline">
-                  
-                    {vehicle.owner_phone}
-                  </a>
-                </div>
-              }
-
-              {(jobCard as any).contact_for_updates === 'RIDER' && (jobCard as any).rider_name &&
-              <>
-                  <Separator className="my-2" />
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{(jobCard as any).rider_name}</span>
-                    <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">Rider — OTP & Updates</span>
-                  </div>
-                   {(jobCard as any).rider_phone &&
-                <div className="flex items-center gap-2 text-sm">
-                       <Phone className="h-4 w-4 text-primary" />
-                       <a
-                    href={`tel:${(jobCard as any).rider_phone}`}
-                    className="text-primary hover:underline">
-                    
-                         {(jobCard as any).rider_phone}
-                       </a>
-                     </div>
-                }
-                </>
-              }
 
         {/* 2. Service Details */}
         <ServiceDetailsSection
