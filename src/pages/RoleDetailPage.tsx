@@ -76,7 +76,7 @@ const GROUP_ORDER = [
   'REPORTS', 'USERS_TEAM', 'MASTERS_CONFIG', 'PROFILE_SELF',
 ];
 
-const POLICY_TYPES = ['COCO', 'FOFO'];
+const POLICY_TYPES = ['ALL', 'COCO', 'FOFO'];
 
 const SCOPE_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   global: { icon: <Globe className="h-4 w-4" />, label: 'Global', color: 'bg-primary/10 text-primary' },
