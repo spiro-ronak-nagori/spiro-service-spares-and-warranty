@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Wrench, Plus, Loader2 } from 'lucide-react';
+import { Wrench, Plus, Loader2, Pencil } from 'lucide-react';
 import { JobCardLabourEntry } from '@/hooks/useLabour';
 
 /** Aggregated labour row: one per labour_master_id */
