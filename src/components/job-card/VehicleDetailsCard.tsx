@@ -16,7 +16,7 @@ export function VehicleDetailsCard({ vehicle, jobCard }: VehicleDetailsCardProps
 
   return (
     <Card>
-      <CardHeader className="pb-0">
+      <CardHeader className={isExpanded ? "pb-0" : ""}>
         <button
           type="button"
           className="w-full flex items-center justify-between text-left"
