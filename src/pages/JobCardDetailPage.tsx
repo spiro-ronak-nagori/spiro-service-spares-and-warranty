@@ -119,7 +119,7 @@ export default function JobCardDetailPage() {
   const canEditMechanic = jobCard ? mechanicNameEnabledForThisJC && MECHANIC_EDITABLE_STATUSES.includes(jobCard.status) : false;
   const showMechanicFieldsInEdit = canEditMechanic && !!(jobCard as any)?.assigned_mechanic_name;
 
-  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[], newMechanicName?: string, newMechanicNotes?: string) => {
+  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[], newMechanicName?: string) => {
     if (!jobCard || !profile || !canEditIssues) {
       toast.error('Issue editing is not allowed in the current status');
       return;
