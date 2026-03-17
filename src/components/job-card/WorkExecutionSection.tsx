@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Hammer, ChevronDown, ChevronUp, User, ClipboardPen, Loader2, Plus } from 'lucide-react';
-import { LabourSubsection } from './LabourSubsection';
+import { LabourSubsection, AggregatedLabourRow } from './LabourSubsection';
 import { JobCardLabourEntry } from '@/hooks/useLabour';
 
 interface WorkExecutionSectionProps {
