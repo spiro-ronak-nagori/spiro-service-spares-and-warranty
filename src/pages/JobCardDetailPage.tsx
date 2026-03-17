@@ -6,15 +6,10 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
-  Car,
-  User,
-  Phone,
-  Gauge,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -46,6 +41,7 @@ import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistShe
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 import { ChecklistStatusSection } from '@/components/job-card/ChecklistStatusSection';
+import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
 
@@ -770,104 +766,34 @@ export default function JobCardDetailPage() {
       
       <div className={`p-4 space-y-4 ${hasStickyCta ? 'pb-24' : ''}`}>
 
-        {/* Status context banner */}
+        {/* Status context — neutral inline alerts */}
         {jobCard.status === 'DRAFT' && (
-          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Incomplete — complete inwarding to proceed</p>
-          </div>
+          <p className="text-sm text-muted-foreground flex items-center gap-2 px-1">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Complete inwarding
+          </p>
         )}
         {jobCard.status === 'DELIVERED' && (
-          <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-4 py-3 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-sm font-medium text-green-800 dark:text-green-400">Vehicle Delivered</p>
-          </div>
+          <p className="text-sm text-muted-foreground flex items-center gap-2 px-1">
+            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            Vehicle delivered
+          </p>
         )}
         {jobCard.status === 'REOPENED' && (
-          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Reopened — Work resumed</p>
-          </div>
+          <p className="text-sm text-muted-foreground flex items-center gap-2 px-1">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Reopened — work resumed
+          </p>
         )}
         {(jobCard.status === 'COMPLETED' || jobCard.status === 'CLOSED') && (
-          <div className="rounded-lg bg-muted border border-border px-4 py-3">
-            <p className="text-sm font-medium text-muted-foreground">{jobCard.status === 'COMPLETED' ? 'Completed' : 'Closed'}</p>
-          </div>
+          <p className="text-sm text-muted-foreground flex items-center gap-2 px-1">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {jobCard.status === 'COMPLETED' ? 'Completed' : 'Closed'}
+          </p>
         )}
 
         {/* 1. Vehicle Details */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Car className="h-4 w-4" />
-              Vehicle Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Registration</span>
-                <p className="font-medium">{vehicle?.reg_no || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Model</span>
-                <p className="font-medium">{vehicle?.model || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Color</span>
-                <p className="font-medium">{vehicle?.color || '—'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Odometer</span>
-                <p className="font-medium flex items-center gap-1">
-                  <Gauge className="h-3 w-3" />
-                  {jobCard.odometer.toLocaleString()} km
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{vehicle?.owner_name || 'Unknown'}</span>
-                <span className="text-xs text-muted-foreground">(Owner)</span>
-              </div>
-              {vehicle?.owner_phone &&
-              <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a
-                  href={`tel:${vehicle.owner_phone}`}
-                  className="text-primary hover:underline">
-                  
-                    {vehicle.owner_phone}
-                  </a>
-                </div>
-              }
-
-              {(jobCard as any).contact_for_updates === 'RIDER' && (jobCard as any).rider_name &&
-              <>
-                  <Separator className="my-2" />
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{(jobCard as any).rider_name}</span>
-                    <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">Rider — OTP & Updates</span>
-                  </div>
-                   {(jobCard as any).rider_phone &&
-                <div className="flex items-center gap-2 text-sm">
-                       <Phone className="h-4 w-4 text-primary" />
-                       <a
-                    href={`tel:${(jobCard as any).rider_phone}`}
-                    className="text-primary hover:underline">
-                    
-                         {(jobCard as any).rider_phone}
-                       </a>
-                     </div>
-                }
-                </>
-              }
-            </div>
-          </CardContent>
-        </Card>
+        <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} />
 
         {/* 2. Service Details */}
         <ServiceDetailsSection
@@ -923,24 +849,27 @@ export default function JobCardDetailPage() {
 
         {/* 5. Timeline */}
         <Card>
-          <CardHeader
-            className="pb-3 cursor-pointer"
-            onClick={() => setShowTimeline(!showTimeline)}>
-            
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Timeline
-              </CardTitle>
-              {showTimeline ?
-              <ChevronUp className="h-4 w-4" /> :
-
-              <ChevronDown className="h-4 w-4" />
-              }
-            </div>
-            <CardDescription>
-              {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
-            </CardDescription>
+          <CardHeader className="pb-0">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between text-left"
+              onClick={() => setShowTimeline(!showTimeline)}
+            >
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Timeline
+                </CardTitle>
+                {!showTimeline && (
+                  <p className="text-xs text-muted-foreground mt-1 ml-6">
+                    {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
+                {showTimeline ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </button>
           </CardHeader>
           {showTimeline &&
           <CardContent className="pt-0">

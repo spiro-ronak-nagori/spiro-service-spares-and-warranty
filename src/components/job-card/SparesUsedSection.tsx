@@ -277,6 +277,8 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
     );
   }
 
+  const showSparesWarning = mandatorySparesRequired && spares.length === 0 && jobCardStatus === 'READY';
+
   return (
     <Card id="spares-used-section">
       <CardHeader className="pb-0">
@@ -285,21 +287,22 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
           className="w-full flex items-center justify-between text-left"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <CardTitle className="text-base flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Spares Used
-            <span className="text-xs font-normal text-muted-foreground">
-              {spares.length} {spares.length === 1 ? 'item' : 'items'}
-            </span>
-          </CardTitle>
-          <div className="shrink-0 ml-2 text-muted-foreground">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Spares Used
+            </CardTitle>
+            {!isExpanded && (
+              <p className="text-xs text-muted-foreground mt-1 ml-6">
+                {spares.length} {spares.length === 1 ? 'item' : 'items'}
+                {showSparesWarning && <span className="ml-2">· ⚠ Spares required before delivery</span>}
+              </p>
+            )}
+          </div>
+          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </button>
-        {/* Warning shown even when collapsed */}
-        {mandatorySparesRequired && spares.length === 0 && (
-          <p className="text-xs text-amber-600 font-medium mt-1 ml-6">⚠ Required before delivery</p>
-        )}
       </CardHeader>
 
       {isExpanded && (
