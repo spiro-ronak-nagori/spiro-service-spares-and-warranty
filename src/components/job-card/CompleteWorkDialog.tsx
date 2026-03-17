@@ -15,7 +15,7 @@ interface CompleteWorkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   jobCard: JobCard;
-  onComplete: (remarks: string) => void;
+  onComplete: (remarks: string) => Promise<void> | void;
   sparesEnabled?: boolean;
   spares?: JobCardSpare[];
   warrantyEnabled?: boolean;
@@ -46,12 +46,13 @@ export function CompleteWorkDialog({
   const { resolve: resolveCategoryName } = useServiceCategoryNames();
   const [sparesBlocker, setSparesBlocker] = useState<SparesBlocker | null>(null);
   const [checkingSpares, setCheckingSpares] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const allIssues = jobCard.issue_categories;
   const isRemarksValid = remarks.trim().length >= MIN_REMARKS_LENGTH;
   const allChecked = allIssues.length === 0 || allIssues.every(item => checkedItems.has(item));
   const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.docBlockers.length > 0 || sparesBlocker.approvalBlockers.length > 0);
-  const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker;
+  const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker && !checkingSpares && !isSubmitting;
 
   useEffect(() => {
     if (open && sparesEnabled) {
@@ -124,13 +125,19 @@ export function CompleteWorkDialog({
     setCheckedItems(newChecked);
   };
 
-  const handleSubmit = () => {
-    if (canSubmit) {
-      onComplete(remarks.trim());
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    setIsSubmitting(true);
+    try {
+      await onComplete(remarks.trim());
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
+    if (isSubmitting) return;
     setRemarks('');
     setCheckedItems(new Set());
     onOpenChange(false);
@@ -175,7 +182,7 @@ export function CompleteWorkDialog({
                     </ul>
                   </div>
                   {onOpenSparesModal && (
-                    <Button variant="destructive" size="sm" onClick={handleAddSparesNow} className="mt-2 h-11">
+                      <Button type="button" variant="destructive" size="sm" onClick={handleAddSparesNow} className="mt-2 h-11">
                       <Package className="h-3.5 w-3.5 mr-1.5" />
                       Add Spares Now
                     </Button>
@@ -289,10 +296,10 @@ export function CompleteWorkDialog({
         </div>
 
         <DrawerFooter className="safe-bottom">
-          <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12">
-            Complete Work
+          <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="h-12">
+            {isSubmitting ? 'Completing…' : 'Complete Work'}
           </Button>
-          <Button variant="outline" onClick={handleClose} className="h-12">
+          <Button type="button" variant="outline" onClick={handleClose} className="h-12" disabled={isSubmitting}>
             Cancel
           </Button>
         </DrawerFooter>
