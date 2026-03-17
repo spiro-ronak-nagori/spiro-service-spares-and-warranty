@@ -58,12 +58,14 @@ export default function JobCardDetailPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [hasSetDefaultSection, setHasSetDefaultSection] = useState(false);
   const toggleSection = (section: string) => setExpandedSection(prev => prev === section ? null : section);
-  // Auto-expand service details if few items
+  // Auto-expand: vehicle by default, or service if few items
   useEffect(() => {
     if (jobCard && !hasSetDefaultSection) {
       const total = (jobCard.service_categories?.length || 0) + (jobCard.issue_categories?.length || 0);
       if (total > 0 && total < 6) {
         setExpandedSection('service');
+      } else {
+        setExpandedSection('vehicle');
       }
       setHasSetDefaultSection(true);
     }
@@ -793,7 +795,7 @@ export default function JobCardDetailPage() {
         )}
 
         {/* 1. Vehicle Details */}
-        <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} />
+        <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} isExpanded={expandedSection === 'vehicle'} onToggle={() => toggleSection('vehicle')} />
 
         {/* 2. Service Details */}
         <ServiceDetailsSection
