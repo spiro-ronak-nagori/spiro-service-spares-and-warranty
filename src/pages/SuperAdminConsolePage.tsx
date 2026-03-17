@@ -62,7 +62,9 @@ export default function SuperAdminConsolePage() {
     ? 'System Admin Console'
     : isSuperAdmin
     ? 'Super Admin Console'
-    : `${profile?.country || ''} Console`;
+    : isCountryAdmin
+    ? `${profile?.country || ''} Console`
+    : 'Workshop Console';
 
   const menuItems = [
     {
@@ -78,6 +80,13 @@ export default function SuperAdminConsolePage() {
       icon: ShieldCheck,
       path: '/console/admins',
       visible: can('nav.manage_users'),
+    },
+    {
+      label: 'Manage Team',
+      description: 'Invite and manage your workshop team members',
+      icon: Users,
+      path: `/console/workshops/${profile?.workshop_id}/team`,
+      visible: can('users.manage_workshop_team') && !can('config.manage_workshops') && !!profile?.workshop_id,
     },
     {
       label: 'Manage System Configuration',
