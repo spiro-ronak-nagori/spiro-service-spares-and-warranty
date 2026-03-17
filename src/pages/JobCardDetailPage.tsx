@@ -794,6 +794,8 @@ export default function JobCardDetailPage() {
           onEditIssues={() => setShowEditIssues(true)}
           customerComments={(jobCard as any).customer_comments}
           completionRemarks={jobCard.completion_remarks}
+          isExpanded={expandedSection === 'service'}
+          onToggle={() => toggleSection('service')}
         />
 
         {/* Checklist section removed — handled via sticky CTA */}
