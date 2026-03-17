@@ -79,6 +79,7 @@ const App = () => (
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PermissionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
