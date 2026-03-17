@@ -362,7 +362,7 @@ export default function ManageSpareMasterPage() {
     return true;
   });
 
-  const hasActiveFilters = filterModel !== 'all' || filterStatus !== 'all';
+  const hasActiveFilters = filterModel !== 'all' || filterStatus !== 'all' || filterClaimType !== 'all';
 
   return (
     <AppLayout>
