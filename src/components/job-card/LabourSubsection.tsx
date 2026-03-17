@@ -1,8 +1,22 @@
-import { useState } from 'react';
-import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Wrench, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Wrench, Plus, Loader2 } from 'lucide-react';
 import { JobCardLabourEntry } from '@/hooks/useLabour';
+
+/** Aggregated labour row: one per labour_master_id */
+export interface AggregatedLabourRow {
+  /** All underlying entry IDs */
+  entryIds: string[];
+  /** Primary entry (first added) — used for edit/remove */
+  primaryEntry: JobCardLabourEntry;
+  labourMasterId: string;
+  labourName: string;
+  labourCode: string | null;
+  totalMinutes: number;
+  /** Weighted average rate or null */
+  rate: number | null;
+  /** Concatenated remarks */
+  remarks: string | null;
+}
 
 interface LabourSubsectionProps {
   entries: JobCardLabourEntry[];
@@ -11,15 +25,50 @@ interface LabourSubsectionProps {
   canEdit: boolean;
   canRemove: boolean;
   onAdd: () => void;
-  onEdit: (entry: JobCardLabourEntry) => void;
-  onRemove: (id: string) => void;
+  onEditAggregated: (row: AggregatedLabourRow) => void;
+  onRemoveAggregated: (row: AggregatedLabourRow) => void;
 }
 
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
+export function formatDuration(minutes: number): string {
+  if (minutes <= 0) return '0m';
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+export function aggregateLabourEntries(entries: JobCardLabourEntry[]): AggregatedLabourRow[] {
+  const map = new Map<string, AggregatedLabourRow>();
+
+  for (const entry of entries) {
+    const key = entry.labour_master_id;
+    const existing = map.get(key);
+    if (existing) {
+      existing.entryIds.push(entry.id);
+      existing.totalMinutes += entry.duration_minutes;
+      // Keep latest remarks if any
+      if (entry.remarks) {
+        existing.remarks = existing.remarks
+          ? `${existing.remarks}; ${entry.remarks}`
+          : entry.remarks;
+      }
+    } else {
+      const master = entry.labour_master;
+      map.set(key, {
+        entryIds: [entry.id],
+        primaryEntry: entry,
+        labourMasterId: key,
+        labourName: master?.labour_name || 'Unknown',
+        labourCode: master?.labour_code || null,
+        totalMinutes: entry.duration_minutes,
+        rate: entry.rate,
+        remarks: entry.remarks,
+      });
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 export function LabourSubsection({
@@ -29,12 +78,11 @@ export function LabourSubsection({
   canEdit,
   canRemove,
   onAdd,
-  onEdit,
-  onRemove,
+  onEditAggregated,
+  onRemoveAggregated,
 }: LabourSubsectionProps) {
-  const [removingId, setRemovingId] = useState<string | null>(null);
-
-  const totalMinutes = entries.reduce((sum, e) => sum + e.duration_minutes, 0);
+  const rows = useMemo(() => aggregateLabourEntries(entries), [entries]);
+  const totalMinutes = rows.reduce((sum, r) => sum + r.totalMinutes, 0);
 
   return (
     <div>
@@ -47,63 +95,40 @@ export function LabourSubsection({
         <div className="mt-1.5 ml-[22px]">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>
-      ) : entries.length === 0 ? (
-        <p className="text-xs text-muted-foreground/60 mt-0.5 ml-[22px]">No labour items added</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground/60 mt-0.5 ml-[22px]">No labour added yet</p>
       ) : (
-        <div className="mt-1.5 ml-[22px] space-y-2">
-          {entries.map((entry) => {
-            const master = entry.labour_master;
-            const name = master?.labour_name || 'Unknown';
-            return (
-              <div key={entry.id} className="flex items-start gap-2 group">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground/90">{name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-muted-foreground">
-                      {formatDuration(entry.duration_minutes)}
-                    </span>
-                    {entry.rate != null && (
-                      <span className="text-[11px] text-muted-foreground">
-                        • Rate: {entry.rate}
-                      </span>
-                    )}
-                  </div>
-                  {entry.remarks && (
-                    <p className="text-[11px] text-muted-foreground/60 mt-0.5">{entry.remarks}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {canEdit && (
-                    <button
-                      type="button"
-                      className="p-1 text-muted-foreground hover:text-foreground"
-                      onClick={() => onEdit(entry)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                  )}
-                  {canRemove && (
-                    <button
-                      type="button"
-                      className="p-1 text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemove(entry.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {entries.length > 1 && (
-            <p className="text-[11px] text-muted-foreground/60">
-              Total: {formatDuration(totalMinutes)}
-            </p>
+        <div className="mt-1.5 ml-[22px] space-y-1">
+          {rows.map((row) => (
+            <button
+              key={row.labourMasterId}
+              type="button"
+              className="flex items-center justify-between w-full text-left py-1 -mx-1 px-1 rounded-md hover:bg-muted/50 transition-colors active:bg-muted/70"
+              onClick={() => {
+                if (canEdit || canRemove) onEditAggregated(row);
+              }}
+              disabled={!canEdit && !canRemove}
+            >
+              <span className="text-sm text-foreground/90 truncate mr-3">
+                {row.labourName}
+              </span>
+              <span className="text-sm text-muted-foreground tabular-nums shrink-0">
+                {formatDuration(row.totalMinutes)}
+              </span>
+            </button>
+          ))}
+
+          {rows.length > 1 && (
+            <div className="flex items-center justify-between pt-1 border-t border-border/40">
+              <span className="text-[11px] text-muted-foreground">Total</span>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {formatDuration(totalMinutes)}
+              </span>
+            </div>
           )}
         </div>
       )}
 
-      {/* Add Labour CTA */}
       {canAdd && (
         <button
           type="button"

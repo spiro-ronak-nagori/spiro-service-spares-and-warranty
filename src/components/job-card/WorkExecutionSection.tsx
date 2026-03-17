@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Hammer, ChevronDown, ChevronUp, User, ClipboardPen, Loader2, Plus } from 'lucide-react';
-import { LabourSubsection } from './LabourSubsection';
+import { LabourSubsection, AggregatedLabourRow } from './LabourSubsection';
 import { JobCardLabourEntry } from '@/hooks/useLabour';
 
 interface WorkExecutionSectionProps {
@@ -22,8 +22,8 @@ interface WorkExecutionSectionProps {
   canEditLabour?: boolean;
   canRemoveLabour?: boolean;
   onAddLabour?: () => void;
-  onEditLabour?: (entry: JobCardLabourEntry) => void;
-  onRemoveLabour?: (id: string) => void;
+  onEditAggregated?: (row: AggregatedLabourRow) => void;
+  onRemoveAggregated?: (row: AggregatedLabourRow) => void;
 }
 
 /** Parse "[dd MMM HH:mm] note text" lines into structured entries */
@@ -38,12 +38,8 @@ function parseNotes(raw: string | null | undefined): { text: string; timestamp: 
   });
 }
 
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
+// formatDuration now imported from LabourSubsection
+import { formatDuration } from './LabourSubsection';
 
 export function WorkExecutionSection({
   assignedMechanicName,
@@ -59,8 +55,8 @@ export function WorkExecutionSection({
   canEditLabour = false,
   canRemoveLabour = false,
   onAddLabour,
-  onEditLabour,
-  onRemoveLabour,
+  onEditAggregated,
+  onRemoveAggregated,
 }: WorkExecutionSectionProps) {
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -135,8 +131,8 @@ export function WorkExecutionSection({
                 canEdit={canEditLabour}
                 canRemove={canRemoveLabour}
                 onAdd={onAddLabour || (() => {})}
-                onEdit={onEditLabour || (() => {})}
-                onRemove={onRemoveLabour || (() => {})}
+                onEditAggregated={onEditAggregated || (() => {})}
+                onRemoveAggregated={onRemoveAggregated || (() => {})}
               />
               <Separator className="my-3" />
             </>

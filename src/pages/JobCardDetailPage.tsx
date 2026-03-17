@@ -43,6 +43,7 @@ import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 import { WorkExecutionSection } from '@/components/job-card/WorkExecutionSection';
 import { AddLabourSheet } from '@/components/job-card/AddLabourSheet';
+import { AggregatedLabourRow } from '@/components/job-card/LabourSubsection';
 import { useJobCardLabour, useLabourMaster, addJobCardLabour, updateJobCardLabour, deleteJobCardLabour, JobCardLabourEntry } from '@/hooks/useLabour';
 // ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
@@ -103,9 +104,9 @@ export default function JobCardDetailPage() {
   const { entries: labourEntries, isLoading: labourLoading, refetch: refetchLabour } = useJobCardLabour(id);
   const { items: labourCatalogue } = useLabourMaster(labourActive ? workshopCountry : null);
   const [showLabourSheet, setShowLabourSheet] = useState(false);
-  const [editingLabour, setEditingLabour] = useState<JobCardLabourEntry | null>(null);
+  const [editingLabourRow, setEditingLabourRow] = useState<AggregatedLabourRow | null>(null);
   const [isSavingLabour, setIsSavingLabour] = useState(false);
-  const [deletingLabourId, setDeletingLabourId] = useState<string | null>(null);
+  const [deletingLabourRow, setDeletingLabourRow] = useState<AggregatedLabourRow | null>(null);
 
   const LABOUR_EDITABLE_STATUSES: JobCardStatus[] = ['IN_PROGRESS', 'REOPENED'];
   const canEditLabourInJc = jobCard ? LABOUR_EDITABLE_STATUSES.includes(jobCard.status) : false;
@@ -114,19 +115,45 @@ export default function JobCardDetailPage() {
     if (!jobCard || !profile) return;
     setIsSavingLabour(true);
     try {
-      if (editingLabour) {
-        await updateJobCardLabour(editingLabour.id, {
+      if (editingLabourRow) {
+        // Editing aggregated row: update the primary entry with total duration, delete extras
+        const primaryId = editingLabourRow.primaryEntry.id;
+        await updateJobCardLabour(primaryId, {
           duration_minutes: data.durationMinutes,
           rate: data.rate,
           remarks: data.remarks,
         }, profile.id, jobCard.id);
+        // Remove duplicate entries (keep only primary)
+        for (const extraId of editingLabourRow.entryIds.slice(1)) {
+          await deleteJobCardLabour(extraId, profile.id, jobCard.id);
+        }
         toast.success('Labour updated');
       } else {
-        await addJobCardLabour(jobCard.id, data.labourMasterId, data.durationMinutes, data.rate, data.remarks, profile.id);
-        toast.success('Labour added');
+        // Adding: check if same type already exists — aggregate by updating existing
+        const existingOfType = labourEntries.filter(e => e.labour_master_id === data.labourMasterId);
+        if (existingOfType.length > 0) {
+          // Add duration to the first existing entry
+          const primary = existingOfType[0];
+          const totalExisting = existingOfType.reduce((s, e) => s + e.duration_minutes, 0);
+          await updateJobCardLabour(primary.id, {
+            duration_minutes: totalExisting + data.durationMinutes,
+            rate: data.rate ?? primary.rate,
+            remarks: data.remarks
+              ? (primary.remarks ? `${primary.remarks}; ${data.remarks}` : data.remarks)
+              : primary.remarks,
+          }, profile.id, jobCard.id);
+          // Consolidate: remove extra entries
+          for (const extra of existingOfType.slice(1)) {
+            await deleteJobCardLabour(extra.id, profile.id, jobCard.id);
+          }
+          toast.success('Labour updated');
+        } else {
+          await addJobCardLabour(jobCard.id, data.labourMasterId, data.durationMinutes, data.rate, data.remarks, profile.id);
+          toast.success('Labour added');
+        }
       }
       setShowLabourSheet(false);
-      setEditingLabour(null);
+      setEditingLabourRow(null);
       refetchLabour();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to save labour');
@@ -135,12 +162,15 @@ export default function JobCardDetailPage() {
     }
   };
 
-  const handleDeleteLabour = async () => {
-    if (!deletingLabourId || !profile || !jobCard) return;
+  const handleDeleteLabourRow = async () => {
+    if (!deletingLabourRow || !profile || !jobCard) return;
     try {
-      await deleteJobCardLabour(deletingLabourId, profile.id, jobCard.id);
+      // Delete all entries for this aggregated row
+      for (const entryId of deletingLabourRow.entryIds) {
+        await deleteJobCardLabour(entryId, profile.id, jobCard.id);
+      }
       toast.success('Labour removed');
-      setDeletingLabourId(null);
+      setDeletingLabourRow(null);
       refetchLabour();
     } catch (err: any) {
       toast.error('Failed to remove labour');
@@ -1021,9 +1051,9 @@ export default function JobCardDetailPage() {
             canAddLabour={labourActive && canEditLabourInJc && can('labour.add')}
             canEditLabour={labourActive && canEditLabourInJc && can('labour.edit')}
             canRemoveLabour={labourActive && canEditLabourInJc && can('labour.remove')}
-            onAddLabour={() => { setEditingLabour(null); setShowLabourSheet(true); }}
-            onEditLabour={(entry) => { setEditingLabour(entry); setShowLabourSheet(true); }}
-            onRemoveLabour={(id) => setDeletingLabourId(id)}
+            onAddLabour={() => { setEditingLabourRow(null); setShowLabourSheet(true); }}
+            onEditAggregated={(row) => { setEditingLabourRow(row); setShowLabourSheet(true); }}
+            onRemoveAggregated={(row) => setDeletingLabourRow(row)}
           />
         )}
 
@@ -1293,22 +1323,32 @@ export default function JobCardDetailPage() {
           open={showLabourSheet}
           onOpenChange={(open) => {
             setShowLabourSheet(open);
-            if (!open) setEditingLabour(null);
+            if (!open) setEditingLabourRow(null);
           }}
           catalogue={labourCatalogue}
-          editingEntry={editingLabour}
+          existingEntries={labourEntries}
+          editingRow={editingLabourRow}
           onSave={handleSaveLabour}
+          onRemove={() => {
+            if (editingLabourRow) {
+              setShowLabourSheet(false);
+              setDeletingLabourRow(editingLabourRow);
+              setEditingLabourRow(null);
+            }
+          }}
           isSaving={isSavingLabour}
+          canEdit={canEditLabourInJc && can('labour.edit')}
+          canRemove={canEditLabourInJc && can('labour.remove')}
         />
       )}
 
       {/* Labour Delete Confirmation */}
       <ConfirmationDialog
-        open={!!deletingLabourId}
-        onOpenChange={(open) => { if (!open) setDeletingLabourId(null); }}
+        open={!!deletingLabourRow}
+        onOpenChange={(open) => { if (!open) setDeletingLabourRow(null); }}
         title="Remove Labour"
-        description="Are you sure you want to remove this labour entry? This action cannot be undone."
-        onConfirm={handleDeleteLabour}
+        description={`Remove all ${deletingLabourRow?.labourName || ''} labour from this job card? This action cannot be undone.`}
+        onConfirm={handleDeleteLabourRow}
         confirmLabel="Remove"
         variant="destructive"
       />
