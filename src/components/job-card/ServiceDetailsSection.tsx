@@ -20,6 +20,8 @@ interface GroupedCategory {
   issues: { code: string; name: string }[];
 }
 
+const MAX_VISIBLE_ISSUES = 3;
+
 export function ServiceDetailsSection({
   serviceCategories,
   issueCategories,
@@ -52,9 +54,7 @@ export function ServiceDetailsSection({
 
   const totalCategories = serviceCategories.length;
   const totalIssues = issueCategories.length;
-  const isLargeDataset = totalCategories > 5 || totalIssues > 10;
 
-  // Default: always collapsed
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (serviceCategories.length === 0 && issueCategories.length === 0) {
@@ -83,7 +83,6 @@ export function ServiceDetailsSection({
     );
   }
 
-  // Collapsed summary
   const summaryLine = (() => {
     const catNames = grouped.filter((g) => g.code !== '__orphan__').map((g) => g.name);
     const maxShow = 3;
@@ -103,64 +102,49 @@ export function ServiceDetailsSection({
             <CardTitle className="text-base flex items-center gap-2">
               <Wrench className="h-4 w-4" />
               Service Details
-              <span className="text-xs font-normal text-muted-foreground">
-                {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} • {totalIssues} {totalIssues === 1 ? 'issue' : 'issues'}
-              </span>
             </CardTitle>
             {!isExpanded && (
-              <p className="text-sm text-muted-foreground truncate mt-1 ml-6">{summaryLine}</p>
+              <div className="mt-1 ml-6">
+                <p className="text-xs text-muted-foreground">
+                  {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} • {totalIssues} {totalIssues === 1 ? 'issue' : 'issues'}
+                </p>
+                <p className="text-sm text-foreground/80 truncate mt-0.5">{summaryLine}</p>
+              </div>
             )}
           </div>
-          <div className="shrink-0 ml-2 text-muted-foreground">
+          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </button>
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="pt-3 space-y-0">
-          <div className={isLargeDataset ? 'space-y-2' : 'space-y-3'}>
+        <CardContent className="pt-3">
+          <div className="space-y-4">
             {grouped.map((group) => (
               <div key={group.code}>
-                {isLargeDataset ? (
-                  <div className="text-sm">
-                    <span className="font-semibold text-foreground">{group.name}</span>
-                    {group.issues.length > 0 && (
-                      <span className="text-muted-foreground">
-                        {' '}({group.issues.length}) •{' '}
-                        {group.issues.length <= 3
-                          ? group.issues.map((i) => i.name).join(', ')
-                          : `${group.issues.slice(0, 2).map((i) => i.name).join(', ')} +${group.issues.length - 2}`}
-                      </span>
+                <p className="text-sm font-semibold text-foreground">{group.name}</p>
+                {group.issues.length > 0 && (
+                  <ul className="mt-1.5 ml-3 space-y-1">
+                    {group.issues.slice(0, MAX_VISIBLE_ISSUES).map((issue) => (
+                      <li key={issue.code} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-muted-foreground/40 mt-0.5 text-xs">•</span>
+                        <span>{issue.name}</span>
+                      </li>
+                    ))}
+                    {group.issues.length > MAX_VISIBLE_ISSUES && (
+                      <li className="text-xs text-muted-foreground/70 ml-4">
+                        +{group.issues.length - MAX_VISIBLE_ISSUES} more
+                      </li>
                     )}
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {group.name}
-                      {group.issues.length > 0 && (
-                        <span className="font-normal text-muted-foreground ml-1">({group.issues.length})</span>
-                      )}
-                    </p>
-                    {group.issues.length > 0 && (
-                      <ul className="mt-1 ml-1 space-y-0.5">
-                        {group.issues.map((issue) => (
-                          <li key={issue.code} className="text-sm text-muted-foreground flex items-start gap-1.5">
-                            <span className="text-muted-foreground/50 mt-0.5">•</span>
-                            <span>{issue.name}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  </ul>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Secondary CTA inside expanded view */}
           {canEditIssues && (
-            <div className="pt-3 border-t border-border mt-3">
+            <div className="pt-3 border-t border-border mt-4">
               <button
                 type="button"
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
