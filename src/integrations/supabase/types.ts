@@ -2033,6 +2033,7 @@ export type Database = {
         | "USERS_TEAM"
         | "MASTERS_CONFIG"
         | "PROFILE_SELF"
+        | "LABOUR_MANAGEMENT"
       rbac_policy_type: "DEFAULT" | "COCO" | "FOFO"
       rbac_scope_type: "global" | "country" | "workshop" | "assignment"
       spare_action_type:
@@ -2214,6 +2215,7 @@ export const Constants = {
         "USERS_TEAM",
         "MASTERS_CONFIG",
         "PROFILE_SELF",
+        "LABOUR_MANAGEMENT",
       ],
       rbac_policy_type: ["DEFAULT", "COCO", "FOFO"],
       rbac_scope_type: ["global", "country", "workshop", "assignment"],
