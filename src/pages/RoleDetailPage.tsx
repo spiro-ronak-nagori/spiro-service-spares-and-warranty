@@ -213,9 +213,11 @@ export default function RoleDetailPage() {
   // Available permission keys for new override (exclude already overridden for same policy type)
   const availablePermKeysForOverride = useMemo(() => {
     const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
+    // For "ALL" type, check both COCO and FOFO existing overrides
+    const typesToCheck = newOverridePolicyType === 'ALL' ? ['COCO', 'FOFO'] : [newOverridePolicyType];
     const existingKeys = new Set(
       allOverrides
-        .filter(o => o.policy_type === newOverridePolicyType && o.country === resolvedCountry)
+        .filter(o => typesToCheck.includes(o.policy_type) && o.country === resolvedCountry)
         .map(o => o.permission_key)
     );
     return permissions.filter(p => !existingKeys.has(p.permission_key));
