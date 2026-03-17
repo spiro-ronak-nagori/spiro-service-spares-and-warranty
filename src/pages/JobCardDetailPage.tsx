@@ -15,13 +15,11 @@ import {
   User,
   Phone,
   Gauge,
-  Wrench,
   Clock,
   CheckCircle2,
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Pencil,
   Loader2 } from
 'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
@@ -46,6 +44,7 @@ import { JobCardSpare } from '@/types';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
+import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 import { ChecklistStatusSection } from '@/components/job-card/ChecklistStatusSection';
 import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
@@ -871,100 +870,16 @@ export default function JobCardDetailPage() {
         </Card>
 
         {/* 2. Service Details */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Wrench className="h-4 w-4" />
-                Service Details
-              </CardTitle>
-              {canEditIssues ?
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs font-medium"
-                onClick={() => setShowEditIssues(true)}>
-                
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit Issues
-                </Button> :
-              null}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {jobCard.service_categories.length > 0 ?
-            <div className="space-y-4">
-                {jobCard.service_categories.map((cat, i) => {
-                const mappedIssues = jobCard.issue_categories.filter(
-                  (issue) => getParentCode(issue) === cat
-                );
-                return (
-                  <div key={i} className="space-y-1.5">
-                      <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
-                        {resolveCategoryName(cat)}
-                      </span>
-                      {mappedIssues.length > 0 &&
-                    <div className="ml-2 flex flex-wrap gap-1.5">
-                          {mappedIssues.map((issue, j) =>
-                      <span
-                        key={j}
-                        className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
-                        
-                              {resolveCategoryName(issue)}
-                            </span>
-                      )}
-                        </div>
-                    }
-                    </div>);
-
-              })}
-              </div> :
-
-            <p className="text-sm text-muted-foreground">No services selected</p>
-            }
-
-            {(() => {
-              const mappedCats = new Set(jobCard.service_categories);
-              const orphanIssues = jobCard.issue_categories.filter(
-                (issue) => !mappedCats.has(getParentCode(issue) ?? '')
-              );
-              if (orphanIssues.length === 0) return null;
-              return (
-                <div className="mt-4 space-y-1.5">
-                  <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
-                    Other Issues
-                  </span>
-                  <div className="ml-2 flex flex-wrap gap-1.5">
-                    {orphanIssues.map((issue, i) =>
-                    <span
-                      key={i}
-                      className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
-                      
-                        {resolveCategoryName(issue)}
-                      </span>
-                    )}
-                  </div>
-                </div>);
-
-            })()}
-
-            {(jobCard as any).customer_comments &&
-            <>
-                <Separator className="my-3" />
-                <p className="text-xs text-muted-foreground mb-1">Customer Comments</p>
-                <p className="text-sm whitespace-pre-wrap text-foreground/80">{(jobCard as any).customer_comments}</p>
-              </>
-            }
-
-            {jobCard.completion_remarks &&
-            <>
-                <Separator className="my-3" />
-                <p className="text-xs text-muted-foreground mb-1">Completion Remarks</p>
-                <p className="text-sm">{jobCard.completion_remarks}</p>
-              </>
-            }
-          </CardContent>
-        </Card>
+        <ServiceDetailsSection
+          serviceCategories={jobCard.service_categories}
+          issueCategories={jobCard.issue_categories}
+          resolveCategoryName={resolveCategoryName}
+          getParentCode={getParentCode}
+          canEditIssues={canEditIssues}
+          onEditIssues={() => setShowEditIssues(true)}
+          customerComments={(jobCard as any).customer_comments}
+          completionRemarks={jobCard.completion_remarks}
+        />
 
         {/* 3. Vehicle Checklist — hide if not applicable */}
         {showChecklistSection && checklistSectionStatus !== 'not_applicable' &&
