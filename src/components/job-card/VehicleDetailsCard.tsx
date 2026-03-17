@@ -7,10 +7,14 @@ import { JobCard } from '@/types';
 interface VehicleDetailsCardProps {
   vehicle: JobCard['vehicle'];
   jobCard: JobCard;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
-export function VehicleDetailsCard({ vehicle, jobCard }: VehicleDetailsCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+export function VehicleDetailsCard({ vehicle, jobCard, isExpanded: controlledExpanded, onToggle }: VehicleDetailsCardProps) {
+  const [localExpanded, setLocalExpanded] = useState(true);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : localExpanded;
+  const handleToggle = () => { if (onToggle) onToggle(); else setLocalExpanded(!localExpanded); };
 
   const subtitle = [vehicle?.reg_no, vehicle?.model].filter(Boolean).join(' · ') || 'No vehicle info';
 
