@@ -322,7 +322,8 @@ export default function RoleDetailPage() {
             policy_type: o.policy_type as any,
             permission_key: o.permission_key,
             enabled: o.enabled,
-          });
+            country: o.country,
+          } as any);
         }
       }
 
