@@ -92,7 +92,6 @@ export function EditIssuesSheet({
       onSave(
         Array.from(selectedL1),
         Array.from(selectedL2),
-        showMechanicFields ? mechanicName.trim() || undefined : undefined,
       );
     }
   };
