@@ -56,6 +56,7 @@ export default function ManageSpareMasterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModel, setFilterModel] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterClaimType, setFilterClaimType] = useState<'all' | 'warranty' | 'goodwill'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Add/edit dialog
@@ -356,10 +357,12 @@ export default function ManageSpareMasterPage() {
       const partApps = getPartApplicability(part.id);
       if (!partApps.some(a => a.vehicle_model_id === filterModel)) return false;
     }
+    if (filterClaimType === 'warranty' && !part.warranty_available) return false;
+    if (filterClaimType === 'goodwill' && !part.goodwill_available) return false;
     return true;
   });
 
-  const hasActiveFilters = filterModel !== 'all' || filterStatus !== 'all';
+  const hasActiveFilters = filterModel !== 'all' || filterStatus !== 'all' || filterClaimType !== 'all';
 
   return (
     <AppLayout>
@@ -426,8 +429,18 @@ export default function ManageSpareMasterPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={filterClaimType} onValueChange={(v) => setFilterClaimType(v as any)}>
+              <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="warranty">Warranty</SelectItem>
+                <SelectItem value="goodwill">Goodwill</SelectItem>
+              </SelectContent>
+            </Select>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterModel('all'); setFilterStatus('all'); }}>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterModel('all'); setFilterStatus('all'); setFilterClaimType('all'); }}>
                 Clear
               </Button>
             )}
