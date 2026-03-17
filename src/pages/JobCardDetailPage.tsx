@@ -220,12 +220,12 @@ export default function JobCardDetailPage() {
   }, [jobCard?.issue_categories, sparesEnabled]);
 
   // Resolve checklist_status for INWARDED job cards where it's still NULL
-  // This runs once and persists the result to the DB column
+  // Only needs feature flag when checklist_status is not yet persisted
   useEffect(() => {
-    if (!id || !jobCard || checklistFlagLoading || checklistStatusResolved) return;
+    if (!id || !jobCard || checklistStatusResolved) return;
     const currentChecklistStatus = (jobCard as any).checklist_status;
 
-    // If already persisted, nothing to do
+    // If already persisted, nothing to do — instant resolution
     if (currentChecklistStatus) {
       setChecklistStatusResolved(true);
       return;
@@ -237,11 +237,13 @@ export default function JobCardDetailPage() {
       return;
     }
 
+    // For NULL status on INWARDED cards, we need the feature flag to decide
+    if (checklistFlagLoading) return;
+
     // If feature flag is off, persist NOT_APPLICABLE
     if (!checklistEnabledForThisJC) {
       (async () => {
         await supabase.from('job_cards').update({ checklist_status: 'NOT_APPLICABLE' } as any).eq('id', id);
-        // Update local state
         setJobCard(prev => prev ? { ...prev, checklist_status: 'NOT_APPLICABLE' } as any : prev);
         setChecklistStatusResolved(true);
       })();
