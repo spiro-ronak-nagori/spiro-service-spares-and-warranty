@@ -76,7 +76,7 @@ const GROUP_ORDER = [
   'REPORTS', 'USERS_TEAM', 'MASTERS_CONFIG', 'PROFILE_SELF',
 ];
 
-const POLICY_TYPES = ['COCO', 'FOFO'];
+const POLICY_TYPES = ['ALL', 'COCO', 'FOFO'];
 
 const SCOPE_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   global: { icon: <Globe className="h-4 w-4" />, label: 'Global', color: 'bg-primary/10 text-primary' },
@@ -213,9 +213,11 @@ export default function RoleDetailPage() {
   // Available permission keys for new override (exclude already overridden for same policy type)
   const availablePermKeysForOverride = useMemo(() => {
     const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
+    // For "ALL" type, check both COCO and FOFO existing overrides
+    const typesToCheck = newOverridePolicyType === 'ALL' ? ['COCO', 'FOFO'] : [newOverridePolicyType];
     const existingKeys = new Set(
       allOverrides
-        .filter(o => o.policy_type === newOverridePolicyType && o.country === resolvedCountry)
+        .filter(o => typesToCheck.includes(o.policy_type) && o.country === resolvedCountry)
         .map(o => o.permission_key)
     );
     return permissions.filter(p => !existingKeys.has(p.permission_key));
@@ -223,15 +225,21 @@ export default function RoleDetailPage() {
 
   const handleAddOverride = () => {
     if (!newOverridePermKey || !role) return;
-    const tempId = `new_${Date.now()}_${Math.random()}`;
     const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
-    setPendingNewOverrides(prev => [...prev, {
-      id: tempId,
-      policy_type: newOverridePolicyType,
-      permission_key: newOverridePermKey,
-      enabled: newOverrideEnabled,
-      country: resolvedCountry,
-    }]);
+    
+    // "ALL" creates paired COCO + FOFO overrides
+    const typesToCreate = newOverridePolicyType === 'ALL' ? ['COCO', 'FOFO'] : [newOverridePolicyType];
+    
+    for (const policyType of typesToCreate) {
+      const tempId = `new_${Date.now()}_${policyType}_${Math.random()}`;
+      setPendingNewOverrides(prev => [...prev, {
+        id: tempId,
+        policy_type: policyType,
+        permission_key: newOverridePermKey,
+        enabled: newOverrideEnabled,
+        country: resolvedCountry,
+      }]);
+    }
     setShowAddOverride(false);
     setNewOverridePermKey('');
     setNewOverrideEnabled(false);
@@ -557,9 +565,9 @@ export default function RoleDetailPage() {
               <Select value={newOverridePolicyType} onValueChange={setNewOverridePolicyType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {POLICY_TYPES.map(pt => (
-                    <SelectItem key={pt} value={pt}>{pt}</SelectItem>
-                  ))}
+                  <SelectItem value="ALL">All (COCO + FOFO)</SelectItem>
+                  <SelectItem value="COCO">COCO only</SelectItem>
+                  <SelectItem value="FOFO">FOFO only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -592,7 +600,9 @@ export default function RoleDetailPage() {
               </Select>
             </div>
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium">Enabled in {newOverridePolicyType} workshops</label>
+              <label className="text-xs font-medium">
+                Enabled in {newOverridePolicyType === 'ALL' ? 'all' : newOverridePolicyType} workshops
+              </label>
               <Switch checked={newOverrideEnabled} onCheckedChange={setNewOverrideEnabled} className="scale-90" />
             </div>
           </div>
