@@ -357,6 +357,8 @@ export default function ManageSpareMasterPage() {
       const partApps = getPartApplicability(part.id);
       if (!partApps.some(a => a.vehicle_model_id === filterModel)) return false;
     }
+    if (filterClaimType === 'warranty' && !part.warranty_available) return false;
+    if (filterClaimType === 'goodwill' && !part.goodwill_available) return false;
     return true;
   });
 
