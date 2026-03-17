@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, Settings, ChevronRight, ShieldCheck, Loader2, Sheet, CheckCircle2, XCircle } from 'lucide-react';
+import { Building2, Settings, ChevronRight, ShieldCheck, Loader2, Sheet, CheckCircle2, XCircle, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,7 +27,7 @@ export default function SuperAdminConsolePage() {
   const isSystemAdmin = profile?.role === 'system_admin';
   const isSuperAdmin = profile?.role === 'super_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
-  const hasAccess = isSystemAdmin || isSuperAdmin || isCountryAdmin;
+  const hasAccess = can('nav.console');
 
   useEffect(() => {
     if (!isSystemAdmin) return;
@@ -62,7 +62,9 @@ export default function SuperAdminConsolePage() {
     ? 'System Admin Console'
     : isSuperAdmin
     ? 'Super Admin Console'
-    : `${profile?.country || ''} Console`;
+    : isCountryAdmin
+    ? `${profile?.country || ''} Console`
+    : 'Workshop Console';
 
   const menuItems = [
     {
@@ -78,6 +80,13 @@ export default function SuperAdminConsolePage() {
       icon: ShieldCheck,
       path: '/console/admins',
       visible: can('nav.manage_users'),
+    },
+    {
+      label: 'Manage Team',
+      description: 'Invite and manage your workshop team members',
+      icon: Users,
+      path: `/console/workshops/${profile?.workshop_id}/team`,
+      visible: can('users.manage_workshop_team') && !can('config.manage_workshops') && !!profile?.workshop_id,
     },
     {
       label: 'Manage System Configuration',
