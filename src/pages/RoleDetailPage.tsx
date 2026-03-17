@@ -107,11 +107,14 @@ export default function RoleDetailPage() {
   const [newOverridePolicyType, setNewOverridePolicyType] = useState('FOFO');
   const [newOverridePermKey, setNewOverridePermKey] = useState('');
   const [newOverrideEnabled, setNewOverrideEnabled] = useState(false);
+  const [newOverrideCountry, setNewOverrideCountry] = useState<string>('__GLOBAL__');
   const [deletingOverrideId, setDeletingOverrideId] = useState<string | null>(null);
   // Track overrides to delete on save
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   // Track new overrides added locally (not yet persisted)
   const [pendingNewOverrides, setPendingNewOverrides] = useState<PolicyOverride[]>([]);
+  // Countries list
+  const [countries, setCountries] = useState<{ name: string }[]>([]);
 
   const isSystemAdmin = profile?.role === 'system_admin';
 
