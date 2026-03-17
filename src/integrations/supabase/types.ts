@@ -1117,6 +1117,7 @@ export type Database = {
       }
       rbac_policy_overrides: {
         Row: {
+          country: string | null
           created_at: string
           enabled: boolean
           id: string
@@ -1126,6 +1127,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          country?: string | null
           created_at?: string
           enabled: boolean
           id?: string
@@ -1135,6 +1137,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          country?: string | null
           created_at?: string
           enabled?: boolean
           id?: string
