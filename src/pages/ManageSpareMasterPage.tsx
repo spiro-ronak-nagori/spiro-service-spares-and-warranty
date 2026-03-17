@@ -429,8 +429,18 @@ export default function ManageSpareMasterPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={filterClaimType} onValueChange={(v) => setFilterClaimType(v as any)}>
+              <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="warranty">Warranty</SelectItem>
+                <SelectItem value="goodwill">Goodwill</SelectItem>
+              </SelectContent>
+            </Select>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterModel('all'); setFilterStatus('all'); }}>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterModel('all'); setFilterStatus('all'); setFilterClaimType('all'); }}>
                 Clear
               </Button>
             )}
