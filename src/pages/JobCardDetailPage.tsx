@@ -858,9 +858,9 @@ export default function JobCardDetailPage() {
               </CardTitle>
               {canEditIssues ?
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-xs text-primary"
+                className="h-8 gap-1.5 text-xs font-medium"
                 onClick={() => setShowEditIssues(true)}>
                 
                   <Pencil className="h-3.5 w-3.5" />
