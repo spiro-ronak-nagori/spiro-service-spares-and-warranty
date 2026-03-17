@@ -289,20 +289,24 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
   const isActiveStatus = jobCardStatus === 'IN_PROGRESS' || jobCardStatus === 'REOPENED' || jobCardStatus === 'READY';
   const showWarningIndicator = showSparesWarning && isActiveStatus;
 
+  // Lock collapsed when no spares and status is not IN_PROGRESS/REOPENED (i.e. before work or after work)
+  const isWorkStatus = jobCardStatus === 'IN_PROGRESS' || jobCardStatus === 'REOPENED';
+  const lockedCollapsed = spares.length === 0 && !isWorkStatus;
+
   return (
     <Card id="spares-used-section">
-      <CardHeader className={isExpanded ? "pb-0" : ""}>
+      <CardHeader className={isExpanded && !lockedCollapsed ? "pb-0" : ""}>
         <button
           type="button"
-          className="w-full flex items-center justify-between text-left"
-          onClick={handleToggle}
+          className={`w-full flex items-center justify-between text-left ${lockedCollapsed ? 'cursor-default' : ''}`}
+          onClick={lockedCollapsed ? undefined : handleToggle}
         >
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Package className="h-4 w-4" />
               Spares Used
             </CardTitle>
-            {!isExpanded && (
+            {(lockedCollapsed || !isExpanded) && (
               <p className="text-xs mt-1 ml-6">
                 {showWarningIndicator ? (
                   <span className="text-amber-700 flex items-center gap-1">
@@ -317,9 +321,11 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               </p>
             )}
           </div>
-          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </div>
+          {!lockedCollapsed && (
+            <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+          )}
         </button>
       </CardHeader>
 
