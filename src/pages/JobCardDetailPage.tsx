@@ -862,7 +862,7 @@ export default function JobCardDetailPage() {
         <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} isExpanded={expandedSection === 'vehicle'} onToggle={() => toggleSection('vehicle')} />
 
         {/* 2. Service Details */}
-        <ServiceDetailsSection
+          <ServiceDetailsSection
           serviceCategories={jobCard.service_categories}
           issueCategories={jobCard.issue_categories}
           resolveCategoryName={resolveCategoryName}
@@ -873,6 +873,8 @@ export default function JobCardDetailPage() {
           completionRemarks={jobCard.completion_remarks}
           assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
           mechanicNotes={(jobCard as any).mechanic_notes}
+          canAddMechanicNote={canAddMechanicNote}
+          onAddMechanicNote={handleAddMechanicNote}
           isExpanded={expandedSection === 'service'}
           onToggle={() => toggleSection('service')}
         />
