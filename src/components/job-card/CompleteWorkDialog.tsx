@@ -40,6 +40,7 @@ export function CompleteWorkDialog({
   sparesEnabled,
   spares = [],
   warrantyEnabled,
+  canAddSpares = true,
   onOpenSparesModal,
 }: CompleteWorkDialogProps) {
   const [remarks, setRemarks] = useState('');
