@@ -927,26 +927,25 @@ export default function JobCardDetailPage() {
         )}
 
         {/* 4. Spares Used Section */}
-        {sparesEnabled &&
+        {sparesEnabled && can('spares.view') &&
         <SparesUsedSection
           spares={spares}
           isLoading={sparesLoading}
-          onAddSpares={() => {setEditingSpare(null);setShowSparesModal(true);}}
-          onEditSpare={handleEditSpare}
-          onDeleteSpare={(id) => setDeletingSpareId(id)}
-          onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
+          onAddSpares={can('spares.add') ? () => {setEditingSpare(null);setShowSparesModal(true);} : undefined}
+          onEditSpare={can('spares.edit') ? handleEditSpare : undefined}
+          onDeleteSpare={can('spares.remove') ? (id) => setDeletingSpareId(id) : undefined}
+          onSubmitWarranty={warrantyEnabled && can('spares.submit_warranty') ? (spare) => setWarrantySpare(spare) : undefined}
           onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
           onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
           onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
-          onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
-          canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
+          onSubmitAll={warrantyEnabled && can('spares.submit_warranty') ? () => setShowSubmitAll(true) : undefined}
+          canEdit={(jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') && can('spares.edit')}
           warrantyEnabled={warrantyEnabled}
           mandatorySparesRequired={mandatorySparesRequired}
           jobCardStatus={jobCard.status}
           isExpanded={expandedSection === 'spares'}
           onToggle={() => toggleSection('spares')}
         />
-
         }
 
         {/* 5. Timeline */}
