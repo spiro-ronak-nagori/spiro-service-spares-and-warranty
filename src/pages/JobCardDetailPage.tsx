@@ -104,9 +104,9 @@ export default function JobCardDetailPage() {
   const { entries: labourEntries, isLoading: labourLoading, refetch: refetchLabour } = useJobCardLabour(id);
   const { items: labourCatalogue } = useLabourMaster(labourActive ? workshopCountry : null);
   const [showLabourSheet, setShowLabourSheet] = useState(false);
-  const [editingLabour, setEditingLabour] = useState<JobCardLabourEntry | null>(null);
+  const [editingLabourRow, setEditingLabourRow] = useState<AggregatedLabourRow | null>(null);
   const [isSavingLabour, setIsSavingLabour] = useState(false);
-  const [deletingLabourId, setDeletingLabourId] = useState<string | null>(null);
+  const [deletingLabourRow, setDeletingLabourRow] = useState<AggregatedLabourRow | null>(null);
 
   const LABOUR_EDITABLE_STATUSES: JobCardStatus[] = ['IN_PROGRESS', 'REOPENED'];
   const canEditLabourInJc = jobCard ? LABOUR_EDITABLE_STATUSES.includes(jobCard.status) : false;
@@ -115,19 +115,45 @@ export default function JobCardDetailPage() {
     if (!jobCard || !profile) return;
     setIsSavingLabour(true);
     try {
-      if (editingLabour) {
-        await updateJobCardLabour(editingLabour.id, {
+      if (editingLabourRow) {
+        // Editing aggregated row: update the primary entry with total duration, delete extras
+        const primaryId = editingLabourRow.primaryEntry.id;
+        await updateJobCardLabour(primaryId, {
           duration_minutes: data.durationMinutes,
           rate: data.rate,
           remarks: data.remarks,
         }, profile.id, jobCard.id);
+        // Remove duplicate entries (keep only primary)
+        for (const extraId of editingLabourRow.entryIds.slice(1)) {
+          await deleteJobCardLabour(extraId, profile.id, jobCard.id);
+        }
         toast.success('Labour updated');
       } else {
-        await addJobCardLabour(jobCard.id, data.labourMasterId, data.durationMinutes, data.rate, data.remarks, profile.id);
-        toast.success('Labour added');
+        // Adding: check if same type already exists — aggregate by updating existing
+        const existingOfType = labourEntries.filter(e => e.labour_master_id === data.labourMasterId);
+        if (existingOfType.length > 0) {
+          // Add duration to the first existing entry
+          const primary = existingOfType[0];
+          const totalExisting = existingOfType.reduce((s, e) => s + e.duration_minutes, 0);
+          await updateJobCardLabour(primary.id, {
+            duration_minutes: totalExisting + data.durationMinutes,
+            rate: data.rate ?? primary.rate,
+            remarks: data.remarks
+              ? (primary.remarks ? `${primary.remarks}; ${data.remarks}` : data.remarks)
+              : primary.remarks,
+          }, profile.id, jobCard.id);
+          // Consolidate: remove extra entries
+          for (const extra of existingOfType.slice(1)) {
+            await deleteJobCardLabour(extra.id, profile.id, jobCard.id);
+          }
+          toast.success('Labour updated');
+        } else {
+          await addJobCardLabour(jobCard.id, data.labourMasterId, data.durationMinutes, data.rate, data.remarks, profile.id);
+          toast.success('Labour added');
+        }
       }
       setShowLabourSheet(false);
-      setEditingLabour(null);
+      setEditingLabourRow(null);
       refetchLabour();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to save labour');
@@ -136,12 +162,15 @@ export default function JobCardDetailPage() {
     }
   };
 
-  const handleDeleteLabour = async () => {
-    if (!deletingLabourId || !profile || !jobCard) return;
+  const handleDeleteLabourRow = async () => {
+    if (!deletingLabourRow || !profile || !jobCard) return;
     try {
-      await deleteJobCardLabour(deletingLabourId, profile.id, jobCard.id);
+      // Delete all entries for this aggregated row
+      for (const entryId of deletingLabourRow.entryIds) {
+        await deleteJobCardLabour(entryId, profile.id, jobCard.id);
+      }
       toast.success('Labour removed');
-      setDeletingLabourId(null);
+      setDeletingLabourRow(null);
       refetchLabour();
     } catch (err: any) {
       toast.error('Failed to remove labour');
