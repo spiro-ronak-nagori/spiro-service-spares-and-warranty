@@ -463,24 +463,26 @@ export default function JobCardDetailPage() {
     try {
       const oldName = (jobCard as any).assigned_mechanic_name || null;
 
-      const { error } = await supabase.
-      from('job_cards').
-      update({ assigned_mechanic_name: name } as any).
-      eq('id', jobCard.id);
-      if (error) throw error;
-
-      await supabase.from('audit_trail').insert({
-        job_card_id: jobCard.id,
-        user_id: profile.id,
-        from_status: jobCard.status,
-        to_status: jobCard.status,
-        notes: JSON.stringify({
-          event: 'MECHANIC_NAME_UPDATED',
-          old_mechanic_name: oldName,
-          new_mechanic_name: name,
-          status_at_change: jobCard.status
-        })
-      });
+      // Run update + audit insert concurrently
+      const [updateResult] = await Promise.all([
+        supabase
+          .from('job_cards')
+          .update({ assigned_mechanic_name: name } as any)
+          .eq('id', jobCard.id),
+        supabase.from('audit_trail').insert({
+          job_card_id: jobCard.id,
+          user_id: profile.id,
+          from_status: jobCard.status,
+          to_status: jobCard.status,
+          notes: JSON.stringify({
+            event: 'MECHANIC_NAME_UPDATED',
+            old_mechanic_name: oldName,
+            new_mechanic_name: name,
+            status_at_change: jobCard.status
+          })
+        }),
+      ]);
+      if (updateResult.error) throw updateResult.error;
 
       setShowMechanicSheet(false);
 
@@ -489,8 +491,7 @@ export default function JobCardDetailPage() {
         await updateStatus('IN_PROGRESS', { assigned_mechanic_name: name });
       } else {
         toast.success('Mechanic name updated');
-        fetchJobCard();
-        fetchAuditTrail();
+        Promise.all([fetchJobCard(), fetchAuditTrail()]);
       }
     } catch (err: any) {
       console.error('Error saving mechanic name:', err);
