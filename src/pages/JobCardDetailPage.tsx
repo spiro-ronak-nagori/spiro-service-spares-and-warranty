@@ -614,25 +614,31 @@ export default function JobCardDetailPage() {
       setIsUpdating(true);
       try {
         const outSocUrl = await uploadJcImage(pendingOutSocData.file, jobCard.id, 'outgoing_soc');
-        await supabase.
-        from('job_cards').
-        update({
-          out_soc_value: pendingOutSocData.value,
-          out_soc_photo_url: outSocUrl,
-          out_soc_detected_value: pendingOutSocData.validation?.ocr?.socReading ?? null,
-          out_soc_detection_confidence: pendingOutSocData.validation?.ocr?.confidence ?? null,
-          out_soc_override_reason: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchReason : null,
-          out_soc_override_comment: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchComment : null,
-          out_soc_anomaly_flag: false
-        } as any).
-        eq('id', jobCard.id);
+        // Run SOC data save + status transition concurrently
+        await Promise.all([
+          supabase
+            .from('job_cards')
+            .update({
+              out_soc_value: pendingOutSocData.value,
+              out_soc_photo_url: outSocUrl,
+              out_soc_detected_value: pendingOutSocData.validation?.ocr?.socReading ?? null,
+              out_soc_detection_confidence: pendingOutSocData.validation?.ocr?.confidence ?? null,
+              out_soc_override_reason: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchReason : null,
+              out_soc_override_comment: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchComment : null,
+              out_soc_anomaly_flag: false
+            } as any)
+            .eq('id', jobCard.id),
+          updateStatus('DELIVERED', { delivery_otp_verified: true }),
+        ]);
 
-        await updateStatus('DELIVERED', { delivery_otp_verified: true });
-        const result = await sendSms({ jobCardId: jobCard.id, trigger: 'DELIVERED' });
-        if (result?.auto_completed) {
-          fetchJobCard();
-          fetchAuditTrail();
-        }
+        // Fire SMS in background
+        sendSms({ jobCardId: jobCard.id, trigger: 'DELIVERED' })
+          .then(result => {
+            if (result?.auto_completed) {
+              Promise.all([fetchJobCard(), fetchAuditTrail()]);
+            }
+          })
+          .catch(console.error);
       } catch (err) {
         console.error('Error saving outgoing SOC:', err);
         toast.error('Failed to save outgoing SOC data');
