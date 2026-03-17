@@ -77,6 +77,9 @@ const GROUP_ORDER = [
   'REPORTS', 'USERS_TEAM', 'MASTERS_CONFIG', 'PROFILE_SELF',
 ];
 
+const getGroupLabel = (groupKey: string) =>
+  GROUP_LABELS[groupKey] || groupKey.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+
 const POLICY_TYPES = ['ALL', 'COCO', 'FOFO'];
 
 const SCOPE_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
