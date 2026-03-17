@@ -396,7 +396,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
   const lockedCollapsed = spares.length === 0 && !isWorkStatus;
 
   return (
-    <Card id="spares-used-section">
+    <Card id="spares-used-section" className={showWarningIndicator && !isExpanded ? 'border-amber-300 bg-amber-50/30' : ''}>
       <CardHeader className={isExpanded && !lockedCollapsed ? "pb-0" : ""}>
         <button
           type="button"
