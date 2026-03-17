@@ -55,14 +55,8 @@ export function ServiceDetailsSection({
   const totalCategories = serviceCategories.length;
   const totalIssues = issueCategories.length;
 
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const summaryLine = (() => {
-    const catNames = grouped.filter((g) => g.code !== '__orphan__').map((g) => g.name);
-    const maxShow = 3;
-    if (catNames.length <= maxShow) return catNames.join(', ');
-    return `${catNames.slice(0, maxShow).join(', ')} +${catNames.length - maxShow} more`;
-  })();
+  const autoExpand = (totalCategories + totalIssues) < 5;
+  const [isExpanded, setIsExpanded] = useState(autoExpand);
 
   const subtitle = serviceCategories.length === 0 && issueCategories.length === 0
     ? 'No services selected'
@@ -82,7 +76,7 @@ export function ServiceDetailsSection({
               Service Details
             </CardTitle>
             {!isExpanded && (
-              <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}{totalIssues > 0 ? ` · ${summaryLine}` : ''}</p>
+              <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}</p>
             )}
           </div>
           <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">

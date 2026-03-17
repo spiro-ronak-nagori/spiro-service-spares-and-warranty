@@ -40,7 +40,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
-import { ChecklistStatusSection } from '@/components/job-card/ChecklistStatusSection';
+// ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
@@ -644,20 +644,8 @@ export default function JobCardDetailPage() {
 
   const vehicle = jobCard.vehicle;
 
-  // Compute checklist section status from persisted column — instant when DB value exists
+  // Checklist status — used only for CTA gating
   const persistedChecklistStatus = (jobCard as any).checklist_status as string | null;
-  const checklistSectionStatus = (() => {
-    // If DB has a value, use it instantly — no waiting for feature flag
-    if (persistedChecklistStatus === 'NOT_APPLICABLE') return 'not_applicable' as const;
-    if (persistedChecklistStatus === 'COMPLETED') return 'completed' as const;
-    if (persistedChecklistStatus === 'PENDING') return 'pending' as const;
-    // NULL = needs resolution; show loading only if we're still resolving
-    if (!checklistStatusResolved) return 'loading' as const;
-    return 'not_applicable' as const;
-  })();
-
-  // Show checklist section on INWARDED status (and IN_PROGRESS to show completed state)
-  const showChecklistSection = ['INWARDED', 'IN_PROGRESS', 'REOPENED', 'READY', 'DELIVERED', 'COMPLETED', 'CLOSED'].includes(jobCard.status);
 
   // Determine if sticky CTA needs checklist gate for INWARDED
   const inwardedNeedsChecklist = jobCard.status === 'INWARDED' && persistedChecklistStatus === 'PENDING';
@@ -807,12 +795,7 @@ export default function JobCardDetailPage() {
           completionRemarks={jobCard.completion_remarks}
         />
 
-        {/* 3. Vehicle Checklist — hide if not applicable */}
-        {showChecklistSection && checklistSectionStatus !== 'not_applicable' &&
-        <ChecklistStatusSection
-          status={checklistSectionStatus}
-          onComplete={() => setShowChecklist(true)} />
-        }
+        {/* Checklist section removed — handled via sticky CTA */}
 
         {/* Assigned Mechanic Section */}
         {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name &&
