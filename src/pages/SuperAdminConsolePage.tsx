@@ -14,6 +14,7 @@ export default function SuperAdminConsolePage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [exporting, setExporting] = useState(false);
+  const { can } = useRbacPermissions();
   const [lastExport, setLastExport] = useState<{
     status: string;
     finished_at: string | null;
