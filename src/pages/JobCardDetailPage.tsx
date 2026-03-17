@@ -843,24 +843,11 @@ export default function JobCardDetailPage() {
           onEditIssues={() => setShowEditIssues(true)}
           customerComments={(jobCard as any).customer_comments}
           completionRemarks={jobCard.completion_remarks}
+          assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
+          mechanicNotes={(jobCard as any).mechanic_notes}
           isExpanded={expandedSection === 'service'}
           onToggle={() => toggleSection('service')}
         />
-
-        {/* Checklist section removed — handled via sticky CTA */}
-
-        {/* Assigned Mechanic Section */}
-        {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name &&
-        <MechanicNameSection
-          name={(jobCard as any).assigned_mechanic_name}
-          canEdit={canEditMechanic}
-          locked={mechanicLocked}
-          onEdit={() => {
-            setMechanicSheetForStartWork(false);
-            setShowMechanicSheet(true);
-          }} />
-
-        }
 
         {/* 4. Spares Used Section */}
         {sparesEnabled &&
