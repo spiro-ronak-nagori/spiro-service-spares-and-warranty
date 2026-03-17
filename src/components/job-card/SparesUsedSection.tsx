@@ -303,12 +303,24 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             {!isExpanded && (
               <p className="text-xs text-muted-foreground mt-1 ml-6">
                 {spares.length} {spares.length === 1 ? 'item' : 'items'}
-                {showSparesWarning && <span className="ml-2">· ⚠ Spares required before delivery</span>}
+                {showSparesWarning && <span className="ml-2">· ⚠ Required before delivery</span>}
               </p>
             )}
           </div>
-          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
+            {/* "+ Add" shortcut only when collapsed with no spares */}
+            {!isExpanded && spares.length === 0 && canEdit && onAddSpares && (
+              <span
+                role="button"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => { e.stopPropagation(); onAddSpares(); }}
+              >
+                + Add
+              </span>
+            )}
+            <span className="text-muted-foreground">
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </span>
           </div>
         </button>
       </CardHeader>
@@ -316,87 +328,88 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
       {isExpanded && (
         <CardContent className="pt-3">
           {spares.length === 0 ? (
-            <div className="text-center py-4">
-              <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <div className="py-3">
               <p className="text-sm text-muted-foreground">No spares added yet</p>
               {canEdit && onAddSpares && (
                 <button
                   type="button"
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary"
                   onClick={onAddSpares}
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Spares
+                  Add Spare
                 </button>
               )}
             </div>
           ) : (
             <>
-              <Accordion type="multiple" className="w-full">
+              {/* Compact spare list */}
+              <div className="divide-y divide-border">
                 {spares.map((spare) => (
-                  <AccordionItem key={spare.id} value={spare.id}>
-                    <AccordionTrigger className="py-3 hover:no-underline">
-                      <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {spare.spare_part?.part_name || 'Unknown Part'}
-                            {spare.spare_part?.part_code && (
-                              <span className="text-muted-foreground font-normal"> ({spare.spare_part.part_code})</span>
-                            )}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            <Badge variant="outline" className="text-[10px] h-5 px-1.5">Qty: {spare.qty}</Badge>
-                            <Badge variant="secondary" className={`text-[10px] h-5 px-1.5 ${CLAIM_TYPE_CLASS[spare.claim_type] || ''}`}>
-                              {CLAIM_LABEL[spare.claim_type]}
-                            </Badge>
-                            <WarrantyBadge spare={spare} warrantyEnabled={warrantyEnabled} />
+                  <Accordion key={spare.id} type="multiple" className="w-full">
+                    <AccordionItem value={spare.id} className="border-0">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium truncate">
+                                {spare.spare_part?.part_name || 'Unknown Part'}
+                              </p>
+                              <Badge variant="outline" className="text-[10px] h-5 px-1.5 shrink-0">×{spare.qty}</Badge>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              <Badge variant="secondary" className={`text-[10px] h-5 px-1.5 ${CLAIM_TYPE_CLASS[spare.claim_type] || ''}`}>
+                                {CLAIM_LABEL[spare.claim_type]}
+                              </Badge>
+                              <WarrantyBadge spare={spare} warrantyEnabled={warrantyEnabled} />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3 pt-1">
-                        {spare.serial_number && (
-                          <div className="text-xs">
-                            <span className="text-muted-foreground">New Part Serial#:</span>{' '}
-                            <span className="font-medium">{spare.serial_number}</span>
-                          </div>
-                        )}
-                        <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
-                        {spare.old_part_serial_number && (
-                          <div className="text-xs">
-                            <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
-                            <span className="font-medium">{spare.old_part_serial_number}</span>
-                          </div>
-                        )}
-                        <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
-                        <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
-                        {spare.technician_comment && (
-                          <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
-                        )}
-                        <SpareDecisionInfo spare={spare} />
-                        <SpareActions
-                          spare={spare} canEdit={canEdit} warrantyEnabled={warrantyEnabled}
-                          onSubmitWarranty={onSubmitWarranty} onWithdrawSpare={onWithdrawSpare}
-                          onRespondNeedsInfo={onRespondNeedsInfo} onConvertToUserPaid={onConvertToUserPaid}
-                          onEditSpare={onEditSpare} onDeleteSpare={onDeleteSpare}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-3 pt-1">
+                          {spare.serial_number && (
+                            <div className="text-xs">
+                              <span className="text-muted-foreground">New Part Serial#:</span>{' '}
+                              <span className="font-medium">{spare.serial_number}</span>
+                            </div>
+                          )}
+                          <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
+                          {spare.old_part_serial_number && (
+                            <div className="text-xs">
+                              <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
+                              <span className="font-medium">{spare.old_part_serial_number}</span>
+                            </div>
+                          )}
+                          <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
+                          <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
+                          {spare.technician_comment && (
+                            <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+                          )}
+                          <SpareDecisionInfo spare={spare} />
+                          <SpareActions
+                            spare={spare} canEdit={canEdit} warrantyEnabled={warrantyEnabled}
+                            onSubmitWarranty={onSubmitWarranty} onWithdrawSpare={onWithdrawSpare}
+                            onRespondNeedsInfo={onRespondNeedsInfo} onConvertToUserPaid={onConvertToUserPaid}
+                            onEditSpare={onEditSpare} onDeleteSpare={onDeleteSpare}
+                          />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 ))}
-              </Accordion>
+              </div>
 
-              {/* Single secondary CTA for adding more */}
+              {/* Add more action */}
               {canEdit && onAddSpares && (
-                <div className="pt-3 border-t border-border mt-2">
+                <div className="pt-3 border-t border-border mt-1">
                   <button
                     type="button"
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
                     onClick={onAddSpares}
                   >
                     <Plus className="h-3 w-3" />
-                    Add Spares
+                    Add Spare
                   </button>
                 </div>
               )}
