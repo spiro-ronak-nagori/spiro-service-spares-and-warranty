@@ -61,7 +61,7 @@ export default function JobCardDetailPage() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(true);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
