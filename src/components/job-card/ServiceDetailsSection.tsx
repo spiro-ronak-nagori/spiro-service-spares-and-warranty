@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Wrench, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ServiceDetailsSectionProps {
   serviceCategories: string[];
