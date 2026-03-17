@@ -64,6 +64,7 @@ const GROUP_LABELS: Record<string, string> = {
   NAVIGATION: 'Navigation',
   JOB_CARDS: 'Job Cards',
   SPARES_MANAGEMENT: 'Spares Management',
+  LABOUR_MANAGEMENT: 'Labour Management',
   WARRANTY: 'Warranty',
   REPORTS: 'Reports',
   USERS_TEAM: 'Users & Team',
@@ -72,7 +73,7 @@ const GROUP_LABELS: Record<string, string> = {
 };
 
 const GROUP_ORDER = [
-  'NAVIGATION', 'JOB_CARDS', 'SPARES_MANAGEMENT', 'WARRANTY',
+  'NAVIGATION', 'JOB_CARDS', 'SPARES_MANAGEMENT', 'LABOUR_MANAGEMENT', 'WARRANTY',
   'REPORTS', 'USERS_TEAM', 'MASTERS_CONFIG', 'PROFILE_SELF',
 ];
 
