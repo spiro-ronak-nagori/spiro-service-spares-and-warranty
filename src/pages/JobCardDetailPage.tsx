@@ -838,29 +838,29 @@ export default function JobCardDetailPage() {
 
         {/* 5. Timeline */}
         <Card>
-          <CardHeader className={showTimeline ? "pb-0" : ""}>
+          <CardHeader className={expandedSection === 'timeline' ? "pb-0" : ""}>
             <button
               type="button"
               className="w-full flex items-center justify-between text-left"
-              onClick={() => setShowTimeline(!showTimeline)}
+              onClick={() => toggleSection('timeline')}
             >
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Timeline
                 </CardTitle>
-                {!showTimeline && (
+                {expandedSection !== 'timeline' && (
                   <p className="text-xs text-muted-foreground mt-1 ml-6">
                     {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>
               <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
-                {showTimeline ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {expandedSection === 'timeline' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
             </button>
           </CardHeader>
-          {showTimeline &&
+          {expandedSection === 'timeline' &&
           <CardContent className="pt-0">
               <div className="space-y-4">
                 {auditTrail.map((entry, i) =>
