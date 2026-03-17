@@ -9,7 +9,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw, UserCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw, UserCheck, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
