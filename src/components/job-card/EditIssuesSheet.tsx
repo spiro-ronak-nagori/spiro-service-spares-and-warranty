@@ -38,9 +38,8 @@ export function EditIssuesSheet({
       fetchCategories();
       setSelectedL1(new Set(currentServiceCategories));
       setSelectedL2(new Set(currentIssueCategories));
-      setMechanicName(currentMechanicName || '');
     }
-  }, [open, currentServiceCategories, currentIssueCategories, currentMechanicName]);
+  }, [open, currentServiceCategories, currentIssueCategories]);
 
   const fetchCategories = async () => {
     setIsLoadingCategories(true);
