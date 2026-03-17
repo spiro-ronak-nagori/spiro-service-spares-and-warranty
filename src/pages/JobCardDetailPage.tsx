@@ -937,12 +937,11 @@ export default function JobCardDetailPage() {
           </CardContent>
         </Card>
 
-        {/* 3. Vehicle Checklist */}
-        {showChecklistSection &&
+        {/* 3. Vehicle Checklist — hide if not applicable */}
+        {showChecklistSection && checklistSectionStatus !== 'not_applicable' &&
         <ChecklistStatusSection
           status={checklistSectionStatus}
           onComplete={() => setShowChecklist(true)} />
-
         }
 
         {/* Assigned Mechanic Section */}
