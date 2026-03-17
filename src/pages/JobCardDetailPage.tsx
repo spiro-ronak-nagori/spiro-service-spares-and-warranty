@@ -55,7 +55,8 @@ export default function JobCardDetailPage() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const toggleSection = (section: string) => setExpandedSection(prev => prev === section ? null : section);
 
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
