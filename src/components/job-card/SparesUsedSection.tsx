@@ -134,177 +134,152 @@ function SpareItem({
   onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
   onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const locked = isLocked(spare);
   const statusText = getStatusText(spare, warrantyEnabled);
   const partName = spare.spare_part?.part_name || 'Unknown Part';
   const partCode = spare.spare_part?.part_code;
 
-  const hasDetails = spare.serial_number || spare.old_part_serial_number ||
-    (spare.photos && spare.photos.length > 0) || spare.technician_comment || canEdit;
-
-  // Claim type text color
   const claimColor = spare.claim_type === 'WARRANTY'
     ? 'text-blue-600'
     : spare.claim_type === 'GOODWILL'
       ? 'text-purple-600'
       : 'text-muted-foreground';
 
-  const metaText = `Qty: ${spare.qty}`;
-
   return (
-    <div className="py-3">
-      <button
-        type="button"
-        className="w-full flex items-start justify-between text-left gap-2"
-        onClick={() => hasDetails && setExpanded(!expanded)}
-      >
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {partName}
-            {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
-          </p>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <span className="text-xs text-muted-foreground">{metaText}</span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className={`text-xs font-medium ${claimColor}`}>{CLAIM_LABEL[spare.claim_type]}</span>
-            {statusText && (
-              <>
-                <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                  {statusText}
-                </span>
-              </>
-            )}
-          </div>
+    <div className="py-3 space-y-2">
+      {/* Header */}
+      <div>
+        <p className="text-sm font-medium text-foreground truncate">
+          {partName}
+          {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
+        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <span className="text-xs text-muted-foreground">Qty: {spare.qty}</span>
+          <span className="text-xs text-muted-foreground">·</span>
+          <span className={`text-xs font-medium ${claimColor}`}>{CLAIM_LABEL[spare.claim_type]}</span>
+          {statusText && (
+            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+              {statusText}
+            </span>
+          )}
         </div>
-        {hasDetails && (
-          <div className="shrink-0 text-muted-foreground mt-0.5">
-            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </div>
-        )}
-      </button>
+      </div>
 
-      {/* Expanded details */}
-      {expanded && (
-        <div className="mt-3 ml-0 space-y-3">
-          {spare.serial_number && (
-            <div className="text-xs">
-              <span className="text-muted-foreground">New Part Serial#:</span>{' '}
-              <span className="font-medium text-foreground">{spare.serial_number}</span>
-            </div>
+      {/* Details — always visible */}
+      {spare.serial_number && (
+        <div className="text-xs">
+          <span className="text-muted-foreground">New Part Serial#:</span>{' '}
+          <span className="font-medium text-foreground">{spare.serial_number}</span>
+        </div>
+      )}
+      <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
+
+      {spare.old_part_serial_number && (
+        <div className="text-xs">
+          <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
+          <span className="font-medium text-foreground">{spare.old_part_serial_number}</span>
+        </div>
+      )}
+      <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
+      <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
+
+      {spare.technician_comment && (
+        <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+      )}
+
+      <SpareDecisionInfo spare={spare} />
+
+      {/* Actions — grouped tightly */}
+      {canEdit && (
+        <div className="space-y-1.5">
+          {/* Primary CTAs */}
+          {warrantyEnabled && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+            <Button variant="default" size="sm" className="h-8 text-xs w-full"
+              onClick={() => onSubmitWarranty(spare)}>
+              <Send className="h-3 w-3 mr-1" />
+              Submit {CLAIM_LABEL[spare.claim_type]}
+            </Button>
           )}
-          <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
 
-          {spare.old_part_serial_number && (
-            <div className="text-xs">
-              <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
-              <span className="font-medium text-foreground">{spare.old_part_serial_number}</span>
-            </div>
-          )}
-          <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
-          <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
-
-          {spare.technician_comment && (
-            <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+          {locked && (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') && onWithdrawSpare && (
+            <Button variant="outline" size="sm" className="h-8 text-xs w-full"
+              onClick={() => onWithdrawSpare(spare)}>
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Withdraw & Edit
+            </Button>
           )}
 
-          <SpareDecisionInfo spare={spare} />
-
-          {/* Actions */}
-          {canEdit && (
-            <div className="space-y-2 pt-1">
-              {/* Submit Warranty CTA */}
-              {warrantyEnabled && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+          {spare.approval_state === 'NEEDS_INFO' && (
+            <>
+              <div className="bg-accent/50 border border-border rounded-md p-2 text-xs">
+                <span className="font-medium text-foreground">Admin requested more info</span>
+              </div>
+              {onRespondNeedsInfo && (
                 <Button variant="default" size="sm" className="h-8 text-xs w-full"
-                  onClick={(e) => { e.stopPropagation(); onSubmitWarranty(spare); }}>
+                  onClick={() => onRespondNeedsInfo(spare)}>
                   <Send className="h-3 w-3 mr-1" />
-                  Submit {CLAIM_LABEL[spare.claim_type]}
+                  Respond
                 </Button>
               )}
-
-              {/* Withdraw */}
-              {locked && (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') && onWithdrawSpare && (
+              {onWithdrawSpare && (
                 <Button variant="outline" size="sm" className="h-8 text-xs w-full"
-                  onClick={(e) => { e.stopPropagation(); onWithdrawSpare(spare); }}>
+                  onClick={() => onWithdrawSpare(spare)}>
                   <RotateCcw className="h-3 w-3 mr-1" />
                   Withdraw & Edit
                 </Button>
               )}
+            </>
+          )}
 
-              {/* NEEDS_INFO */}
-              {spare.approval_state === 'NEEDS_INFO' && (
-                <>
-                  <div className="bg-accent/50 border border-border rounded-md p-2 text-xs">
-                    <span className="font-medium text-foreground">Admin requested more info</span>
-                  </div>
-                  {onRespondNeedsInfo && (
-                    <Button variant="default" size="sm" className="h-8 text-xs w-full"
-                      onClick={(e) => { e.stopPropagation(); onRespondNeedsInfo(spare); }}>
-                      <Send className="h-3 w-3 mr-1" />
-                      Respond
-                    </Button>
-                  )}
-                  {onWithdrawSpare && (
-                    <Button variant="outline" size="sm" className="h-8 text-xs w-full"
-                      onClick={(e) => { e.stopPropagation(); onWithdrawSpare(spare); }}>
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Withdraw & Edit
-                    </Button>
-                  )}
-                </>
+          {spare.approval_state === 'REJECTED' && (
+            <>
+              {onWithdrawSpare && (
+                <Button variant="default" size="sm" className="h-8 text-xs w-full"
+                  onClick={() => onWithdrawSpare(spare)}>
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Withdraw & Edit
+                </Button>
               )}
-
-              {/* REJECTED */}
-              {spare.approval_state === 'REJECTED' && (
-                <>
-                  {onWithdrawSpare && (
-                    <Button variant="default" size="sm" className="h-8 text-xs w-full"
-                      onClick={(e) => { e.stopPropagation(); onWithdrawSpare(spare); }}>
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Withdraw & Edit
-                    </Button>
-                  )}
-                  {onConvertToUserPaid && (
-                    <Button variant="outline" size="sm" className="h-8 text-xs w-full"
-                      onClick={(e) => { e.stopPropagation(); onConvertToUserPaid(spare); }}>
-                      Convert to User Paid
-                    </Button>
-                  )}
-                </>
+              {onConvertToUserPaid && (
+                <Button variant="outline" size="sm" className="h-8 text-xs w-full"
+                  onClick={() => onConvertToUserPaid(spare)}>
+                  Convert to User Paid
+                </Button>
               )}
+            </>
+          )}
 
-              {/* Edit / Delete — DRAFT only */}
-              {!locked && (
-                <div className="flex items-center gap-4 pt-1 border-t border-border">
-                  {onEditSpare && (
-                    <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-primary"
-                      onClick={(e) => { e.stopPropagation(); onEditSpare(spare); }}>
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                    </button>
-                  )}
-                  {onDeleteSpare && (
-                    <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-destructive"
-                      onClick={(e) => { e.stopPropagation(); onDeleteSpare(spare.id); }}>
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </button>
-                  )}
-                </div>
+          {/* Secondary actions — Edit / Delete */}
+          {!locked && (onEditSpare || onDeleteSpare) && (
+            <div className="flex items-center gap-4 pt-0.5">
+              {onEditSpare && (
+                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
+                  onClick={() => onEditSpare(spare)}>
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </button>
               )}
-
-              {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) && (
-                <p className="text-xs text-muted-foreground">
-                  Claim submitted. Withdraw to make changes.
-                </p>
+              {onDeleteSpare && (
+                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-destructive"
+                  onClick={() => onDeleteSpare(spare.id)}>
+                  <Trash2 className="h-3 w-3" />
+                  Delete
+                </button>
               )}
             </div>
+          )}
+
+          {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) && (
+            <p className="text-xs text-muted-foreground">
+              Claim submitted. Withdraw to make changes.
+            </p>
           )}
         </div>
       )}
     </div>
   );
 }
+
 
 /* ── Main section ── */
 export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
