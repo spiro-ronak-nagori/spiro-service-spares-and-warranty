@@ -112,8 +112,9 @@ export function LabourSubsection({
               <span className="text-sm text-foreground/90 truncate mr-3">
                 {row.labourName}
               </span>
-              <span className="text-sm text-muted-foreground tabular-nums shrink-0">
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums shrink-0">
                 {formatDuration(row.totalMinutes)}
+                {(canEdit || canRemove) && <Pencil className="h-3 w-3 text-muted-foreground/60" />}
               </span>
             </button>
           ))}
