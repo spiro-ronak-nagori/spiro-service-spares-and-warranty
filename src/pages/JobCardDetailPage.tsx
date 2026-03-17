@@ -552,7 +552,13 @@ export default function JobCardDetailPage() {
   };
 
   const handleCompleteWork = async (remarks: string) => {
-    if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
+    if (!jobCard) return;
+    if (!canTransitionTo(jobCard.status, 'READY')) {
+      if (jobCard.status === 'REOPENED') {
+        toast.error('Start work again before completing a reopened job card.');
+      }
+      return;
+    }
 
     // Append closure remarks as a work note with type qualifier
     const existing = (jobCard as any).mechanic_notes as string | null;
@@ -789,7 +795,7 @@ export default function JobCardDetailPage() {
 
     }
 
-    if (status === 'IN_PROGRESS' || status === 'REOPENED') {
+    if (status === 'IN_PROGRESS') {
       const sparesBlocking = sparesEnabled && mandatorySparesRequired && spares.length === 0;
       return (
         <Button
@@ -807,6 +813,19 @@ export default function JobCardDetailPage() {
           
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           {sparesBlocking ? 'Add Required Spares' : 'Mark Work Completed'}
+        </Button>);
+
+    }
+
+    if (status === 'REOPENED') {
+      return (
+        <Button
+          className="w-full h-12 text-sm font-semibold"
+          onClick={handleStartWork}
+          disabled={isUpdating}>
+          
+          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Start Work
         </Button>);
 
     }
