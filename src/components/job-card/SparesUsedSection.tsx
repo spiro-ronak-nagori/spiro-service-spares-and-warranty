@@ -110,20 +110,28 @@ function SparePhotos({ photos, kind, label }: { photos: JobCardSpare['photos']; 
   const filtered = (photos || []).filter(p => p.photo_kind === kind);
   if (filtered.length === 0) return null;
   return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground flex items-center gap-1">
-        <Camera className="h-3 w-3" />
+    <div>
+      <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1 mb-1">
+        <Camera className="h-2.5 w-2.5" />
         {label}
       </p>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {filtered.map(photo => (
-          <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-16 h-16 rounded-md overflow-hidden border border-border bg-muted">
+          <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-14 h-14 rounded overflow-hidden border border-border bg-muted">
             <img src={photo.photo_url} alt={photo.description_prompt || label} className="w-full h-full object-cover" loading="lazy" />
           </a>
         ))}
       </div>
     </div>
   );
+}
+
+/* ── Check if spare needs action ── */
+function needsAction(spare: JobCardSpare): boolean {
+  const state = getWarrantyDisplayState(spare);
+  return ['SUBMISSION_PENDING', 'READY_TO_SUBMIT', 'NEEDS_INFO'].includes(state) && spare.approval_state === 'DRAFT'
+    || spare.approval_state === 'NEEDS_INFO'
+    || spare.approval_state === 'REJECTED';
 }
 
 /* ── Single spare item (collapsed/expanded) ── */
