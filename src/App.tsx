@@ -72,6 +72,7 @@ const App = () => (
             <Route path="/console/vehicle-checklist" element={<ProtectedRoute><ManageChecklistPage /></ProtectedRoute>} />
             <Route path="/console/roles" element={<ProtectedRoute><ManageRolesPage /></ProtectedRoute>} />
             <Route path="/console/roles/:roleKey" element={<ProtectedRoute><RoleDetailPage /></ProtectedRoute>} />
+            <Route path="/console/labour" element={<ProtectedRoute><ManageLabourPage /></ProtectedRoute>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

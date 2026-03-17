@@ -55,6 +55,12 @@ export default function SystemConfigPage() {
       icon: ClipboardCheck,
       path: '/console/vehicle-checklist',
     },
+    {
+      label: 'Manage Labour',
+      description: 'Configure labour catalog and rules country-wise',
+      icon: Wrench,
+      path: '/console/labour',
+    },
   ];
 
   return (
