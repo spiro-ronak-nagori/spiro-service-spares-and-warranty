@@ -457,7 +457,7 @@ export default function RoleDetailPage() {
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <Accordion type="multiple" className="w-full">
-              {GROUP_ORDER.map((groupKey) => {
+              {orderedGroupKeys.map((groupKey) => {
                 const perms = groupedPerms[groupKey] || [];
                 if (perms.length === 0) return null;
                 const enabledCount = perms.filter((p) => p.enabled).length;
@@ -466,7 +466,7 @@ export default function RoleDetailPage() {
                   <AccordionItem key={groupKey} value={groupKey} className="border-b last:border-0">
                     <AccordionTrigger className="px-4 py-3 hover:no-underline">
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">{GROUP_LABELS[groupKey]}</span>
+                        <span className="font-medium">{getGroupLabel(groupKey)}</span>
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {enabledCount}/{perms.length}
                         </Badge>
