@@ -71,7 +71,7 @@ export default function SuperAdminConsolePage() {
       visible: true,
     },
     {
-      label: 'Manage Admins',
+      label: 'Manage Users',
       description: 'Manage system and country-level administrator roles',
       icon: ShieldCheck,
       path: '/console/admins',
