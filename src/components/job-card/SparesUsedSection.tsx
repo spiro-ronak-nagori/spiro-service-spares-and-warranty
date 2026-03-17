@@ -26,10 +26,12 @@ interface SparesUsedSectionProps {
 }
 
 const CLAIM_LABEL: Record<string, string> = {
-  USER_PAID: 'User Paid',
   WARRANTY: 'Warranty',
   GOODWILL: 'Goodwill',
+  USER_PAID: 'User Paid',
 };
+
+const CLAIM_ORDER: string[] = ['WARRANTY', 'GOODWILL', 'USER_PAID'];
 
 const PHOTO_KIND_LABEL: Record<SparePhotoKind, string> = {
   NEW_PART_PROOF: 'New Part Proof',
@@ -59,7 +61,7 @@ function getStatusText(spare: JobCardSpare, warrantyEnabled?: boolean): string {
   return WARRANTY_STATE_LABEL[displayState];
 }
 
-/* ── Decision info (who approved/rejected) ── */
+/* ── Decision info ── */
 function SpareDecisionInfo({ spare }: { spare: JobCardSpare }) {
   const [actorName, setActorName] = useState<string | null>(null);
   const relevantStates = ['APPROVED', 'REJECTED', 'NEEDS_INFO'];
@@ -124,12 +126,13 @@ function SparePhotos({ photos, kind, label }: { photos: JobCardSpare['photos']; 
   );
 }
 
-/* ── Single spare item ── */
+/* ── Single spare item (collapsed/expanded) ── */
 function SpareItem({
-  spare, canEdit, warrantyEnabled,
+  spare, canEdit, warrantyEnabled, expanded, onToggleExpand,
   onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onEditSpare, onDeleteSpare,
 }: {
   spare: JobCardSpare; canEdit?: boolean; warrantyEnabled?: boolean;
+  expanded: boolean; onToggleExpand: () => void;
   onSubmitWarranty?: (s: JobCardSpare) => void; onWithdrawSpare?: (s: JobCardSpare) => void;
   onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
   onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
@@ -146,133 +149,144 @@ function SpareItem({
       : 'text-muted-foreground';
 
   return (
-    <div className="py-3 space-y-2">
-      {/* Header */}
-      <div>
-        <p className="text-sm font-medium text-foreground truncate">
-          {partName}
-          {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
-        </p>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <span className="text-xs text-muted-foreground">Qty: {spare.qty}</span>
-          <span className="text-xs text-muted-foreground">·</span>
-          <span className={`text-xs font-medium ${claimColor}`}>{CLAIM_LABEL[spare.claim_type]}</span>
-          {statusText && (
-            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-              {statusText}
-            </span>
-          )}
+    <div className="py-2.5">
+      {/* Collapsed summary — always visible */}
+      <button
+        type="button"
+        className="w-full flex items-start justify-between text-left gap-2"
+        onClick={onToggleExpand}
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {partName}
+            {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
+          </p>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <span className="text-xs text-muted-foreground">Qty: {spare.qty}</span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className={`text-xs font-medium ${claimColor}`}>{CLAIM_LABEL[spare.claim_type]}</span>
+            {statusText && (
+              <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                {statusText}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Details — always visible */}
-      {spare.serial_number && (
-        <div className="text-xs">
-          <span className="text-muted-foreground">New Part Serial#:</span>{' '}
-          <span className="font-medium text-foreground">{spare.serial_number}</span>
+        <div className="shrink-0 text-muted-foreground mt-0.5">
+          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </div>
-      )}
-      <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
+      </button>
 
-      {spare.old_part_serial_number && (
-        <div className="text-xs">
-          <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
-          <span className="font-medium text-foreground">{spare.old_part_serial_number}</span>
-        </div>
-      )}
-      <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
-      <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
-
-      {spare.technician_comment && (
-        <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
-      )}
-
-      <SpareDecisionInfo spare={spare} />
-
-      {/* Actions — grouped tightly */}
-      {canEdit && (
-        <div className="space-y-1.5">
-          {/* Primary CTAs */}
-          {warrantyEnabled && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
-            <Button variant="default" size="sm" className="h-8 text-xs w-full"
-              onClick={() => onSubmitWarranty(spare)}>
-              <Send className="h-3 w-3 mr-1" />
-              Submit {CLAIM_LABEL[spare.claim_type]}
-            </Button>
-          )}
-
-          {locked && (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') && onWithdrawSpare && (
-            <Button variant="outline" size="sm" className="h-8 text-xs w-full"
-              onClick={() => onWithdrawSpare(spare)}>
-              <RotateCcw className="h-3 w-3 mr-1" />
-              Withdraw & Edit
-            </Button>
-          )}
-
-          {spare.approval_state === 'NEEDS_INFO' && (
-            <>
-              <div className="bg-accent/50 border border-border rounded-md p-2 text-xs">
-                <span className="font-medium text-foreground">Admin requested more info</span>
-              </div>
-              {onRespondNeedsInfo && (
-                <Button variant="default" size="sm" className="h-8 text-xs w-full"
-                  onClick={() => onRespondNeedsInfo(spare)}>
-                  <Send className="h-3 w-3 mr-1" />
-                  Respond
-                </Button>
-              )}
-              {onWithdrawSpare && (
-                <Button variant="outline" size="sm" className="h-8 text-xs w-full"
-                  onClick={() => onWithdrawSpare(spare)}>
-                  <RotateCcw className="h-3 w-3 mr-1" />
-                  Withdraw & Edit
-                </Button>
-              )}
-            </>
-          )}
-
-          {spare.approval_state === 'REJECTED' && (
-            <>
-              {onWithdrawSpare && (
-                <Button variant="default" size="sm" className="h-8 text-xs w-full"
-                  onClick={() => onWithdrawSpare(spare)}>
-                  <RotateCcw className="h-3 w-3 mr-1" />
-                  Withdraw & Edit
-                </Button>
-              )}
-              {onConvertToUserPaid && (
-                <Button variant="outline" size="sm" className="h-8 text-xs w-full"
-                  onClick={() => onConvertToUserPaid(spare)}>
-                  Convert to User Paid
-                </Button>
-              )}
-            </>
-          )}
-
-          {/* Secondary actions — Edit / Delete */}
-          {!locked && (onEditSpare || onDeleteSpare) && (
-            <div className="flex items-center gap-4 pt-0.5">
-              {onEditSpare && (
-                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
-                  onClick={() => onEditSpare(spare)}>
-                  <Pencil className="h-3 w-3" />
-                  Edit
-                </button>
-              )}
-              {onDeleteSpare && (
-                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-destructive"
-                  onClick={() => onDeleteSpare(spare.id)}>
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </button>
-              )}
+      {/* Expanded details */}
+      {expanded && (
+        <div className="mt-2.5 space-y-2 pl-0">
+          {spare.serial_number && (
+            <div className="text-xs">
+              <span className="text-muted-foreground">New Part Serial#:</span>{' '}
+              <span className="font-medium text-foreground">{spare.serial_number}</span>
             </div>
           )}
+          <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
 
-          {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) && (
-            <p className="text-xs text-muted-foreground">
-              Claim submitted. Withdraw to make changes.
-            </p>
+          {spare.old_part_serial_number && (
+            <div className="text-xs">
+              <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
+              <span className="font-medium text-foreground">{spare.old_part_serial_number}</span>
+            </div>
+          )}
+          <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
+          <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
+
+          {spare.technician_comment && (
+            <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+          )}
+
+          <SpareDecisionInfo spare={spare} />
+
+          {/* Actions */}
+          {canEdit && (
+            <div className="space-y-1.5">
+              {warrantyEnabled && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
+                <Button variant="default" size="sm" className="h-8 text-xs w-full"
+                  onClick={() => onSubmitWarranty(spare)}>
+                  <Send className="h-3 w-3 mr-1" />
+                  Submit {CLAIM_LABEL[spare.claim_type]}
+                </Button>
+              )}
+
+              {locked && (spare.approval_state === 'SUBMITTED' || spare.approval_state === 'RESUBMITTED') && onWithdrawSpare && (
+                <Button variant="outline" size="sm" className="h-8 text-xs w-full"
+                  onClick={() => onWithdrawSpare(spare)}>
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Withdraw & Edit
+                </Button>
+              )}
+
+              {spare.approval_state === 'NEEDS_INFO' && (
+                <>
+                  <div className="bg-accent/50 border border-border rounded-md p-2 text-xs">
+                    <span className="font-medium text-foreground">Admin requested more info</span>
+                  </div>
+                  {onRespondNeedsInfo && (
+                    <Button variant="default" size="sm" className="h-8 text-xs w-full"
+                      onClick={() => onRespondNeedsInfo(spare)}>
+                      <Send className="h-3 w-3 mr-1" />
+                      Respond
+                    </Button>
+                  )}
+                  {onWithdrawSpare && (
+                    <Button variant="outline" size="sm" className="h-8 text-xs w-full"
+                      onClick={() => onWithdrawSpare(spare)}>
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Withdraw & Edit
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {spare.approval_state === 'REJECTED' && (
+                <>
+                  {onWithdrawSpare && (
+                    <Button variant="default" size="sm" className="h-8 text-xs w-full"
+                      onClick={() => onWithdrawSpare(spare)}>
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Withdraw & Edit
+                    </Button>
+                  )}
+                  {onConvertToUserPaid && (
+                    <Button variant="outline" size="sm" className="h-8 text-xs w-full"
+                      onClick={() => onConvertToUserPaid(spare)}>
+                      Convert to User Paid
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {!locked && (onEditSpare || onDeleteSpare) && (
+                <div className="flex items-center gap-4 pt-0.5">
+                  {onEditSpare && (
+                    <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
+                      onClick={() => onEditSpare(spare)}>
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
+                  )}
+                  {onDeleteSpare && (
+                    <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-destructive"
+                      onClick={() => onDeleteSpare(spare.id)}>
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) && (
+                <p className="text-xs text-muted-foreground">
+                  Claim submitted. Withdraw to make changes.
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -280,16 +294,78 @@ function SpareItem({
   );
 }
 
+/* ── Claim type group ── */
+function SpareGroup({
+  claimType, spares, expandedId, onToggleExpand, canEdit, warrantyEnabled,
+  onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onEditSpare, onDeleteSpare,
+}: {
+  claimType: string; spares: JobCardSpare[];
+  expandedId: string | null; onToggleExpand: (id: string) => void;
+  canEdit?: boolean; warrantyEnabled?: boolean;
+  onSubmitWarranty?: (s: JobCardSpare) => void; onWithdrawSpare?: (s: JobCardSpare) => void;
+  onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
+  onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
+}) {
+  const claimColor = claimType === 'WARRANTY'
+    ? 'text-blue-600'
+    : claimType === 'GOODWILL'
+      ? 'text-purple-600'
+      : 'text-muted-foreground';
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 py-1.5">
+        <span className={`text-xs font-semibold uppercase tracking-wide ${claimColor}`}>
+          {CLAIM_LABEL[claimType]}
+        </span>
+        <span className="text-[10px] text-muted-foreground">({spares.length})</span>
+      </div>
+      <div className="divide-y divide-border">
+        {spares.map((spare) => (
+          <SpareItem
+            key={spare.id}
+            spare={spare}
+            expanded={expandedId === spare.id}
+            onToggleExpand={() => onToggleExpand(spare.id)}
+            canEdit={canEdit}
+            warrantyEnabled={warrantyEnabled}
+            onSubmitWarranty={onSubmitWarranty}
+            onWithdrawSpare={onWithdrawSpare}
+            onRespondNeedsInfo={onRespondNeedsInfo}
+            onConvertToUserPaid={onConvertToUserPaid}
+            onEditSpare={onEditSpare}
+            onDeleteSpare={onDeleteSpare}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── Main section ── */
 export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
   const [localExpanded, setLocalExpanded] = useState(false);
+  const [expandedSpareId, setExpandedSpareId] = useState<string | null>(null);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : localExpanded;
   const handleToggle = () => {
     if (onToggle) onToggle();
     else setLocalExpanded(!localExpanded);
   };
+
+  const handleToggleSpare = (id: string) => {
+    setExpandedSpareId(prev => prev === id ? null : id);
+  };
+
+  // Group spares by claim type in defined order
+  const groups = useMemo(() => {
+    const map = new Map<string, JobCardSpare[]>();
+    for (const type of CLAIM_ORDER) {
+      const items = spares.filter(s => s.claim_type === type);
+      if (items.length > 0) map.set(type, items);
+    }
+    return map;
+  }, [spares]);
 
   const showSubmitAll = useMemo(() => {
     if (!warrantyEnabled || !canEdit || !onSubmitAll) return false;
@@ -383,12 +459,15 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             </div>
           ) : (
             <>
-              {/* Clean spare list */}
-              <div className="divide-y divide-border">
-                {spares.map((spare) => (
-                  <SpareItem
-                    key={spare.id}
-                    spare={spare}
+              {/* Grouped spare list */}
+              <div className="space-y-4">
+                {Array.from(groups.entries()).map(([claimType, groupSpares]) => (
+                  <SpareGroup
+                    key={claimType}
+                    claimType={claimType}
+                    spares={groupSpares}
+                    expandedId={expandedSpareId}
+                    onToggleExpand={handleToggleSpare}
                     canEdit={canEdit}
                     warrantyEnabled={warrantyEnabled}
                     onSubmitWarranty={onSubmitWarranty}
@@ -403,7 +482,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
 
               {/* Add spare at bottom */}
               {canEdit && onAddSpares && (
-                <div className="pt-3 border-t border-border mt-1">
+                <div className="pt-3 border-t border-border mt-3">
                   <button
                     type="button"
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
