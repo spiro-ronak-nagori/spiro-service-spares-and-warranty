@@ -1287,6 +1287,32 @@ export default function JobCardDetailPage() {
         onSave={handleMechanicNameSave}
         isSaving={isSavingMechanic} />
       
+      {/* Labour Sheet */}
+      {labourActive && (
+        <AddLabourSheet
+          open={showLabourSheet}
+          onOpenChange={(open) => {
+            setShowLabourSheet(open);
+            if (!open) setEditingLabour(null);
+          }}
+          catalogue={labourCatalogue}
+          editingEntry={editingLabour}
+          onSave={handleSaveLabour}
+          isSaving={isSavingLabour}
+        />
+      )}
+
+      {/* Labour Delete Confirmation */}
+      <ConfirmationDialog
+        open={!!deletingLabourId}
+        onOpenChange={(open) => { if (!open) setDeletingLabourId(null); }}
+        title="Remove Labour"
+        description="Are you sure you want to remove this labour entry? This action cannot be undone."
+        onConfirm={handleDeleteLabour}
+        confirmLabel="Remove"
+        variant="destructive"
+      />
+
     </AppLayout>);
 
 }
