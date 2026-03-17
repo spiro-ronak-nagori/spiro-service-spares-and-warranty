@@ -473,8 +473,7 @@ export default function RoleDetailPage() {
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <Accordion type="multiple" className="w-full">
-              {orderedGroupKeys.map((groupKey) => {
-                const perms = groupedPerms[groupKey] || [];
+              {permissionSections.map(({ groupKey, perms }) => {
                 if (perms.length === 0) return null;
                 const enabledCount = perms.filter((p) => p.enabled).length;
 
