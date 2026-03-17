@@ -874,19 +874,17 @@ export default function JobCardDetailPage() {
             </button>
           </CardHeader>
           {expandedSection === 'timeline' &&
-          <CardContent className="pt-0">
-              <div className="space-y-4">
+          <CardContent className="pt-4">
+              <div className="flex flex-col">
                 {auditTrail.map((entry, i) =>
               <div key={entry.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
                         <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
                       </div>
-                      {i < auditTrail.length - 1 &&
-                  <div className="w-px flex-1 bg-border mt-1" />
-                  }
+                      <div className="w-px flex-1 bg-border min-h-[16px]" />
                     </div>
-                    <div className="flex-1 pb-4">
+                    <div className="flex-1 pb-3">
                       <div className="flex items-center gap-2">
                         <StatusPill status={entry.to_status} size="sm" />
                         {entry.from_status &&
@@ -907,8 +905,8 @@ export default function JobCardDetailPage() {
                 
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
-                      <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${jobCard.status !== 'DRAFT' ? 'bg-primary' : 'bg-muted'}`}>
+                      <CheckCircle2 className={`h-3 w-3 ${jobCard.status !== 'DRAFT' ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                     </div>
                   </div>
                   <div className="flex-1">
