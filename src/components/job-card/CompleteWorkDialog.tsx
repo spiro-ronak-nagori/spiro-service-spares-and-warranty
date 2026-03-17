@@ -125,13 +125,19 @@ export function CompleteWorkDialog({
     setCheckedItems(newChecked);
   };
 
-  const handleSubmit = () => {
-    if (canSubmit) {
-      onComplete(remarks.trim());
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    setIsSubmitting(true);
+    try {
+      await onComplete(remarks.trim());
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
+    if (isSubmitting) return;
     setRemarks('');
     setCheckedItems(new Set());
     onOpenChange(false);
