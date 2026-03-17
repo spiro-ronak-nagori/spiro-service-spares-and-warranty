@@ -42,6 +42,8 @@ import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistShe
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 import { WorkExecutionSection } from '@/components/job-card/WorkExecutionSection';
+import { AddLabourSheet } from '@/components/job-card/AddLabourSheet';
+import { useJobCardLabour, useLabourMaster, addJobCardLabour, updateJobCardLabour, deleteJobCardLabour, JobCardLabourEntry } from '@/hooks/useLabour';
 // ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
