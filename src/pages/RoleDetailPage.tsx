@@ -212,13 +212,14 @@ export default function RoleDetailPage() {
 
   // Available permission keys for new override (exclude already overridden for same policy type)
   const availablePermKeysForOverride = useMemo(() => {
+    const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
     const existingKeys = new Set(
       allOverrides
-        .filter(o => o.policy_type === newOverridePolicyType)
+        .filter(o => o.policy_type === newOverridePolicyType && o.country === resolvedCountry)
         .map(o => o.permission_key)
     );
     return permissions.filter(p => !existingKeys.has(p.permission_key));
-  }, [permissions, allOverrides, newOverridePolicyType]);
+  }, [permissions, allOverrides, newOverridePolicyType, newOverrideCountry]);
 
   const handleAddOverride = () => {
     if (!newOverridePermKey || !role) return;
