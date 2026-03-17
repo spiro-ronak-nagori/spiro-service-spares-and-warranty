@@ -32,7 +32,7 @@ export function ServiceDetailsSection({
   canEditIssues,
   onEditIssues,
   customerComments,
-  completionRemarks,
+  
   isExpanded: controlledExpanded,
   onToggle,
 }: ServiceDetailsSectionProps) {
