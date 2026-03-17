@@ -1069,6 +1069,7 @@ export default function JobCardDetailPage() {
         sparesEnabled={sparesEnabled}
         spares={spares}
         warrantyEnabled={warrantyEnabled}
+        canAddSpares={can('spares.add')}
         onOpenSparesModal={() => setShowSparesModal(true)} />
       
 
