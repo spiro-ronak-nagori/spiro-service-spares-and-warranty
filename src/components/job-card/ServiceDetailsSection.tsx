@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wrench, ChevronDown, ChevronUp, User } from 'lucide-react';
 
 interface ServiceDetailsSectionProps {
   serviceCategories: string[];
@@ -12,6 +12,8 @@ interface ServiceDetailsSectionProps {
   onEditIssues: () => void;
   customerComments?: string | null;
   completionRemarks?: string | null;
+  assignedMechanicName?: string | null;
+  mechanicNotes?: string | null;
   isExpanded?: boolean;
   onToggle?: () => void;
 }
@@ -33,6 +35,8 @@ export function ServiceDetailsSection({
   onEditIssues,
   customerComments,
   completionRemarks,
+  assignedMechanicName,
+  mechanicNotes,
   isExpanded: controlledExpanded,
   onToggle,
 }: ServiceDetailsSectionProps) {
@@ -110,6 +114,7 @@ export function ServiceDetailsSection({
 
       {isExpanded && (
         <CardContent className="pt-3">
+          {/* Service categories & issues */}
           {serviceCategories.length === 0 && issueCategories.length === 0 ? (
             <p className="text-sm text-muted-foreground">No services selected</p>
           ) : (
@@ -137,7 +142,19 @@ export function ServiceDetailsSection({
             </div>
           )}
 
+          {/* Assigned Mechanic — only shown when assigned */}
+          {assignedMechanicName && (
+            <>
+              <Separator className="my-3" />
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Assigned Mechanic</p>
+              </div>
+              <p className="text-sm text-foreground/90 mt-0.5 ml-[22px]">{assignedMechanicName}</p>
+            </>
+          )}
 
+          {/* Customer Comments */}
           {customerComments && (
             <>
               <Separator className="my-3" />
@@ -146,6 +163,16 @@ export function ServiceDetailsSection({
             </>
           )}
 
+          {/* Mechanic Notes */}
+          {mechanicNotes && (
+            <>
+              <Separator className="my-3" />
+              <p className="text-xs text-muted-foreground mb-1">Mechanic Notes</p>
+              <p className="text-sm whitespace-pre-wrap text-foreground/80">{mechanicNotes}</p>
+            </>
+          )}
+
+          {/* Completion Remarks */}
           {completionRemarks && (
             <>
               <Separator className="my-3" />

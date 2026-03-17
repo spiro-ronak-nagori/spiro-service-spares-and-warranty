@@ -4,6 +4,10 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ServiceCategory } from '@/types';
@@ -13,8 +17,12 @@ interface EditIssuesSheetProps {
   onOpenChange: (open: boolean) => void;
   currentServiceCategories: string[];
   currentIssueCategories: string[];
-  onSave: (serviceCategories: string[], issueCategories: string[]) => void;
+  onSave: (serviceCategories: string[], issueCategories: string[], mechanicName?: string, mechanicNotes?: string) => void;
   isSaving?: boolean;
+  /** Mechanic name editing — pass null/undefined to hide the field */
+  mechanicName?: string | null;
+  showMechanicFields?: boolean;
+  mechanicNotes?: string | null;
 }
 
 export function EditIssuesSheet({
@@ -24,20 +32,26 @@ export function EditIssuesSheet({
   currentIssueCategories,
   onSave,
   isSaving = false,
+  mechanicName: currentMechanicName,
+  showMechanicFields = false,
+  mechanicNotes: currentMechanicNotes,
 }: EditIssuesSheetProps) {
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedL1, setSelectedL1] = useState<Set<string>>(new Set());
   const [selectedL2, setSelectedL2] = useState<Set<string>>(new Set());
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [mechanicName, setMechanicName] = useState('');
+  const [mechanicNotes, setMechanicNotes] = useState('');
 
   useEffect(() => {
     if (open) {
       fetchCategories();
-      // Pre-select current values
       setSelectedL1(new Set(currentServiceCategories));
       setSelectedL2(new Set(currentIssueCategories));
+      setMechanicName(currentMechanicName || '');
+      setMechanicNotes(currentMechanicNotes || '');
     }
-  }, [open, currentServiceCategories, currentIssueCategories]);
+  }, [open, currentServiceCategories, currentIssueCategories, currentMechanicName, currentMechanicNotes]);
 
   const fetchCategories = async () => {
     setIsLoadingCategories(true);
@@ -87,7 +101,12 @@ export function EditIssuesSheet({
 
   const handleSave = () => {
     if (hasSelection) {
-      onSave(Array.from(selectedL1), Array.from(selectedL2));
+      onSave(
+        Array.from(selectedL1),
+        Array.from(selectedL2),
+        showMechanicFields ? mechanicName.trim() || undefined : undefined,
+        showMechanicFields ? mechanicNotes.trim() || undefined : undefined,
+      );
     }
   };
 
@@ -95,9 +114,9 @@ export function EditIssuesSheet({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[92vh]">
         <DrawerHeader>
-          <DrawerTitle>Edit Issues</DrawerTitle>
+          <DrawerTitle>Edit Service Details</DrawerTitle>
           <DrawerDescription>
-            Add or remove service issues for this job card
+            Update service issues{showMechanicFields ? ', mechanic, and notes' : ''} for this job card
           </DrawerDescription>
         </DrawerHeader>
 
@@ -143,6 +162,40 @@ export function EditIssuesSheet({
                 );
               })}
             </div>
+          )}
+
+          {/* Mechanic fields */}
+          {showMechanicFields && (
+            <>
+              <Separator className="my-4" />
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="edit-mechanic-name" className="text-sm font-medium">
+                    Assigned Mechanic
+                  </Label>
+                  <Input
+                    id="edit-mechanic-name"
+                    value={mechanicName}
+                    onChange={(e) => setMechanicName(e.target.value)}
+                    placeholder="Enter mechanic name"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-mechanic-notes" className="text-sm font-medium">
+                    Mechanic Notes <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Textarea
+                    id="edit-mechanic-notes"
+                    value={mechanicNotes}
+                    onChange={(e) => setMechanicNotes(e.target.value)}
+                    placeholder="Any notes for the mechanic…"
+                    className="mt-1.5 min-h-[60px]"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </>
           )}
         </div>
 

@@ -745,6 +745,7 @@ export type Database = {
           inwarding_otp_verified: boolean | null
           issue_categories: string[]
           jc_number: string
+          mechanic_notes: string | null
           odometer: number
           odometer_photo_url: string | null
           out_soc_anomaly_flag: boolean | null
@@ -792,6 +793,7 @@ export type Database = {
           inwarding_otp_verified?: boolean | null
           issue_categories?: string[]
           jc_number: string
+          mechanic_notes?: string | null
           odometer: number
           odometer_photo_url?: string | null
           out_soc_anomaly_flag?: boolean | null
@@ -839,6 +841,7 @@ export type Database = {
           inwarding_otp_verified?: boolean | null
           issue_categories?: string[]
           jc_number?: string
+          mechanic_notes?: string | null
           odometer?: number
           odometer_photo_url?: string | null
           out_soc_anomaly_flag?: boolean | null
