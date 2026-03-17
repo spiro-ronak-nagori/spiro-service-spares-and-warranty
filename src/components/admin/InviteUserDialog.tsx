@@ -370,12 +370,13 @@ export function InviteUserDialog({
 
               <div className="space-y-2">
                 <Label>Role <span className="text-destructive">*</span></Label>
-                <Select value={role} onValueChange={(v) => setRole(v as 'workshop_admin' | 'technician')}>
+                <Select value={role} onValueChange={(v) => setRole(v as 'workshop_admin' | 'technician' | 'spares_manager')}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="technician">Technician</SelectItem>
+                    <SelectItem value="spares_manager">Spares Manager</SelectItem>
                     {allowAdminRole && (
                       <SelectItem value="workshop_admin">Workshop Admin</SelectItem>
                     )}
