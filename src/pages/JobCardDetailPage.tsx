@@ -42,7 +42,6 @@ import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 // ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
-import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
 
 export default function JobCardDetailPage() {
