@@ -30,6 +30,8 @@ import ShortLinkRedirect from "./pages/ShortLinkRedirect";
 import WarrantyApprovalsPage from "./pages/WarrantyApprovalsPage";
 import ManageWarrantyAdminsPage from "./pages/ManageWarrantyAdminsPage";
 import ManageChecklistPage from "./pages/ManageChecklistPage";
+import ManageRolesPage from "./pages/ManageRolesPage";
+import RoleDetailPage from "./pages/RoleDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +69,8 @@ const App = () => (
             <Route path="/warranty-approvals" element={<ProtectedRoute><WarrantyApprovalsPage /></ProtectedRoute>} />
             <Route path="/console/warranty-admins" element={<ProtectedRoute><ManageWarrantyAdminsPage /></ProtectedRoute>} />
             <Route path="/console/vehicle-checklist" element={<ProtectedRoute><ManageChecklistPage /></ProtectedRoute>} />
+            <Route path="/console/roles" element={<ProtectedRoute><ManageRolesPage /></ProtectedRoute>} />
+            <Route path="/console/roles/:roleKey" element={<ProtectedRoute><RoleDetailPage /></ProtectedRoute>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

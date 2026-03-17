@@ -46,6 +46,13 @@ export default function ManageAdminsPage() {
       path: '/console/warranty-admins',
       visible: isSystemAdmin || isSuperAdmin,
     },
+    {
+      label: 'Manage Roles & Permissions',
+      description: 'Configure access, scope, and operational permissions',
+      icon: ShieldCheck,
+      path: '/console/roles',
+      visible: isSystemAdmin,
+    },
   ];
 
   return (
