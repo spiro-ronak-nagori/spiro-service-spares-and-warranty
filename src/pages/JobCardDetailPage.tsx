@@ -560,13 +560,18 @@ export default function JobCardDetailPage() {
     const entry = `[${timestamp}] 🔒 Work completed — ${remarks}`;
     const updatedNotes = existing ? `${existing}\n${entry}` : entry;
 
-    await supabase
+    const { error } = await supabase
       .from('job_cards')
       .update({ mechanic_notes: updatedNotes } as any)
       .eq('id', jobCard.id);
 
-    updateStatus('READY');
-    sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
+    if (error) {
+      toast.error('Failed to save work note');
+      return;
+    }
+
+    await updateStatus('READY');
+    await sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
     setShowCompleteWork(false);
   };
 
