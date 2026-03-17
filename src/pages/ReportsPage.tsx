@@ -95,12 +95,16 @@ export default function ReportsPage() {
   const isCountryAdmin = profile?.role === 'country_admin';
   const isManagement = isSuperAdmin || isCountryAdmin;
 
-  // Redirect non-management users
+  // Also check RBAC nav permission
+  const { can, isLoading: rbacLoading } = useRbacPermissions();
+
+  // Redirect non-management users or those without reports permission
   useEffect(() => {
-    if (profile && !isManagement) {
+    if (rbacLoading) return;
+    if (profile && (!isManagement || !can('nav.reports'))) {
       navigate('/', { replace: true });
     }
-  }, [profile, isManagement, navigate]);
+  }, [profile, isManagement, navigate, can, rbacLoading]);
 
   // Load workshops and countries
   useEffect(() => {
