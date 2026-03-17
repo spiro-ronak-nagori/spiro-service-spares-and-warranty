@@ -793,7 +793,7 @@ export default function JobCardDetailPage() {
         )}
 
         {/* 1. Vehicle Details */}
-        <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} />
+        <VehicleDetailsCard vehicle={vehicle} jobCard={jobCard} isExpanded={expandedSection === 'vehicle'} onToggle={() => toggleSection('vehicle')} />
 
         {/* 2. Service Details */}
         <ServiceDetailsSection
