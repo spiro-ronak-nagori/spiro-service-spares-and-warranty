@@ -4,6 +4,8 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Hammer, ChevronDown, ChevronUp, User, ClipboardPen, Loader2, Plus } from 'lucide-react';
+import { LabourSubsection } from './LabourSubsection';
+import { JobCardLabourEntry } from '@/hooks/useLabour';
 
 interface WorkExecutionSectionProps {
   assignedMechanicName?: string | null;
@@ -12,6 +14,16 @@ interface WorkExecutionSectionProps {
   onAddNote?: (note: string) => Promise<void>;
   isExpanded?: boolean;
   onToggle?: () => void;
+  // Labour props
+  labourEnabled?: boolean;
+  labourEntries?: JobCardLabourEntry[];
+  labourLoading?: boolean;
+  canAddLabour?: boolean;
+  canEditLabour?: boolean;
+  canRemoveLabour?: boolean;
+  onAddLabour?: () => void;
+  onEditLabour?: (entry: JobCardLabourEntry) => void;
+  onRemoveLabour?: (id: string) => void;
 }
 
 /** Parse "[dd MMM HH:mm] note text" lines into structured entries */
@@ -26,6 +38,13 @@ function parseNotes(raw: string | null | undefined): { text: string; timestamp: 
   });
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export function WorkExecutionSection({
   assignedMechanicName,
   mechanicNotes,
@@ -33,6 +52,15 @@ export function WorkExecutionSection({
   onAddNote,
   isExpanded: controlledExpanded,
   onToggle,
+  labourEnabled = false,
+  labourEntries = [],
+  labourLoading = false,
+  canAddLabour = false,
+  canEditLabour = false,
+  canRemoveLabour = false,
+  onAddLabour,
+  onEditLabour,
+  onRemoveLabour,
 }: WorkExecutionSectionProps) {
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -53,9 +81,12 @@ export function WorkExecutionSection({
   const isExpanded = controlledExpanded ?? false;
   const parsedNotes = useMemo(() => parseNotes(mechanicNotes), [mechanicNotes]);
 
-  // Collapsed subtitle: mechanic name or latest note text
+  // Collapsed subtitle priority: mechanic → labour summary → latest note → empty
   const latestNote = parsedNotes.length > 0 ? parsedNotes[parsedNotes.length - 1].text : null;
-  const subtitle = assignedMechanicName || latestNote || 'No notes yet';
+  const labourSummary = labourEnabled && labourEntries.length > 0
+    ? `${labourEntries.length} labour item${labourEntries.length > 1 ? 's' : ''} • ${formatDuration(labourEntries.reduce((s, e) => s + e.duration_minutes, 0))}`
+    : null;
+  const subtitle = assignedMechanicName || labourSummary || latestNote || 'No notes yet';
 
   return (
     <Card>
@@ -94,7 +125,24 @@ export function WorkExecutionSection({
             </>
           )}
 
-          {/* 2. Work Notes */}
+          {/* 2. Labour subsection */}
+          {labourEnabled && (
+            <>
+              <LabourSubsection
+                entries={labourEntries}
+                isLoading={labourLoading}
+                canAdd={canAddLabour}
+                canEdit={canEditLabour}
+                canRemove={canRemoveLabour}
+                onAdd={onAddLabour || (() => {})}
+                onEdit={onEditLabour || (() => {})}
+                onRemove={onRemoveLabour || (() => {})}
+              />
+              <Separator className="my-3" />
+            </>
+          )}
+
+          {/* 3. Work Notes */}
           <div className="flex items-center gap-2">
             <ClipboardPen className="h-3.5 w-3.5 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">Work Notes</p>
