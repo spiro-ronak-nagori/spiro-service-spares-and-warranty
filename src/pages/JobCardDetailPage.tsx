@@ -119,7 +119,7 @@ export default function JobCardDetailPage() {
   const canEditMechanic = jobCard ? mechanicNameEnabledForThisJC && MECHANIC_EDITABLE_STATUSES.includes(jobCard.status) : false;
   const showMechanicFieldsInEdit = canEditMechanic && !!(jobCard as any)?.assigned_mechanic_name;
 
-  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[]) => {
+  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[], newMechanicName?: string, newMechanicNotes?: string) => {
     if (!jobCard || !profile || !canEditIssues) {
       toast.error('Issue editing is not allowed in the current status');
       return;
@@ -148,32 +148,52 @@ export default function JobCardDetailPage() {
       const addedServices = newServiceCategories.filter((c) => !oldServiceCats.includes(c));
       const removedServices = oldServiceCats.filter((c) => !newServiceCategories.includes(c));
 
-      if (addedIssues.length === 0 && removedIssues.length === 0 && addedServices.length === 0 && removedServices.length === 0) {
+      const updatePayload: Record<string, any> = {
+        service_categories: newServiceCategories,
+        issue_categories: newIssueCategories,
+      };
+
+      // Include mechanic fields if provided
+      if (newMechanicName !== undefined) {
+        updatePayload.assigned_mechanic_name = newMechanicName || null;
+      }
+      if (newMechanicNotes !== undefined) {
+        updatePayload.mechanic_notes = newMechanicNotes || null;
+      }
+
+      const hasIssueChanges = addedIssues.length > 0 || removedIssues.length > 0 || addedServices.length > 0 || removedServices.length > 0;
+      const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || '')) ||
+        (newMechanicNotes !== undefined && newMechanicNotes !== ((jobCard as any).mechanic_notes || ''));
+
+      if (!hasIssueChanges && !hasMechanicChanges) {
         setShowEditIssues(false);
         return;
       }
 
       const { error: updateErr } = await supabase.
       from('job_cards').
-      update({
-        service_categories: newServiceCategories,
-        issue_categories: newIssueCategories
-      } as any).
+      update(updatePayload as any).
       eq('id', jobCard.id);
 
       if (updateErr) throw updateErr;
 
       const auditNotes = JSON.stringify({
-        event: 'ISSUES_UPDATED',
+        event: 'SERVICE_DETAILS_UPDATED',
         status_at_edit: freshJc.status,
-        old_services: oldServiceCats,
-        new_services: newServiceCategories,
-        old_issues: oldIssueCats,
-        new_issues: newIssueCategories,
-        added_issues: addedIssues,
-        removed_issues: removedIssues,
-        added_services: addedServices,
-        removed_services: removedServices
+        ...(hasIssueChanges ? {
+          old_services: oldServiceCats,
+          new_services: newServiceCategories,
+          old_issues: oldIssueCats,
+          new_issues: newIssueCategories,
+          added_issues: addedIssues,
+          removed_issues: removedIssues,
+          added_services: addedServices,
+          removed_services: removedServices,
+        } : {}),
+        ...(hasMechanicChanges ? {
+          mechanic_name_changed: newMechanicName !== undefined,
+          mechanic_notes_changed: newMechanicNotes !== undefined,
+        } : {}),
       });
 
       await supabase.from('audit_trail').insert({
@@ -184,7 +204,7 @@ export default function JobCardDetailPage() {
         notes: auditNotes
       });
 
-      toast.success('Issues updated successfully');
+      toast.success('Service details updated');
       setShowEditIssues(false);
       fetchJobCard();
       fetchAuditTrail();
