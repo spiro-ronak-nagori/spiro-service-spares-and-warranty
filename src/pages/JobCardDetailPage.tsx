@@ -829,7 +829,10 @@ export default function JobCardDetailPage() {
           canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
           warrantyEnabled={warrantyEnabled}
           mandatorySparesRequired={mandatorySparesRequired}
-          jobCardStatus={jobCard.status} />
+          jobCardStatus={jobCard.status}
+          isExpanded={expandedSection === 'spares'}
+          onToggle={() => toggleSection('spares')}
+        />
 
         }
 
