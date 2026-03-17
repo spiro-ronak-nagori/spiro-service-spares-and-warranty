@@ -110,6 +110,39 @@ export default function JobCardDetailPage() {
   const [showEditIssues, setShowEditIssues] = useState(false);
   const [isSavingIssues, setIsSavingIssues] = useState(false);
 
+  // Mechanic notes: can add when mechanic is assigned and status is editable
+  const MECHANIC_NOTE_STATUSES: JobCardStatus[] = ['IN_PROGRESS', 'REOPENED'];
+  const canAddMechanicNote = jobCard ? mechanicNameEnabledForThisJC && !!(jobCard as any).assigned_mechanic_name && MECHANIC_NOTE_STATUSES.includes(jobCard.status) : false;
+
+  const handleAddMechanicNote = async (note: string) => {
+    if (!jobCard || !profile) return;
+    const existing = (jobCard as any).mechanic_notes as string | null;
+    const timestamp = format(new Date(), 'dd MMM HH:mm');
+    const entry = `[${timestamp}] ${note}`;
+    const updated = existing ? `${existing}\n${entry}` : entry;
+
+    const { error } = await supabase
+      .from('job_cards')
+      .update({ mechanic_notes: updated } as any)
+      .eq('id', jobCard.id);
+
+    if (error) {
+      toast.error('Failed to save note');
+      throw error;
+    }
+
+    await supabase.from('audit_trail').insert({
+      job_card_id: jobCard.id,
+      user_id: profile.id,
+      from_status: jobCard.status,
+      to_status: jobCard.status,
+      notes: JSON.stringify({ event: 'MECHANIC_NOTE_ADDED', note }),
+    });
+
+    toast.success('Note added');
+    fetchJobCard();
+  };
+
   // Issue editing allowed: after inwarding, before work completed, or after reopen
   const ISSUE_EDITABLE_STATUSES: JobCardStatus[] = ['DRAFT', 'INWARDED', 'IN_PROGRESS', 'REOPENED'];
   const canEditIssues = jobCard ? ISSUE_EDITABLE_STATUSES.includes(jobCard.status) : false;
