@@ -55,7 +55,19 @@ export default function JobCardDetailPage() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [hasSetDefaultSection, setHasSetDefaultSection] = useState(false);
+  const toggleSection = (section: string) => setExpandedSection(prev => prev === section ? null : section);
+  // Auto-expand service details if few items
+  useEffect(() => {
+    if (jobCard && !hasSetDefaultSection) {
+      const total = (jobCard.service_categories?.length || 0) + (jobCard.issue_categories?.length || 0);
+      if (total > 0 && total < 6) {
+        setExpandedSection('service');
+      }
+      setHasSetDefaultSection(true);
+    }
+  }, [jobCard, hasSetDefaultSection]);
 
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
@@ -793,6 +805,8 @@ export default function JobCardDetailPage() {
           onEditIssues={() => setShowEditIssues(true)}
           customerComments={(jobCard as any).customer_comments}
           completionRemarks={jobCard.completion_remarks}
+          isExpanded={expandedSection === 'service'}
+          onToggle={() => toggleSection('service')}
         />
 
         {/* Checklist section removed — handled via sticky CTA */}
@@ -826,35 +840,38 @@ export default function JobCardDetailPage() {
           canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
           warrantyEnabled={warrantyEnabled}
           mandatorySparesRequired={mandatorySparesRequired}
-          jobCardStatus={jobCard.status} />
+          jobCardStatus={jobCard.status}
+          isExpanded={expandedSection === 'spares'}
+          onToggle={() => toggleSection('spares')}
+        />
 
         }
 
         {/* 5. Timeline */}
         <Card>
-          <CardHeader className={showTimeline ? "pb-0" : ""}>
+          <CardHeader className={expandedSection === 'timeline' ? "pb-0" : ""}>
             <button
               type="button"
               className="w-full flex items-center justify-between text-left"
-              onClick={() => setShowTimeline(!showTimeline)}
+              onClick={() => toggleSection('timeline')}
             >
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Timeline
                 </CardTitle>
-                {!showTimeline && (
+                {expandedSection !== 'timeline' && (
                   <p className="text-xs text-muted-foreground mt-1 ml-6">
                     {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>
               <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
-                {showTimeline ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {expandedSection === 'timeline' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
             </button>
           </CardHeader>
-          {showTimeline &&
+          {expandedSection === 'timeline' &&
           <CardContent className="pt-0">
               <div className="space-y-4">
                 {auditTrail.map((entry, i) =>

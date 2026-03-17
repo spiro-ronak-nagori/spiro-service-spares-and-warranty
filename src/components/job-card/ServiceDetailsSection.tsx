@@ -12,6 +12,8 @@ interface ServiceDetailsSectionProps {
   onEditIssues: () => void;
   customerComments?: string | null;
   completionRemarks?: string | null;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
 interface GroupedCategory {
@@ -31,6 +33,8 @@ export function ServiceDetailsSection({
   onEditIssues,
   customerComments,
   completionRemarks,
+  isExpanded: controlledExpanded,
+  onToggle,
 }: ServiceDetailsSectionProps) {
   const grouped = useMemo<GroupedCategory[]>(() => {
     const cats = serviceCategories.map((cat) => {
@@ -55,8 +59,14 @@ export function ServiceDetailsSection({
   const totalCategories = serviceCategories.length;
   const totalIssues = issueCategories.length;
 
+  const isControlled = controlledExpanded !== undefined;
   const autoExpand = (totalCategories + totalIssues) < 5;
-  const [isExpanded, setIsExpanded] = useState(autoExpand);
+  const [localExpanded, setLocalExpanded] = useState(autoExpand);
+  const isExpanded = isControlled ? controlledExpanded : localExpanded;
+  const handleToggle = () => {
+    if (onToggle) onToggle();
+    else setLocalExpanded(!localExpanded);
+  };
 
   const subtitle = serviceCategories.length === 0 && issueCategories.length === 0
     ? 'No services selected'
@@ -68,7 +78,7 @@ export function ServiceDetailsSection({
         <button
           type="button"
           className="w-full flex items-center justify-between text-left"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleToggle}
         >
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base flex items-center gap-2">

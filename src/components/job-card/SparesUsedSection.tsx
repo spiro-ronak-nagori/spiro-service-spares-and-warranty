@@ -28,6 +28,8 @@ interface SparesUsedSectionProps {
   warrantyEnabled?: boolean;
   mandatorySparesRequired?: boolean;
   jobCardStatus?: string;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
 const CLAIM_LABEL: Record<string, string> = {
@@ -249,8 +251,14 @@ function SpareActions({
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus }: SparesUsedSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const isControlled = controlledExpanded !== undefined;
+  const isExpanded = isControlled ? controlledExpanded : localExpanded;
+  const handleToggle = () => {
+    if (onToggle) onToggle();
+    else setLocalExpanded(!localExpanded);
+  };
 
   const showSubmitAll = useMemo(() => {
     if (!warrantyEnabled || !canEdit || !onSubmitAll) return false;
@@ -285,7 +293,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
         <button
           type="button"
           className="w-full flex items-center justify-between text-left"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleToggle}
         >
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base flex items-center gap-2">
