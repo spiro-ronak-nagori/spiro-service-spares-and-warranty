@@ -40,7 +40,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
-import { ChecklistStatusSection } from '@/components/job-card/ChecklistStatusSection';
+// ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';

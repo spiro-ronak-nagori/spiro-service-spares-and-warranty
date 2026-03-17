@@ -76,7 +76,7 @@ export function ServiceDetailsSection({
               Service Details
             </CardTitle>
             {!isExpanded && (
-              <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}{totalIssues > 0 ? ` · ${summaryLine}` : ''}</p>
+              <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}</p>
             )}
           </div>
           <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
