@@ -57,7 +57,16 @@ export default function JobCardDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [hasSetDefaultSection, setHasSetDefaultSection] = useState(false);
-  const toggleSection = (section: string) => setExpandedSection(prev => prev === section ? null : section);
+  // Auto-expand service details if few items
+  useEffect(() => {
+    if (jobCard && !hasSetDefaultSection) {
+      const total = (jobCard.service_categories?.length || 0) + (jobCard.issue_categories?.length || 0);
+      if (total > 0 && total < 6) {
+        setExpandedSection('service');
+      }
+      setHasSetDefaultSection(true);
+    }
+  }, [jobCard, hasSetDefaultSection]);
 
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
