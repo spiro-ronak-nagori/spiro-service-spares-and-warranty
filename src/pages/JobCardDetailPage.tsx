@@ -10,11 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { 
-  Car, 
-  User, 
-  Phone, 
-  Gauge, 
+import {
+  Car,
+  User,
+  Phone,
+  Gauge,
   Wrench,
   Clock,
   CheckCircle2,
@@ -23,8 +23,8 @@ import {
   ChevronUp,
   Package,
   Pencil,
-  Loader2
-} from 'lucide-react';
+  Loader2 } from
+'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
 import { format } from 'date-fns';
@@ -52,17 +52,17 @@ import { MechanicNameSection } from '@/components/job-card/MechanicNameSection';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
 
 export default function JobCardDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{id: string;}>();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { resolve: resolveCategoryName, getParentCode } = useServiceCategoryNames();
-  
+
   const [jobCard, setJobCard] = useState<JobCard | null>(null);
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
-  
+
   // Derive workshop country early (may be null until job card loads)
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
 
@@ -120,11 +120,11 @@ export default function JobCardDetailPage() {
 
     setIsSavingIssues(true);
     try {
-      const { data: freshJc, error: fetchErr } = await supabase
-        .from('job_cards')
-        .select('status, service_categories, issue_categories')
-        .eq('id', jobCard.id)
-        .single();
+      const { data: freshJc, error: fetchErr } = await supabase.
+      from('job_cards').
+      select('status, service_categories, issue_categories').
+      eq('id', jobCard.id).
+      single();
 
       if (fetchErr) throw fetchErr;
       if (!ISSUE_EDITABLE_STATUSES.includes(freshJc.status as JobCardStatus)) {
@@ -136,23 +136,23 @@ export default function JobCardDetailPage() {
 
       const oldServiceCats = freshJc.service_categories as string[];
       const oldIssueCats = freshJc.issue_categories as string[];
-      const addedIssues = newIssueCategories.filter(c => !oldIssueCats.includes(c));
-      const removedIssues = oldIssueCats.filter(c => !newIssueCategories.includes(c));
-      const addedServices = newServiceCategories.filter(c => !oldServiceCats.includes(c));
-      const removedServices = oldServiceCats.filter(c => !newServiceCategories.includes(c));
+      const addedIssues = newIssueCategories.filter((c) => !oldIssueCats.includes(c));
+      const removedIssues = oldIssueCats.filter((c) => !newIssueCategories.includes(c));
+      const addedServices = newServiceCategories.filter((c) => !oldServiceCats.includes(c));
+      const removedServices = oldServiceCats.filter((c) => !newServiceCategories.includes(c));
 
       if (addedIssues.length === 0 && removedIssues.length === 0 && addedServices.length === 0 && removedServices.length === 0) {
         setShowEditIssues(false);
         return;
       }
 
-      const { error: updateErr } = await supabase
-        .from('job_cards')
-        .update({
-          service_categories: newServiceCategories,
-          issue_categories: newIssueCategories,
-        } as any)
-        .eq('id', jobCard.id);
+      const { error: updateErr } = await supabase.
+      from('job_cards').
+      update({
+        service_categories: newServiceCategories,
+        issue_categories: newIssueCategories
+      } as any).
+      eq('id', jobCard.id);
 
       if (updateErr) throw updateErr;
 
@@ -166,7 +166,7 @@ export default function JobCardDetailPage() {
         added_issues: addedIssues,
         removed_issues: removedIssues,
         added_services: addedServices,
-        removed_services: removedServices,
+        removed_services: removedServices
       });
 
       await supabase.from('audit_trail').insert({
@@ -174,7 +174,7 @@ export default function JobCardDetailPage() {
         user_id: profile.id,
         from_status: freshJc.status,
         to_status: freshJc.status,
-        notes: auditNotes,
+        notes: auditNotes
       });
 
       toast.success('Issues updated successfully');
@@ -204,13 +204,13 @@ export default function JobCardDetailPage() {
         return;
       }
       try {
-        const { data } = await supabase
-          .from('service_categories')
-          .select('code')
-          .in('code', jobCard.issue_categories)
-          .eq('requires_spares', true)
-          .not('parent_code', 'is', null)
-          .limit(1);
+        const { data } = await supabase.
+        from('service_categories').
+        select('code').
+        in('code', jobCard.issue_categories).
+        eq('requires_spares', true).
+        not('parent_code', 'is', null).
+        limit(1);
         setMandatorySparesRequired((data?.length ?? 0) > 0);
       } catch {
         setMandatorySparesRequired(false);
@@ -233,7 +233,7 @@ export default function JobCardDetailPage() {
         const template = await resolveChecklistTemplate(
           jobCard.vehicle?.model || null,
           jobCard.workshop_id,
-          workshopCountry,
+          workshopCountry
         );
         if (!template) {
           setChecklistApplicable(false);
@@ -241,12 +241,12 @@ export default function JobCardDetailPage() {
 
           // Audit: checklist not applicable (no matching template)
           if (jobCard.status === 'INWARDED' && profile) {
-            const { data: existing } = await supabase
-              .from('audit_trail')
-              .select('id')
-              .eq('job_card_id', id)
-              .like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%')
-              .limit(1);
+            const { data: existing } = await supabase.
+            from('audit_trail').
+            select('id').
+            eq('job_card_id', id).
+            like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%').
+            limit(1);
             if (!existing || existing.length === 0) {
               await supabase.from('audit_trail').insert({
                 job_card_id: id,
@@ -256,8 +256,8 @@ export default function JobCardDetailPage() {
                 notes: JSON.stringify({
                   event: 'VEHICLE_CHECKLIST_NOT_APPLICABLE',
                   country: workshopCountry,
-                  reason: 'no_matching_template',
-                }),
+                  reason: 'no_matching_template'
+                })
               });
             }
           }
@@ -265,12 +265,12 @@ export default function JobCardDetailPage() {
         }
         setChecklistApplicable(true);
 
-        const { data } = await supabase
-          .from('checklist_runs' as any)
-          .select('id')
-          .eq('job_card_id', id)
-          .limit(1)
-          .maybeSingle();
+        const { data } = await supabase.
+        from('checklist_runs' as any).
+        select('id').
+        eq('job_card_id', id).
+        limit(1).
+        maybeSingle();
         setChecklistCompleted(!!data);
       } catch {
         setChecklistCompleted(null);
@@ -288,12 +288,12 @@ export default function JobCardDetailPage() {
     if (jobCard.status !== 'INWARDED') return;
 
     (async () => {
-      const { data: existing } = await supabase
-        .from('audit_trail')
-        .select('id')
-        .eq('job_card_id', id)
-        .like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%')
-        .limit(1);
+      const { data: existing } = await supabase.
+      from('audit_trail').
+      select('id').
+      eq('job_card_id', id).
+      like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%').
+      limit(1);
       if (!existing || existing.length === 0) {
         await supabase.from('audit_trail').insert({
           job_card_id: id,
@@ -303,8 +303,8 @@ export default function JobCardDetailPage() {
           notes: JSON.stringify({
             event: 'VEHICLE_CHECKLIST_NOT_APPLICABLE',
             country: workshopCountry,
-            reason: 'feature_flag_off',
-          }),
+            reason: 'feature_flag_off'
+          })
         });
       }
     })();
@@ -312,24 +312,24 @@ export default function JobCardDetailPage() {
 
   const fetchJobCard = async () => {
     if (!id) return;
-    
+
     try {
-      const { data, error } = await supabase
-        .from('job_cards')
-        .select(`
+      const { data, error } = await supabase.
+      from('job_cards').
+      select(`
           *,
           vehicle:vehicles(*),
           creator:profiles!job_cards_created_by_fkey(full_name, email, phone),
           workshop:workshops(id, name, country)
-        `)
-        .eq('id', id)
-        .single();
+        `).
+      eq('id', id).
+      single();
 
       if (error) throw error;
-      
+
       setJobCard({
         ...data,
-        status: data.status as JobCardStatus,
+        status: data.status as JobCardStatus
       } as unknown as JobCard);
     } catch (error) {
       console.error('Error fetching job card:', error);
@@ -341,23 +341,23 @@ export default function JobCardDetailPage() {
 
   const fetchAuditTrail = async () => {
     if (!id) return;
-    
+
     try {
-      const { data, error } = await supabase
-        .from('audit_trail')
-        .select(`
+      const { data, error } = await supabase.
+      from('audit_trail').
+      select(`
           *,
           user:profiles!audit_trail_user_id_fkey(full_name)
-        `)
-        .eq('job_card_id', id)
-        .order('created_at', { ascending: false });
+        `).
+      eq('job_card_id', id).
+      order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      setAuditTrail((data || []).map(item => ({
+
+      setAuditTrail((data || []).map((item) => ({
         ...item,
         from_status: item.from_status as JobCardStatus | null,
-        to_status: item.to_status as JobCardStatus,
+        to_status: item.to_status as JobCardStatus
       })) as AuditTrailEntry[]);
     } catch (error) {
       console.error('Error fetching audit trail:', error);
@@ -366,7 +366,7 @@ export default function JobCardDetailPage() {
 
   const updateStatus = async (newStatus: JobCardStatus, additionalData?: Record<string, any>, auditNotes?: string) => {
     if (!jobCard || !profile) return;
-    
+
     setIsUpdating(true);
     try {
       const additionalPayload: Record<string, any> = {};
@@ -381,7 +381,7 @@ export default function JobCardDetailPage() {
         p_job_card_id: jobCard.id,
         p_new_status: newStatus,
         p_notes: auditNotes || null,
-        p_additional_data: Object.keys(additionalPayload).length > 0 ? additionalPayload : null,
+        p_additional_data: Object.keys(additionalPayload).length > 0 ? additionalPayload : null
       });
 
       if (error) {
@@ -444,10 +444,10 @@ export default function JobCardDetailPage() {
     try {
       const oldName = (jobCard as any).assigned_mechanic_name || null;
 
-      const { error } = await supabase
-        .from('job_cards')
-        .update({ assigned_mechanic_name: name } as any)
-        .eq('id', jobCard.id);
+      const { error } = await supabase.
+      from('job_cards').
+      update({ assigned_mechanic_name: name } as any).
+      eq('id', jobCard.id);
       if (error) throw error;
 
       await supabase.from('audit_trail').insert({
@@ -459,8 +459,8 @@ export default function JobCardDetailPage() {
           event: 'MECHANIC_NAME_UPDATED',
           old_mechanic_name: oldName,
           new_mechanic_name: name,
-          status_at_change: jobCard.status,
-        }),
+          status_at_change: jobCard.status
+        })
       });
 
       setShowMechanicSheet(false);
@@ -496,7 +496,7 @@ export default function JobCardDetailPage() {
 
   const handleDeleteSpare = async () => {
     if (!deletingSpareId) return;
-    const spare = spares.find(s => s.id === deletingSpareId);
+    const spare = spares.find((s) => s.id === deletingSpareId);
     if (spare && spare.approval_state !== 'DRAFT') {
       toast.error('Cannot delete a submitted spare. Withdraw first.');
       setDeletingSpareId(null);
@@ -567,18 +567,18 @@ export default function JobCardDetailPage() {
       setIsUpdating(true);
       try {
         const outSocUrl = await uploadJcImage(pendingOutSocData.file, jobCard.id, 'outgoing_soc');
-        await supabase
-          .from('job_cards')
-          .update({
-            out_soc_value: pendingOutSocData.value,
-            out_soc_photo_url: outSocUrl,
-            out_soc_detected_value: pendingOutSocData.validation?.ocr?.socReading ?? null,
-            out_soc_detection_confidence: pendingOutSocData.validation?.ocr?.confidence ?? null,
-            out_soc_override_reason: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchReason : null,
-            out_soc_override_comment: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchComment : null,
-            out_soc_anomaly_flag: false,
-          } as any)
-          .eq('id', jobCard.id);
+        await supabase.
+        from('job_cards').
+        update({
+          out_soc_value: pendingOutSocData.value,
+          out_soc_photo_url: outSocUrl,
+          out_soc_detected_value: pendingOutSocData.validation?.ocr?.socReading ?? null,
+          out_soc_detection_confidence: pendingOutSocData.validation?.ocr?.confidence ?? null,
+          out_soc_override_reason: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchReason : null,
+          out_soc_override_comment: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchComment : null,
+          out_soc_anomaly_flag: false
+        } as any).
+        eq('id', jobCard.id);
 
         await updateStatus('DELIVERED', { delivery_otp_verified: true });
         const result = await sendSms({ jobCardId: jobCard.id, trigger: 'DELIVERED' });
@@ -616,18 +616,18 @@ export default function JobCardDetailPage() {
     setIsUpdating(true);
     try {
       const outSocUrl = await uploadJcImage(socData.file, jobCard.id, 'outgoing_soc');
-      await supabase
-        .from('job_cards')
-        .update({
-          out_soc_value: socData.value,
-          out_soc_photo_url: outSocUrl,
-          out_soc_detected_value: socData.validation?.ocr?.socReading ?? null,
-          out_soc_detection_confidence: socData.validation?.ocr?.confidence ?? null,
-          out_soc_override_reason: socData.mismatchConfirmed ? socData.mismatchReason : null,
-          out_soc_override_comment: socData.mismatchConfirmed ? socData.mismatchComment : null,
-          out_soc_anomaly_flag: false,
-        } as any)
-        .eq('id', jobCard.id);
+      await supabase.
+      from('job_cards').
+      update({
+        out_soc_value: socData.value,
+        out_soc_photo_url: outSocUrl,
+        out_soc_detected_value: socData.validation?.ocr?.socReading ?? null,
+        out_soc_detection_confidence: socData.validation?.ocr?.confidence ?? null,
+        out_soc_override_reason: socData.mismatchConfirmed ? socData.mismatchReason : null,
+        out_soc_override_comment: socData.mismatchConfirmed ? socData.mismatchComment : null,
+        out_soc_anomaly_flag: false
+      } as any).
+      eq('id', jobCard.id);
 
       await updateStatus('DELIVERED', { delivery_otp_verified: true }, 'Super admin bypass – OTP skipped');
       const result = await sendSms({ jobCardId: jobCard.id, trigger: 'DELIVERED' });
@@ -648,7 +648,7 @@ export default function JobCardDetailPage() {
     if (jobCard && canTransitionTo(jobCard.status, 'REOPENED')) {
       updateStatus('REOPENED', {
         service_categories: [...jobCard.service_categories, ...serviceCategories],
-        issue_categories: [...jobCard.issue_categories, ...issueCategories],
+        issue_categories: [...jobCard.issue_categories, ...issueCategories]
       }, comments);
       sendSms({ jobCardId: jobCard.id, trigger: 'REOPENED' });
     }
@@ -664,8 +664,8 @@ export default function JobCardDetailPage() {
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-24 w-full" />
         </div>
-      </AppLayout>
-    );
+      </AppLayout>);
+
   }
 
   if (!jobCard) {
@@ -683,8 +683,8 @@ export default function JobCardDetailPage() {
             </CardContent>
           </Card>
         </div>
-      </AppLayout>
-    );
+      </AppLayout>);
+
   }
 
   const vehicle = jobCard.vehicle;
@@ -714,12 +714,12 @@ export default function JobCardDetailPage() {
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={handleInwardingAction}
-          disabled={isUpdating}
-        >
+          disabled={isUpdating}>
+          
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Complete Inwarding
-        </Button>
-      );
+        </Button>);
+
     }
 
     if (status === 'INWARDED') {
@@ -728,30 +728,30 @@ export default function JobCardDetailPage() {
           <Button className="w-full h-12 text-sm font-semibold" disabled>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Checking…
-          </Button>
-        );
+          </Button>);
+
       }
       if (inwardedNeedsChecklist) {
         return (
           <Button
             className="w-full h-12 text-sm font-semibold"
             onClick={() => setShowChecklist(true)}
-            disabled={isUpdating}
-          >
+            disabled={isUpdating}>
+            
             Complete Checklist
-          </Button>
-        );
+          </Button>);
+
       }
       return (
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={handleStartWork}
-          disabled={isUpdating}
-        >
+          disabled={isUpdating}>
+          
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Start Work
-        </Button>
-      );
+        </Button>);
+
     }
 
     if (status === 'IN_PROGRESS' || status === 'REOPENED') {
@@ -759,12 +759,12 @@ export default function JobCardDetailPage() {
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={() => setShowCompleteWork(true)}
-          disabled={isUpdating}
-        >
+          disabled={isUpdating}>
+          
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Mark Work Completed
-        </Button>
-      );
+        </Button>);
+
     }
 
     if (status === 'READY') {
@@ -774,20 +774,20 @@ export default function JobCardDetailPage() {
             variant="outline"
             className="flex-1 h-12 text-sm font-semibold"
             onClick={() => setShowReopenDialog(true)}
-            disabled={isUpdating}
-          >
+            disabled={isUpdating}>
+            
             Reopen
           </Button>
           <Button
             className="flex-1 h-12 text-sm font-semibold"
             onClick={handleDeliveryAction}
-            disabled={isUpdating}
-          >
+            disabled={isUpdating}>
+            
             {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
             Deliver Vehicle
           </Button>
-        </div>
-      );
+        </div>);
+
     }
 
     // DELIVERED / COMPLETED / CLOSED → no CTA
@@ -803,8 +803,8 @@ export default function JobCardDetailPage() {
       <PageHeader
         title={jobCard.jc_number}
         showBack
-        rightAction={<StatusPill status={jobCard.status} size="md" />}
-      />
+        rightAction={<StatusPill status={jobCard.status} size="md" />} />
+      
       
       <div className={`p-4 space-y-4 ${hasStickyCta ? 'pb-24' : ''}`}>
 
@@ -847,39 +847,39 @@ export default function JobCardDetailPage() {
                 <span className="font-medium">{vehicle?.owner_name || 'Unknown'}</span>
                 <span className="text-xs text-muted-foreground">(Owner)</span>
               </div>
-              {vehicle?.owner_phone && (
-                <div className="flex items-center gap-2 text-sm">
+              {vehicle?.owner_phone &&
+              <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a 
-                    href={`tel:${vehicle.owner_phone}`}
-                    className="text-primary hover:underline"
-                  >
+                  <a
+                  href={`tel:${vehicle.owner_phone}`}
+                  className="text-primary hover:underline">
+                  
                     {vehicle.owner_phone}
                   </a>
                 </div>
-              )}
+              }
 
-              {(jobCard as any).contact_for_updates === 'RIDER' && (jobCard as any).rider_name && (
-                <>
+              {(jobCard as any).contact_for_updates === 'RIDER' && (jobCard as any).rider_name &&
+              <>
                   <Separator className="my-2" />
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-primary" />
                     <span className="font-medium">{(jobCard as any).rider_name}</span>
                     <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">Rider — OTP & Updates</span>
                   </div>
-                   {(jobCard as any).rider_phone && (
-                     <div className="flex items-center gap-2 text-sm">
+                   {(jobCard as any).rider_phone &&
+                <div className="flex items-center gap-2 text-sm">
                        <Phone className="h-4 w-4 text-primary" />
-                       <a 
-                         href={`tel:${(jobCard as any).rider_phone}`}
-                         className="text-primary hover:underline"
-                       >
+                       <a
+                    href={`tel:${(jobCard as any).rider_phone}`}
+                    className="text-primary hover:underline">
+                    
                          {(jobCard as any).rider_phone}
                        </a>
                      </div>
-                   )}
+                }
                 </>
-              )}
+              }
             </div>
           </CardContent>
         </Card>
@@ -892,50 +892,50 @@ export default function JobCardDetailPage() {
                 <Wrench className="h-4 w-4" />
                 Service Details
               </CardTitle>
-              {canEditIssues ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs text-primary"
-                  onClick={() => setShowEditIssues(true)}
-                >
+              {canEditIssues ?
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-xs text-primary"
+                onClick={() => setShowEditIssues(true)}>
+                
                   <Pencil className="h-3.5 w-3.5" />
                   Edit Issues
-                </Button>
-              ) : null}
+                </Button> :
+              null}
             </div>
           </CardHeader>
           <CardContent>
-            {jobCard.service_categories.length > 0 ? (
-              <div className="space-y-4">
+            {jobCard.service_categories.length > 0 ?
+            <div className="space-y-4">
                 {jobCard.service_categories.map((cat, i) => {
-                  const mappedIssues = jobCard.issue_categories.filter(
-                    (issue) => getParentCode(issue) === cat
-                  );
-                  return (
-                    <div key={i} className="space-y-1.5">
+                const mappedIssues = jobCard.issue_categories.filter(
+                  (issue) => getParentCode(issue) === cat
+                );
+                return (
+                  <div key={i} className="space-y-1.5">
                       <span className="inline-flex items-center rounded-full bg-primary/15 text-primary px-3 py-1 text-xs font-semibold">
                         {resolveCategoryName(cat)}
                       </span>
-                      {mappedIssues.length > 0 && (
-                        <div className="ml-2 flex flex-wrap gap-1.5">
-                          {mappedIssues.map((issue, j) => (
-                            <span
-                              key={j}
-                              className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
-                            >
+                      {mappedIssues.length > 0 &&
+                    <div className="ml-2 flex flex-wrap gap-1.5">
+                          {mappedIssues.map((issue, j) =>
+                      <span
+                        key={j}
+                        className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                        
                               {resolveCategoryName(issue)}
                             </span>
-                          ))}
-                        </div>
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No services selected</p>
-            )}
+                        </div>
+                    }
+                    </div>);
+
+              })}
+              </div> :
+
+            <p className="text-sm text-muted-foreground">No services selected</p>
+            }
 
             {(() => {
               const mappedCats = new Set(jobCard.service_categories);
@@ -949,142 +949,142 @@ export default function JobCardDetailPage() {
                     Other Issues
                   </span>
                   <div className="ml-2 flex flex-wrap gap-1.5">
-                    {orphanIssues.map((issue, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
-                      >
+                    {orphanIssues.map((issue, i) =>
+                    <span
+                      key={i}
+                      className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                      
                         {resolveCategoryName(issue)}
                       </span>
-                    ))}
+                    )}
                   </div>
-                </div>
-              );
+                </div>);
+
             })()}
 
-            {(jobCard as any).customer_comments && (
-              <>
+            {(jobCard as any).customer_comments &&
+            <>
                 <Separator className="my-3" />
                 <p className="text-xs text-muted-foreground mb-1">Customer Comments</p>
                 <p className="text-sm whitespace-pre-wrap text-foreground/80">{(jobCard as any).customer_comments}</p>
               </>
-            )}
+            }
 
-            {jobCard.completion_remarks && (
-              <>
+            {jobCard.completion_remarks &&
+            <>
                 <Separator className="my-3" />
                 <p className="text-xs text-muted-foreground mb-1">Completion Remarks</p>
                 <p className="text-sm">{jobCard.completion_remarks}</p>
               </>
-            )}
+            }
           </CardContent>
         </Card>
 
         {/* 3. Vehicle Checklist */}
-        {showChecklistSection && (
-          <ChecklistStatusSection
-            status={checklistSectionStatus}
-            onComplete={() => setShowChecklist(true)}
-          />
-        )}
+        {showChecklistSection &&
+        <ChecklistStatusSection
+          status={checklistSectionStatus}
+          onComplete={() => setShowChecklist(true)} />
+
+        }
 
         {/* Assigned Mechanic Section */}
-        {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name && (
-          <MechanicNameSection
-            name={(jobCard as any).assigned_mechanic_name}
-            canEdit={canEditMechanic}
-            locked={mechanicLocked}
-            onEdit={() => {
-              setMechanicSheetForStartWork(false);
-              setShowMechanicSheet(true);
-            }}
-          />
-        )}
+        {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name &&
+        <MechanicNameSection
+          name={(jobCard as any).assigned_mechanic_name}
+          canEdit={canEditMechanic}
+          locked={mechanicLocked}
+          onEdit={() => {
+            setMechanicSheetForStartWork(false);
+            setShowMechanicSheet(true);
+          }} />
+
+        }
 
         {/* Spares required alert (inline, not a CTA) */}
-        {sparesEnabled && mandatorySparesRequired && spares.length === 0 && (jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') && (
-          <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+        {sparesEnabled && mandatorySparesRequired && spares.length === 0 && (jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') &&
+        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
             <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
             <p className="text-sm text-destructive flex-1">
               Spares required for selected issues. Please add spares to complete work.
             </p>
-            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={() => { setEditingSpare(null); setShowSparesModal(true); }}>
+            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={() => {setEditingSpare(null);setShowSparesModal(true);}}>
               <Package className="h-3.5 w-3.5 mr-1" />
               Add Spares
             </Button>
           </div>
-        )}
+        }
 
         {/* 4. Spares Used Section */}
-        {sparesEnabled && (
-          <SparesUsedSection
-            spares={spares}
-            isLoading={sparesLoading}
-            onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
-            onEditSpare={handleEditSpare}
-            onDeleteSpare={(id) => setDeletingSpareId(id)}
-            onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
-            onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
-            onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
-            onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
-            onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
-            canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
-            warrantyEnabled={warrantyEnabled}
-          />
-        )}
+        {sparesEnabled &&
+        <SparesUsedSection
+          spares={spares}
+          isLoading={sparesLoading}
+          onAddSpares={() => {setEditingSpare(null);setShowSparesModal(true);}}
+          onEditSpare={handleEditSpare}
+          onDeleteSpare={(id) => setDeletingSpareId(id)}
+          onSubmitWarranty={warrantyEnabled ? (spare) => setWarrantySpare(spare) : undefined}
+          onWithdrawSpare={(spare) => setWithdrawingSpare(spare)}
+          onRespondNeedsInfo={(spare) => setNeedsInfoSpare(spare)}
+          onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
+          onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
+          canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
+          warrantyEnabled={warrantyEnabled} />
+
+        }
 
         {/* 5. Timeline */}
         <Card>
-          <CardHeader 
+          <CardHeader
             className="pb-3 cursor-pointer"
-            onClick={() => setShowTimeline(!showTimeline)}
-          >
+            onClick={() => setShowTimeline(!showTimeline)}>
+            
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Timeline
               </CardTitle>
-              {showTimeline ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+              {showTimeline ?
+              <ChevronUp className="h-4 w-4" /> :
+
+              <ChevronDown className="h-4 w-4" />
+              }
             </div>
             <CardDescription>
               {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
-          {showTimeline && (
-            <CardContent className="pt-0">
+          {showTimeline &&
+          <CardContent className="pt-0">
               <div className="space-y-4">
-                {auditTrail.map((entry, i) => (
-                  <div key={entry.id} className="flex gap-3">
+                {auditTrail.map((entry, i) =>
+              <div key={entry.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
                       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
                         <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
                       </div>
-                      {i < auditTrail.length - 1 && (
-                        <div className="w-px flex-1 bg-border mt-1" />
-                      )}
+                      {i < auditTrail.length - 1 &&
+                  <div className="w-px flex-1 bg-border mt-1" />
+                  }
                     </div>
                     <div className="flex-1 pb-4">
                       <div className="flex items-center gap-2">
                         <StatusPill status={entry.to_status} size="sm" />
-                        {entry.from_status && (
-                          <span className="text-xs text-muted-foreground">
+                        {entry.from_status &&
+                    <span className="text-xs text-muted-foreground">
                             from {STATUS_CONFIG[entry.from_status].label}
                           </span>
-                        )}
+                    }
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {(entry.user as any)?.full_name || 'System'} • {format(new Date(entry.created_at), 'MMM d, h:mm a')}
                       </p>
-                      {entry.notes && (
-                        <p className="text-sm mt-1">{entry.notes}</p>
-                      )}
+                      {entry.notes &&
+                  <p className="text-sm mt-1">{entry.notes}</p>
+                  }
                     </div>
                   </div>
-                ))}
+              )}
                 
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
@@ -1101,18 +1101,18 @@ export default function JobCardDetailPage() {
                 </div>
               </div>
             </CardContent>
-          )}
+          }
         </Card>
       </div>
 
       {/* Sticky CTA bar — above bottom navigation */}
-      {hasStickyCta && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+56px)] left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 py-3 shadow-[0_-2px_10px_-3px_hsl(var(--foreground)/0.08)]">
+      {hasStickyCta &&
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+56px)] left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 shadow-[0_-2px_10px_-3px_hsl(var(--foreground)/0.08)] my-0 py-[6px]">
           <div className="mx-auto max-w-lg">
             {stickyCta}
           </div>
         </div>
-      )}
+      }
 
       {/* Dialogs */}
       <OtpVerificationDialog
@@ -1121,8 +1121,8 @@ export default function JobCardDetailPage() {
         jobCard={jobCard}
         purpose="inwarding"
         onVerified={handleInwardingVerified}
-        country={workshopCountry}
-      />
+        country={workshopCountry} />
+      
 
       <OtpVerificationDialog
         open={showDeliveryOtp}
@@ -1130,8 +1130,8 @@ export default function JobCardDetailPage() {
         jobCard={jobCard}
         purpose="delivery"
         onVerified={handleDeliveryVerified}
-        country={workshopCountry}
-      />
+        country={workshopCountry} />
+      
 
       <CompleteWorkDialog
         open={showCompleteWork}
@@ -1141,119 +1141,119 @@ export default function JobCardDetailPage() {
         sparesEnabled={sparesEnabled}
         spares={spares}
         warrantyEnabled={warrantyEnabled}
-        onOpenSparesModal={() => setShowSparesModal(true)}
-      />
+        onOpenSparesModal={() => setShowSparesModal(true)} />
+      
 
       <ReopenJobCardDialog
         open={showReopenDialog}
         onOpenChange={setShowReopenDialog}
-        onReopen={handleReopenJobCard}
-      />
+        onReopen={handleReopenJobCard} />
+      
 
-      {jobCard && (
-        <EditIssuesSheet
-          open={showEditIssues}
-          onOpenChange={setShowEditIssues}
-          currentServiceCategories={jobCard.service_categories}
-          currentIssueCategories={jobCard.issue_categories}
-          onSave={handleSaveIssues}
-          isSaving={isSavingIssues}
-        />
-      )}
+      {jobCard &&
+      <EditIssuesSheet
+        open={showEditIssues}
+        onOpenChange={setShowEditIssues}
+        currentServiceCategories={jobCard.service_categories}
+        currentIssueCategories={jobCard.issue_categories}
+        onSave={handleSaveIssues}
+        isSaving={isSavingIssues} />
+
+      }
 
       <DeliveryWithSocDialog
         open={showDeliveryConfirm}
         onOpenChange={setShowDeliveryConfirm}
         onProceed={handleOutgoingSocProceed}
-        country={workshopCountry}
-      />
+        country={workshopCountry} />
+      
 
-      {jobCard && sparesEnabled && (
-        <SparesModal
-          open={showSparesModal}
-          onOpenChange={(open) => {
-            setShowSparesModal(open);
-            if (!open) {
-              setEditingSpare(null);
-            }
-          }}
-          jobCardId={jobCard.id}
-          profileId={profile?.id || ''}
-          vehicleModel={jobCard.vehicle?.model}
-          vehicleColorCode={(jobCard.vehicle as any)?.color_code}
-          warrantyEnabled={warrantyEnabled}
-          onSaved={handleSparesModalSaved}
-          editingSpare={editingSpare}
-        />
-      )}
+      {jobCard && sparesEnabled &&
+      <SparesModal
+        open={showSparesModal}
+        onOpenChange={(open) => {
+          setShowSparesModal(open);
+          if (!open) {
+            setEditingSpare(null);
+          }
+        }}
+        jobCardId={jobCard.id}
+        profileId={profile?.id || ''}
+        vehicleModel={jobCard.vehicle?.model}
+        vehicleColorCode={(jobCard.vehicle as any)?.color_code}
+        warrantyEnabled={warrantyEnabled}
+        onSaved={handleSparesModalSaved}
+        editingSpare={editingSpare} />
 
-      {warrantySpare && (
-        <SubmitWarrantySheet
-          open={!!warrantySpare}
-          onOpenChange={(open) => { if (!open) setWarrantySpare(null); }}
-          spare={warrantySpare}
-          jobCardId={jobCard.id}
-          profileId={profile?.id || ''}
-          jobCard={jobCard}
-          onSubmitted={() => { setWarrantySpare(null); refetchSpares(); }}
-        />
-      )}
+      }
 
-      {warrantyEnabled && (
-        <SubmitAllWarrantySheet
-          open={showSubmitAll}
-          onOpenChange={setShowSubmitAll}
-          spares={spares}
-          jobCardId={jobCard.id}
-          profileId={profile?.id || ''}
-          onSubmitted={() => { setShowSubmitAll(false); refetchSpares(); }}
-        />
-      )}
+      {warrantySpare &&
+      <SubmitWarrantySheet
+        open={!!warrantySpare}
+        onOpenChange={(open) => {if (!open) setWarrantySpare(null);}}
+        spare={warrantySpare}
+        jobCardId={jobCard.id}
+        profileId={profile?.id || ''}
+        jobCard={jobCard}
+        onSubmitted={() => {setWarrantySpare(null);refetchSpares();}} />
+
+      }
+
+      {warrantyEnabled &&
+      <SubmitAllWarrantySheet
+        open={showSubmitAll}
+        onOpenChange={setShowSubmitAll}
+        spares={spares}
+        jobCardId={jobCard.id}
+        profileId={profile?.id || ''}
+        onSubmitted={() => {setShowSubmitAll(false);refetchSpares();}} />
+
+      }
 
       <ConfirmationDialog
         open={!!deletingSpareId}
-        onOpenChange={(open) => { if (!open) setDeletingSpareId(null); }}
+        onOpenChange={(open) => {if (!open) setDeletingSpareId(null);}}
         title="Delete Spare"
         description="Are you sure you want to remove this spare part? This action cannot be undone."
         onConfirm={handleDeleteSpare}
         confirmLabel="Delete"
-        variant="destructive"
-      />
+        variant="destructive" />
+      
 
       <ConfirmationDialog
         open={!!withdrawingSpare}
-        onOpenChange={(open) => { if (!open) setWithdrawingSpare(null); }}
+        onOpenChange={(open) => {if (!open) setWithdrawingSpare(null);}}
         title="Withdraw submission?"
         description="This claim is already submitted. Withdrawing will reset the submission so you can edit the part/qty/type. Old-part evidence photos and serial will be cleared. Continue?"
         onConfirm={handleWithdrawSpare}
         confirmLabel="Withdraw"
-        variant="destructive"
-      />
+        variant="destructive" />
+      
 
-      {needsInfoSpare && profile && (
-        <NeedsInfoResponseSheet
-          open={!!needsInfoSpare}
-          onOpenChange={(open) => { if (!open) setNeedsInfoSpare(null); }}
-          spare={needsInfoSpare}
-          jobCardId={jobCard.id}
-          profileId={profile.id}
-          userId={profile.user_id}
-          onResponded={() => { setNeedsInfoSpare(null); refetchSpares(); }}
-        />
-      )}
+      {needsInfoSpare && profile &&
+      <NeedsInfoResponseSheet
+        open={!!needsInfoSpare}
+        onOpenChange={(open) => {if (!open) setNeedsInfoSpare(null);}}
+        spare={needsInfoSpare}
+        jobCardId={jobCard.id}
+        profileId={profile.id}
+        userId={profile.user_id}
+        onResponded={() => {setNeedsInfoSpare(null);refetchSpares();}} />
+
+      }
 
       {/* Vehicle Checklist Sheet */}
-      {checklistEnabledForThisJC && (
-        <VehicleChecklistSheet
-          open={showChecklist}
-          onOpenChange={setShowChecklist}
-          jobCardId={jobCard.id}
-          vehicleModel={jobCard.vehicle?.model || null}
-          workshopId={jobCard.workshop_id}
-          workshopCountry={workshopCountry}
-          onCompleted={handleChecklistCompleted}
-        />
-      )}
+      {checklistEnabledForThisJC &&
+      <VehicleChecklistSheet
+        open={showChecklist}
+        onOpenChange={setShowChecklist}
+        jobCardId={jobCard.id}
+        vehicleModel={jobCard.vehicle?.model || null}
+        workshopId={jobCard.workshop_id}
+        workshopCountry={workshopCountry}
+        onCompleted={handleChecklistCompleted} />
+
+      }
 
       {/* Mechanic Name Sheet */}
       <MechanicNameSheet
@@ -1264,8 +1264,8 @@ export default function JobCardDetailPage() {
         }}
         currentName={(jobCard as any).assigned_mechanic_name || null}
         onSave={handleMechanicNameSave}
-        isSaving={isSavingMechanic}
-      />
-    </AppLayout>
-  );
+        isSaving={isSavingMechanic} />
+      
+    </AppLayout>);
+
 }

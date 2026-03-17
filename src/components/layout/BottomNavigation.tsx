@@ -10,7 +10,7 @@ export function BottomNavigation() {
   const role = profile?.role;
 
   const navItems = (() => {
-    const items: { to: string; icon: typeof FileText; label: string }[] = [];
+    const items: {to: string;icon: typeof FileText;label: string;}[] = [];
 
     // Warranty admin gets a dedicated nav
     if (role === 'warranty_admin') {
@@ -42,31 +42,31 @@ export function BottomNavigation() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card safe-bottom">
       <div className="mx-auto flex max-w-lg items-center justify-around">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to || 
-            (item.to === '/' && location.pathname.startsWith('/job-card/'));
-          
+          const isActive = location.pathname === item.to ||
+          item.to === '/' && location.pathname.startsWith('/job-card/');
+
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              className={cn(
-                'flex flex-1 flex-col items-center gap-1 py-3 px-2 text-xs font-medium transition-colors',
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
+              className={cn("flex flex-1 flex-col items-center gap-1 px-2 text-xs font-medium transition-colors py-[6px]",
+
+              isActive ?
+              'text-primary' :
+              'text-muted-foreground hover:text-foreground'
+              )}>
+              
               <item.icon
                 className={cn(
                   'h-6 w-6',
                   isActive && 'text-primary'
-                )}
-              />
+                )} />
+              
               <span>{item.label}</span>
-            </NavLink>
-          );
+            </NavLink>);
+
         })}
       </div>
-    </nav>
-  );
+    </nav>);
+
 }
