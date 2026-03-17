@@ -494,8 +494,14 @@ export default function RoleDetailPage() {
                   const perm = permissions.find((p) => p.permission_key === o.permission_key);
                   return (
                     <div key={o.id} className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">{o.policy_type}</Badge>
+                        {o.country && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{o.country}</Badge>
+                        )}
+                        {!o.country && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 opacity-50">Global</Badge>
+                        )}
                         <span className="text-xs truncate">{perm?.display_label || o.permission_key}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
