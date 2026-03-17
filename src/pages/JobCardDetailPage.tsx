@@ -42,6 +42,8 @@ import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistShe
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
 import { WorkExecutionSection } from '@/components/job-card/WorkExecutionSection';
+import { AddLabourSheet } from '@/components/job-card/AddLabourSheet';
+import { useJobCardLabour, useLabourMaster, addJobCardLabour, updateJobCardLabour, deleteJobCardLabour, JobCardLabourEntry } from '@/hooks/useLabour';
 // ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
@@ -94,6 +96,56 @@ export default function JobCardDetailPage() {
   // Country-based feature flags (reads from country_settings)
   const { value: checklistEnabledForThisJC, isLoading: checklistFlagLoading } = useCountryBoolSetting('ENABLE_VEHICLE_CHECKLIST', workshopCountry);
   const { value: mechanicNameEnabledForThisJC, isLoading: mechanicFlagLoading } = useCountryBoolSetting('ENABLE_MECHANIC_NAME', workshopCountry);
+  const { value: labourEnabledForThisJC } = useCountryBoolSetting('ENABLE_LABOUR', workshopCountry);
+
+  // Labour — depends on Spares Flow being ON + Labour being ON
+  const labourActive = sparesEnabled && labourEnabledForThisJC;
+  const { entries: labourEntries, isLoading: labourLoading, refetch: refetchLabour } = useJobCardLabour(id);
+  const { items: labourCatalogue } = useLabourMaster(labourActive ? workshopCountry : null);
+  const [showLabourSheet, setShowLabourSheet] = useState(false);
+  const [editingLabour, setEditingLabour] = useState<JobCardLabourEntry | null>(null);
+  const [isSavingLabour, setIsSavingLabour] = useState(false);
+  const [deletingLabourId, setDeletingLabourId] = useState<string | null>(null);
+
+  const LABOUR_EDITABLE_STATUSES: JobCardStatus[] = ['IN_PROGRESS', 'REOPENED'];
+  const canEditLabourInJc = jobCard ? LABOUR_EDITABLE_STATUSES.includes(jobCard.status) : false;
+
+  const handleSaveLabour = async (data: { labourMasterId: string; durationMinutes: number; rate: number | null; remarks: string | null }) => {
+    if (!jobCard || !profile) return;
+    setIsSavingLabour(true);
+    try {
+      if (editingLabour) {
+        await updateJobCardLabour(editingLabour.id, {
+          duration_minutes: data.durationMinutes,
+          rate: data.rate,
+          remarks: data.remarks,
+        }, profile.id, jobCard.id);
+        toast.success('Labour updated');
+      } else {
+        await addJobCardLabour(jobCard.id, data.labourMasterId, data.durationMinutes, data.rate, data.remarks, profile.id);
+        toast.success('Labour added');
+      }
+      setShowLabourSheet(false);
+      setEditingLabour(null);
+      refetchLabour();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save labour');
+    } finally {
+      setIsSavingLabour(false);
+    }
+  };
+
+  const handleDeleteLabour = async () => {
+    if (!deletingLabourId || !profile || !jobCard) return;
+    try {
+      await deleteJobCardLabour(deletingLabourId, profile.id, jobCard.id);
+      toast.success('Labour removed');
+      setDeletingLabourId(null);
+      refetchLabour();
+    } catch (err: any) {
+      toast.error('Failed to remove labour');
+    }
+  };
 
   // Checklist — read from persisted column
   const [showChecklist, setShowChecklist] = useState(false);
@@ -963,6 +1015,15 @@ export default function JobCardDetailPage() {
             onAddNote={handleAddMechanicNote}
             isExpanded={expandedSection === 'execution'}
             onToggle={() => toggleSection('execution')}
+            labourEnabled={labourActive && can('labour.view')}
+            labourEntries={labourEntries}
+            labourLoading={labourLoading}
+            canAddLabour={labourActive && canEditLabourInJc && can('labour.add')}
+            canEditLabour={labourActive && canEditLabourInJc && can('labour.edit')}
+            canRemoveLabour={labourActive && canEditLabourInJc && can('labour.remove')}
+            onAddLabour={() => { setEditingLabour(null); setShowLabourSheet(true); }}
+            onEditLabour={(entry) => { setEditingLabour(entry); setShowLabourSheet(true); }}
+            onRemoveLabour={(id) => setDeletingLabourId(id)}
           />
         )}
 
@@ -1226,6 +1287,32 @@ export default function JobCardDetailPage() {
         onSave={handleMechanicNameSave}
         isSaving={isSavingMechanic} />
       
+      {/* Labour Sheet */}
+      {labourActive && (
+        <AddLabourSheet
+          open={showLabourSheet}
+          onOpenChange={(open) => {
+            setShowLabourSheet(open);
+            if (!open) setEditingLabour(null);
+          }}
+          catalogue={labourCatalogue}
+          editingEntry={editingLabour}
+          onSave={handleSaveLabour}
+          isSaving={isSavingLabour}
+        />
+      )}
+
+      {/* Labour Delete Confirmation */}
+      <ConfirmationDialog
+        open={!!deletingLabourId}
+        onOpenChange={(open) => { if (!open) setDeletingLabourId(null); }}
+        title="Remove Labour"
+        description="Are you sure you want to remove this labour entry? This action cannot be undone."
+        onConfirm={handleDeleteLabour}
+        confirmLabel="Remove"
+        variant="destructive"
+      />
+
     </AppLayout>);
 
 }

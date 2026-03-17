@@ -32,6 +32,7 @@ import ManageWarrantyAdminsPage from "./pages/ManageWarrantyAdminsPage";
 import ManageChecklistPage from "./pages/ManageChecklistPage";
 import ManageRolesPage from "./pages/ManageRolesPage";
 import RoleDetailPage from "./pages/RoleDetailPage";
+import ManageLabourPage from "./pages/ManageLabourPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/console/vehicle-checklist" element={<ProtectedRoute><ManageChecklistPage /></ProtectedRoute>} />
             <Route path="/console/roles" element={<ProtectedRoute><ManageRolesPage /></ProtectedRoute>} />
             <Route path="/console/roles/:roleKey" element={<ProtectedRoute><RoleDetailPage /></ProtectedRoute>} />
+            <Route path="/console/labour" element={<ProtectedRoute><ManageLabourPage /></ProtectedRoute>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

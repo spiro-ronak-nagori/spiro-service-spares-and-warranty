@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { ListTree, ClipboardList, Package, ClipboardCheck, ChevronRight, ToggleLeft } from 'lucide-react';
+import { ListTree, ClipboardList, Package, ClipboardCheck, ChevronRight, ToggleLeft, Wrench } from 'lucide-react';
 
 export default function SystemConfigPage() {
   const { profile } = useAuth();
@@ -54,6 +54,12 @@ export default function SystemConfigPage() {
       description: 'Configure intake checklist templates and items',
       icon: ClipboardCheck,
       path: '/console/vehicle-checklist',
+    },
+    {
+      label: 'Manage Labour',
+      description: 'Configure labour catalog and rules country-wise',
+      icon: Wrench,
+      path: '/console/labour',
     },
   ];
 
