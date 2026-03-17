@@ -47,7 +47,7 @@ export function InviteUserDialog({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState('');
-  const [role, setRole] = useState<'workshop_admin' | 'technician'>('technician');
+  const [role, setRole] = useState<'workshop_admin' | 'technician' | 'spares_manager'>('technician');
   const [identifierError, setIdentifierError] = useState('');
 
   // Workshop selection state
