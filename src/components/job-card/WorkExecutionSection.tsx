@@ -131,8 +131,8 @@ export function WorkExecutionSection({
                 canEdit={canEditLabour}
                 canRemove={canRemoveLabour}
                 onAdd={onAddLabour || (() => {})}
-                onEdit={onEditLabour || (() => {})}
-                onRemove={onRemoveLabour || (() => {})}
+                onEditAggregated={onEditAggregated || (() => {})}
+                onRemoveAggregated={onRemoveAggregated || (() => {})}
               />
               <Separator className="my-3" />
             </>
