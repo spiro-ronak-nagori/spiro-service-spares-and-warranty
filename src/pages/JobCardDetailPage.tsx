@@ -96,6 +96,56 @@ export default function JobCardDetailPage() {
   // Country-based feature flags (reads from country_settings)
   const { value: checklistEnabledForThisJC, isLoading: checklistFlagLoading } = useCountryBoolSetting('ENABLE_VEHICLE_CHECKLIST', workshopCountry);
   const { value: mechanicNameEnabledForThisJC, isLoading: mechanicFlagLoading } = useCountryBoolSetting('ENABLE_MECHANIC_NAME', workshopCountry);
+  const { value: labourEnabledForThisJC } = useCountryBoolSetting('ENABLE_LABOUR', workshopCountry);
+
+  // Labour — depends on Spares Flow being ON + Labour being ON
+  const labourActive = sparesEnabled && labourEnabledForThisJC;
+  const { entries: labourEntries, isLoading: labourLoading, refetch: refetchLabour } = useJobCardLabour(id);
+  const { items: labourCatalogue } = useLabourMaster(labourActive ? workshopCountry : null);
+  const [showLabourSheet, setShowLabourSheet] = useState(false);
+  const [editingLabour, setEditingLabour] = useState<JobCardLabourEntry | null>(null);
+  const [isSavingLabour, setIsSavingLabour] = useState(false);
+  const [deletingLabourId, setDeletingLabourId] = useState<string | null>(null);
+
+  const LABOUR_EDITABLE_STATUSES: JobCardStatus[] = ['IN_PROGRESS', 'REOPENED'];
+  const canEditLabourInJc = jobCard ? LABOUR_EDITABLE_STATUSES.includes(jobCard.status) : false;
+
+  const handleSaveLabour = async (data: { labourMasterId: string; durationMinutes: number; rate: number | null; remarks: string | null }) => {
+    if (!jobCard || !profile) return;
+    setIsSavingLabour(true);
+    try {
+      if (editingLabour) {
+        await updateJobCardLabour(editingLabour.id, {
+          duration_minutes: data.durationMinutes,
+          rate: data.rate,
+          remarks: data.remarks,
+        }, profile.id, jobCard.id);
+        toast.success('Labour updated');
+      } else {
+        await addJobCardLabour(jobCard.id, data.labourMasterId, data.durationMinutes, data.rate, data.remarks, profile.id);
+        toast.success('Labour added');
+      }
+      setShowLabourSheet(false);
+      setEditingLabour(null);
+      refetchLabour();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save labour');
+    } finally {
+      setIsSavingLabour(false);
+    }
+  };
+
+  const handleDeleteLabour = async () => {
+    if (!deletingLabourId || !profile || !jobCard) return;
+    try {
+      await deleteJobCardLabour(deletingLabourId, profile.id, jobCard.id);
+      toast.success('Labour removed');
+      setDeletingLabourId(null);
+      refetchLabour();
+    } catch (err: any) {
+      toast.error('Failed to remove labour');
+    }
+  };
 
   // Checklist — read from persisted column
   const [showChecklist, setShowChecklist] = useState(false);
