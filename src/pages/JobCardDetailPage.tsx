@@ -553,6 +553,18 @@ export default function JobCardDetailPage() {
 
   const handleCompleteWork = async (remarks: string) => {
     if (!jobCard || !canTransitionTo(jobCard.status, 'READY')) return;
+
+    // Append completion remarks as a work note with timestamp
+    const existing = (jobCard as any).mechanic_notes as string | null;
+    const timestamp = format(new Date(), 'dd MMM HH:mm');
+    const entry = `[${timestamp}] ${remarks}`;
+    const updatedNotes = existing ? `${existing}\n${entry}` : entry;
+
+    await supabase
+      .from('job_cards')
+      .update({ mechanic_notes: updatedNotes } as any)
+      .eq('id', jobCard.id);
+
     updateStatus('READY', { completion_remarks: remarks });
     sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
     setShowCompleteWork(false);
