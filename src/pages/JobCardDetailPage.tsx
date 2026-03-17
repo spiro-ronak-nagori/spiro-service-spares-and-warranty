@@ -82,11 +82,9 @@ export default function JobCardDetailPage() {
   const { value: checklistEnabledForThisJC, isLoading: checklistFlagLoading } = useCountryBoolSetting('ENABLE_VEHICLE_CHECKLIST', workshopCountry);
   const { value: mechanicNameEnabledForThisJC, isLoading: mechanicFlagLoading } = useCountryBoolSetting('ENABLE_MECHANIC_NAME', workshopCountry);
 
-  // Checklist
-  const [checklistCompleted, setChecklistCompleted] = useState<boolean | null>(null);
-  const [checklistApplicable, setChecklistApplicable] = useState(false);
-  const [checklistCheckLoading, setChecklistCheckLoading] = useState(false);
+  // Checklist — read from persisted column
   const [showChecklist, setShowChecklist] = useState(false);
+  const [checklistStatusResolved, setChecklistStatusResolved] = useState(false);
 
   // Mechanic name
   const [showMechanicSheet, setShowMechanicSheet] = useState(false);
