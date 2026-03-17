@@ -9,7 +9,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw, UserCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Camera, Plus, Pencil, Trash2, Check, X, Send, RotateCcw, UserCheck, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -285,10 +285,12 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
     );
   }
 
-  const showSparesWarning = mandatorySparesRequired && spares.length === 0 && jobCardStatus === 'READY';
+  const showSparesWarning = mandatorySparesRequired && spares.length === 0;
+  const isActiveStatus = jobCardStatus === 'IN_PROGRESS' || jobCardStatus === 'REOPENED' || jobCardStatus === 'READY';
+  const showWarningIndicator = showSparesWarning && isActiveStatus;
 
   return (
-    <Card id="spares-used-section">
+    <Card id="spares-used-section" className={showWarningIndicator ? 'border-amber-300 bg-amber-50/30' : ''}>
       <CardHeader className={isExpanded ? "pb-0" : ""}>
         <button
           type="button"
@@ -301,10 +303,17 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               Spares Used
             </CardTitle>
             {!isExpanded && (
-              <p className="text-xs text-muted-foreground mt-1 ml-6">
-                {spares.length} {spares.length === 1 ? 'item' : 'items'}
-                {showSparesWarning && <span className="ml-2">· ⚠ Required before delivery</span>}
-              </p>
+              <div className="ml-6 mt-1 space-y-0.5">
+                <p className="text-xs text-muted-foreground">
+                  {spares.length} {spares.length === 1 ? 'item' : 'items'}
+                </p>
+                {showWarningIndicator && (
+                  <p className="text-xs text-amber-700 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    Spares required for selected issues
+                  </p>
+                )}
+              </div>
             )}
           </div>
           <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
@@ -329,6 +338,12 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
         <CardContent className="pt-3">
           {spares.length === 0 ? (
             <div className="py-3">
+              {showWarningIndicator && (
+                <p className="text-xs text-amber-700 flex items-center gap-1 mb-3">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  Spares required for selected issues
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">No spares added yet</p>
               {canEdit && onAddSpares && (
                 <button
