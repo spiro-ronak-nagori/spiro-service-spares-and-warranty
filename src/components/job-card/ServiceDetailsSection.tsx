@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Wrench, ChevronDown, ChevronUp, User, MessageSquareText, ClipboardPen, Loader2 } from 'lucide-react';
+import { Wrench, ChevronDown, ChevronUp, MessageSquareText } from 'lucide-react';
 
 interface ServiceDetailsSectionProps {
   serviceCategories: string[];
@@ -14,11 +12,6 @@ interface ServiceDetailsSectionProps {
   onEditIssues: () => void;
   customerComments?: string | null;
   completionRemarks?: string | null;
-  assignedMechanicName?: string | null;
-  mechanicNotes?: string | null;
-  /** Whether inline mechanic note adding is allowed */
-  canAddMechanicNote?: boolean;
-  onAddMechanicNote?: (note: string) => Promise<void>;
   isExpanded?: boolean;
   onToggle?: () => void;
 }
@@ -40,10 +33,6 @@ export function ServiceDetailsSection({
   onEditIssues,
   customerComments,
   completionRemarks,
-  assignedMechanicName,
-  mechanicNotes,
-  canAddMechanicNote = false,
-  onAddMechanicNote,
   isExpanded: controlledExpanded,
   onToggle,
 }: ServiceDetailsSectionProps) {
@@ -77,23 +66,6 @@ export function ServiceDetailsSection({
   const handleToggle = () => {
     if (onToggle) onToggle();
     else setLocalExpanded(!localExpanded);
-  };
-
-  // Inline note adding state
-  const [showNoteInput, setShowNoteInput] = useState(false);
-  const [noteText, setNoteText] = useState('');
-  const [isSavingNote, setIsSavingNote] = useState(false);
-
-  const handleSaveNote = async () => {
-    if (!noteText.trim() || !onAddMechanicNote) return;
-    setIsSavingNote(true);
-    try {
-      await onAddMechanicNote(noteText.trim());
-      setNoteText('');
-      setShowNoteInput(false);
-    } finally {
-      setIsSavingNote(false);
-    }
   };
 
   const subtitle = serviceCategories.length === 0 && issueCategories.length === 0
@@ -178,78 +150,7 @@ export function ServiceDetailsSection({
             </>
           )}
 
-          {/* 3. Assigned Mechanic — only shown when assigned */}
-          {assignedMechanicName && (
-            <>
-              <Separator className="my-3" />
-              <div className="flex items-center gap-2">
-                <User className="h-3.5 w-3.5 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Assigned Mechanic</p>
-              </div>
-              <p className="text-sm text-foreground/90 mt-0.5 ml-[22px]">{assignedMechanicName}</p>
-            </>
-          )}
-
-          {/* 4. Mechanic Notes — only shown when mechanic is assigned */}
-          {assignedMechanicName && (
-            <>
-              <Separator className="my-3" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ClipboardPen className="h-3.5 w-3.5 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Mechanic Notes</p>
-                </div>
-                {canAddMechanicNote && !showNoteInput && (
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-primary"
-                    onClick={() => setShowNoteInput(true)}
-                  >
-                    + Add Note
-                  </button>
-                )}
-              </div>
-              {mechanicNotes ? (
-                <p className="text-sm whitespace-pre-wrap text-foreground/80 mt-0.5 ml-[22px]">{mechanicNotes}</p>
-              ) : !showNoteInput ? (
-                <p className="text-xs text-muted-foreground/60 mt-0.5 ml-[22px]">No notes yet</p>
-              ) : null}
-
-              {/* Inline note input */}
-              {showNoteInput && (
-                <div className="mt-2 ml-[22px] space-y-2">
-                  <Textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Add a note…"
-                    className="min-h-[60px] text-sm"
-                    rows={2}
-                    autoFocus
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setShowNoteInput(false); setNoteText(''); }}
-                      disabled={isSavingNote}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSaveNote}
-                      disabled={!noteText.trim() || isSavingNote}
-                    >
-                      {isSavingNote ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* 5. Completion Remarks */}
+          {/* 3. Completion Remarks */}
           {completionRemarks && (
             <>
               <Separator className="my-3" />

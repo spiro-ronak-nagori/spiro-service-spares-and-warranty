@@ -40,6 +40,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { VehicleChecklistSheet } from '@/components/job-card/VehicleChecklistSheet';
 import { EditIssuesSheet } from '@/components/job-card/EditIssuesSheet';
 import { ServiceDetailsSection } from '@/components/job-card/ServiceDetailsSection';
+import { WorkExecutionSection } from '@/components/job-card/WorkExecutionSection';
 // ChecklistStatusSection removed — checklist is now CTA-driven only
 import { VehicleDetailsCard } from '@/components/job-card/VehicleDetailsCard';
 import { MechanicNameSheet } from '@/components/job-card/MechanicNameSheet';
@@ -150,9 +151,9 @@ export default function JobCardDetailPage() {
   // Mechanic name editability: editable from INWARDED until READY, and again if REOPENED
   const MECHANIC_EDITABLE_STATUSES: JobCardStatus[] = ['INWARDED', 'IN_PROGRESS', 'REOPENED'];
   const canEditMechanic = jobCard ? mechanicNameEnabledForThisJC && MECHANIC_EDITABLE_STATUSES.includes(jobCard.status) : false;
-  const showMechanicFieldsInEdit = canEditMechanic && !!(jobCard as any)?.assigned_mechanic_name;
+  
 
-  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[], newMechanicName?: string) => {
+  const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[]) => {
     if (!jobCard || !profile || !canEditIssues) {
       toast.error('Issue editing is not allowed in the current status');
       return;
@@ -186,15 +187,9 @@ export default function JobCardDetailPage() {
         issue_categories: newIssueCategories,
       };
 
-      // Include mechanic fields if provided
-      if (newMechanicName !== undefined) {
-        updatePayload.assigned_mechanic_name = newMechanicName || null;
-      }
-
       const hasIssueChanges = addedIssues.length > 0 || removedIssues.length > 0 || addedServices.length > 0 || removedServices.length > 0;
-      const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || ''));
 
-      if (!hasIssueChanges && !hasMechanicChanges) {
+      if (!hasIssueChanges) {
         setShowEditIssues(false);
         return;
       }
@@ -218,9 +213,6 @@ export default function JobCardDetailPage() {
           removed_issues: removedIssues,
           added_services: addedServices,
           removed_services: removedServices,
-        } : {}),
-        ...(hasMechanicChanges ? {
-          mechanic_name_changed: newMechanicName !== undefined,
         } : {}),
       });
 
@@ -871,13 +863,21 @@ export default function JobCardDetailPage() {
           onEditIssues={() => setShowEditIssues(true)}
           customerComments={(jobCard as any).customer_comments}
           completionRemarks={jobCard.completion_remarks}
-          assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
-          mechanicNotes={(jobCard as any).mechanic_notes}
-          canAddMechanicNote={canAddMechanicNote}
-          onAddMechanicNote={handleAddMechanicNote}
           isExpanded={expandedSection === 'service'}
           onToggle={() => toggleSection('service')}
         />
+
+        {/* 3. Work Execution — only after work has started */}
+        {(jobCard.work_started_at || jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED' || jobCard.status === 'READY' || jobCard.status === 'DELIVERED' || jobCard.status === 'COMPLETED' || jobCard.status === 'CLOSED') && (
+          <WorkExecutionSection
+            assignedMechanicName={mechanicNameEnabledForThisJC ? (jobCard as any).assigned_mechanic_name : null}
+            mechanicNotes={(jobCard as any).mechanic_notes}
+            canAddNote={canAddMechanicNote}
+            onAddNote={handleAddMechanicNote}
+            isExpanded={expandedSection === 'execution'}
+            onToggle={() => toggleSection('execution')}
+          />
+        )}
 
         {/* 4. Spares Used Section */}
         {sparesEnabled &&
@@ -1028,8 +1028,6 @@ export default function JobCardDetailPage() {
         currentIssueCategories={jobCard.issue_categories}
         onSave={handleSaveIssues}
         isSaving={isSavingIssues}
-        mechanicName={(jobCard as any).assigned_mechanic_name}
-        showMechanicFields={showMechanicFieldsInEdit}
         />
 
       }
