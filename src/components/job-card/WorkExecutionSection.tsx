@@ -22,8 +22,8 @@ interface WorkExecutionSectionProps {
   canEditLabour?: boolean;
   canRemoveLabour?: boolean;
   onAddLabour?: () => void;
-  onEditLabour?: (entry: JobCardLabourEntry) => void;
-  onRemoveLabour?: (id: string) => void;
+  onEditAggregated?: (row: AggregatedLabourRow) => void;
+  onRemoveAggregated?: (row: AggregatedLabourRow) => void;
 }
 
 /** Parse "[dd MMM HH:mm] note text" lines into structured entries */
