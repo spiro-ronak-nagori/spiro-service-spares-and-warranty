@@ -11,7 +11,7 @@ interface ServiceDetailsSectionProps {
   canEditIssues: boolean;
   onEditIssues: () => void;
   customerComments?: string | null;
-  completionRemarks?: string | null;
+  
   isExpanded?: boolean;
   onToggle?: () => void;
 }
