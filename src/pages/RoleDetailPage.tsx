@@ -562,6 +562,21 @@ export default function RoleDetailPage() {
               </Select>
             </div>
             <div className="space-y-2">
+              <label className="text-xs font-medium">Country Scope</label>
+              <Select value={newOverrideCountry} onValueChange={setNewOverrideCountry}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__GLOBAL__">All Countries (Global)</SelectItem>
+                  {countries.map(c => (
+                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Country-specific overrides take precedence over global ones.
+              </p>
+            </div>
+            <div className="space-y-2">
               <label className="text-xs font-medium">Permission</label>
               <Select value={newOverridePermKey} onValueChange={setNewOverridePermKey}>
                 <SelectTrigger><SelectValue placeholder="Select permission" /></SelectTrigger>
