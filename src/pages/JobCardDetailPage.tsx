@@ -1051,9 +1051,9 @@ export default function JobCardDetailPage() {
             canAddLabour={labourActive && canEditLabourInJc && can('labour.add')}
             canEditLabour={labourActive && canEditLabourInJc && can('labour.edit')}
             canRemoveLabour={labourActive && canEditLabourInJc && can('labour.remove')}
-            onAddLabour={() => { setEditingLabour(null); setShowLabourSheet(true); }}
-            onEditLabour={(entry) => { setEditingLabour(entry); setShowLabourSheet(true); }}
-            onRemoveLabour={(id) => setDeletingLabourId(id)}
+            onAddLabour={() => { setEditingLabourRow(null); setShowLabourSheet(true); }}
+            onEditAggregated={(row) => { setEditingLabourRow(row); setShowLabourSheet(true); }}
+            onRemoveAggregated={(row) => setDeletingLabourRow(row)}
           />
         )}
 
