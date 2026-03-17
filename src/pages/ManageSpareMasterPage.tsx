@@ -56,6 +56,7 @@ export default function ManageSpareMasterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModel, setFilterModel] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterClaimType, setFilterClaimType] = useState<'all' | 'warranty' | 'goodwill'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Add/edit dialog
