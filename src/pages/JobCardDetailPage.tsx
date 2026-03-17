@@ -56,6 +56,7 @@ export default function JobCardDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [hasSetDefaultSection, setHasSetDefaultSection] = useState(false);
   const toggleSection = (section: string) => setExpandedSection(prev => prev === section ? null : section);
 
   // Derive workshop country early (may be null until job card loads)
