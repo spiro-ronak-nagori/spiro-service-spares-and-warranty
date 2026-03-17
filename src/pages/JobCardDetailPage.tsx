@@ -807,12 +807,7 @@ export default function JobCardDetailPage() {
           completionRemarks={jobCard.completion_remarks}
         />
 
-        {/* 3. Vehicle Checklist — hide if not applicable */}
-        {showChecklistSection && checklistSectionStatus !== 'not_applicable' &&
-        <ChecklistStatusSection
-          status={checklistSectionStatus}
-          onComplete={() => setShowChecklist(true)} />
-        }
+        {/* Checklist section removed — handled via sticky CTA */}
 
         {/* Assigned Mechanic Section */}
         {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name &&
