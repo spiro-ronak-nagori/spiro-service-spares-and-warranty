@@ -31,6 +31,7 @@ export default function ProfilePage() {
       case 'country_admin': return 'default';
       case 'workshop_admin': return 'default';
       case 'warranty_admin': return 'default';
+      case 'spares_manager': return 'default';
       default: return 'secondary';
     }
   };
