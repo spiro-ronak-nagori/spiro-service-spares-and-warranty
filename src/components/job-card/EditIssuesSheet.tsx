@@ -150,24 +150,6 @@ export function EditIssuesSheet({
             </div>
           )}
 
-          {/* Mechanic field */}
-          {showMechanicFields && (
-            <>
-              <Separator className="my-4" />
-              <div>
-                <Label htmlFor="edit-mechanic-name" className="text-sm font-medium">
-                  Assigned Mechanic
-                </Label>
-                <Input
-                  id="edit-mechanic-name"
-                  value={mechanicName}
-                  onChange={(e) => setMechanicName(e.target.value)}
-                  placeholder="Enter mechanic name"
-                  className="mt-1.5"
-                />
-              </div>
-            </>
-          )}
         </div>
 
         <DrawerFooter className="safe-bottom">
