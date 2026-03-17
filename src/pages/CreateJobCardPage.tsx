@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeRegNo } from '@/lib/normalize-reg-no';
+import { useRbacPermissions } from '@/hooks/useRbacPermissions';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -88,17 +89,23 @@ export default function CreateJobCardPage() {
 
   const isElevatedAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin' || profile?.role === 'country_admin';
   const workshopCountry = workshop?.country || null;
+  const { can, isLoading: rbacLoading } = useRbacPermissions();
   const { value: ocrEnabled } = useSystemSetting('ENABLE_IMAGE_OCR', true, workshopCountry);
   const { value: altPhoneEnabled } = useSystemSetting('ENABLE_ALTERNATE_PHONE_NUMBER', false, workshopCountry);
   const { countries: dbCountries, getCallingCode } = useCountries();
   const { modelNames: vehicleModels, isLoading: modelsLoading, error: modelsError } = useVehicleModels();
 
-  // Redirect elevated admins who landed here without selecting a workshop
+  // Redirect if no permission or no workshop selected
   useEffect(() => {
+    if (rbacLoading) return;
+    if (!can('nav.create_job_card')) {
+      navigate('/', { replace: true });
+      return;
+    }
     if (isElevatedAdmin && !selectedWorkshop && !authWorkshop) {
       navigate('/', { replace: true });
     }
-  }, [isElevatedAdmin, selectedWorkshop, authWorkshop]);
+  }, [isElevatedAdmin, selectedWorkshop, authWorkshop, can, rbacLoading]);
 
   const [currentStep, setCurrentStep] = useState<CreateStep>('vehicle');
   const [isLoading, setIsLoading] = useState(false);

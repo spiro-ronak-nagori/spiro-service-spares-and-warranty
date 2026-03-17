@@ -15,8 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, UserPlus, Building2, Search, MapPin, X, ChevronLeft, AlertCircle } from 'lucide-react';
+import { Loader2, UserPlus, Building2, Search, MapPin, X, ChevronLeft, AlertCircle, Globe, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Workshop } from '@/types';
 import { useCountries } from '@/hooks/useCountries';
@@ -376,10 +377,29 @@ export function InviteUserDialog({
                   <SelectContent>
                     <SelectItem value="technician">Technician</SelectItem>
                     {allowAdminRole && (
-                      <SelectItem value="workshop_admin">Admin</SelectItem>
+                      <SelectItem value="workshop_admin">Workshop Admin</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Scope Summary */}
+              <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  {role === 'workshop_admin' ? (
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  ) : (
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                  <span className="text-xs font-medium">Access Scope</span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto">Workshop</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {role === 'workshop_admin'
+                    ? `Will have admin access to ${selectedWorkshop?.name || 'the assigned workshop'} — can manage team, view all job cards, and configure workshop settings.`
+                    : `Will have technician access to ${selectedWorkshop?.name || 'the assigned workshop'} — can create and work on job cards assigned to them.`
+                  }
+                </p>
               </div>
             </DialogBody>
 

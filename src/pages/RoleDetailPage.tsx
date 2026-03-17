@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +21,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Globe, MapPin, Building2, Link2, Users, Clock, Save, Shield } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Globe, MapPin, Building2, Link2, Users, Clock, Save, Shield, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -66,6 +75,8 @@ const GROUP_ORDER = [
   'REPORTS', 'USERS_TEAM', 'MASTERS_CONFIG', 'PROFILE_SELF',
 ];
 
+const POLICY_TYPES = ['COCO', 'FOFO'];
+
 const SCOPE_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   global: { icon: <Globe className="h-4 w-4" />, label: 'Global', color: 'bg-primary/10 text-primary' },
   country: { icon: <MapPin className="h-4 w-4" />, label: 'Country', color: 'bg-amber-500/10 text-amber-600' },
@@ -90,6 +101,17 @@ export default function RoleDetailPage() {
   const [originalOverrides, setOriginalOverrides] = useState<Record<string, boolean>>({});
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Add override dialog
+  const [showAddOverride, setShowAddOverride] = useState(false);
+  const [newOverridePolicyType, setNewOverridePolicyType] = useState('FOFO');
+  const [newOverridePermKey, setNewOverridePermKey] = useState('');
+  const [newOverrideEnabled, setNewOverrideEnabled] = useState(false);
+  const [deletingOverrideId, setDeletingOverrideId] = useState<string | null>(null);
+  // Track overrides to delete on save
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  // Track new overrides added locally (not yet persisted)
+  const [pendingNewOverrides, setPendingNewOverrides] = useState<PolicyOverride[]>([]);
+
   const isSystemAdmin = profile?.role === 'system_admin';
 
   useEffect(() => {
@@ -99,6 +121,8 @@ export default function RoleDetailPage() {
 
   const loadData = async () => {
     setLoading(true);
+    setPendingDeleteIds(new Set());
+    setPendingNewOverrides([]);
     try {
       const { data: roleData } = await supabase
         .from('rbac_roles')
@@ -161,16 +185,62 @@ export default function RoleDetailPage() {
   };
 
   const toggleOverride = (id: string) => {
-    setOverrides((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o))
+    // Check if it's a pending new override
+    const isPending = pendingNewOverrides.some(o => o.id === id);
+    if (isPending) {
+      setPendingNewOverrides(prev => prev.map(o => o.id === id ? { ...o, enabled: !o.enabled } : o));
+    } else {
+      setOverrides((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o))
+      );
+    }
+  };
+
+  // All overrides combined (existing + pending new, minus pending deletes)
+  const allOverrides = useMemo(() => {
+    const existing = overrides.filter(o => !pendingDeleteIds.has(o.id));
+    return [...existing, ...pendingNewOverrides];
+  }, [overrides, pendingDeleteIds, pendingNewOverrides]);
+
+  // Available permission keys for new override (exclude already overridden for same policy type)
+  const availablePermKeysForOverride = useMemo(() => {
+    const existingKeys = new Set(
+      allOverrides
+        .filter(o => o.policy_type === newOverridePolicyType)
+        .map(o => o.permission_key)
     );
+    return permissions.filter(p => !existingKeys.has(p.permission_key));
+  }, [permissions, allOverrides, newOverridePolicyType]);
+
+  const handleAddOverride = () => {
+    if (!newOverridePermKey || !role) return;
+    const tempId = `new_${Date.now()}_${Math.random()}`;
+    setPendingNewOverrides(prev => [...prev, {
+      id: tempId,
+      policy_type: newOverridePolicyType,
+      permission_key: newOverridePermKey,
+      enabled: newOverrideEnabled,
+    }]);
+    setShowAddOverride(false);
+    setNewOverridePermKey('');
+    setNewOverrideEnabled(false);
+  };
+
+  const handleDeleteOverride = (id: string) => {
+    const isPending = pendingNewOverrides.some(o => o.id === id);
+    if (isPending) {
+      setPendingNewOverrides(prev => prev.filter(o => o.id !== id));
+    } else {
+      setPendingDeleteIds(prev => new Set(prev).add(id));
+    }
+    setDeletingOverrideId(null);
   };
 
   const hasChanges = useMemo(() => {
     const permChanged = permissions.some((p) => originalPerms[p.id] !== p.enabled);
-    const ovChanged = overrides.some((o) => originalOverrides[o.id] !== o.enabled);
-    return permChanged || ovChanged;
-  }, [permissions, overrides, originalPerms, originalOverrides]);
+    const ovChanged = overrides.some((o) => !pendingDeleteIds.has(o.id) && originalOverrides[o.id] !== o.enabled);
+    return permChanged || ovChanged || pendingDeleteIds.size > 0 || pendingNewOverrides.length > 0;
+  }, [permissions, overrides, originalPerms, originalOverrides, pendingDeleteIds, pendingNewOverrides]);
 
   const changedItems = useMemo(() => {
     const items: { label: string; from: string; to: string }[] = [];
@@ -184,7 +254,14 @@ export default function RoleDetailPage() {
       }
     });
     overrides.forEach((o) => {
-      if (originalOverrides[o.id] !== o.enabled) {
+      if (pendingDeleteIds.has(o.id)) {
+        const perm = permissions.find((p) => p.permission_key === o.permission_key);
+        items.push({
+          label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+          from: 'Exists',
+          to: 'Deleted',
+        });
+      } else if (originalOverrides[o.id] !== o.enabled) {
         const perm = permissions.find((p) => p.permission_key === o.permission_key);
         items.push({
           label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
@@ -193,8 +270,16 @@ export default function RoleDetailPage() {
         });
       }
     });
+    pendingNewOverrides.forEach((o) => {
+      const perm = permissions.find((p) => p.permission_key === o.permission_key);
+      items.push({
+        label: `${o.policy_type}: ${perm?.display_label || o.permission_key}`,
+        from: '—',
+        to: o.enabled ? 'Enabled' : 'Disabled',
+      });
+    });
     return items;
-  }, [permissions, overrides, originalPerms, originalOverrides]);
+  }, [permissions, overrides, originalPerms, originalOverrides, pendingDeleteIds, pendingNewOverrides]);
 
   const handleSave = async () => {
     setShowConfirm(false);
@@ -207,9 +292,26 @@ export default function RoleDetailPage() {
       }
 
       // Update changed overrides
-      const changedOvs = overrides.filter((o) => originalOverrides[o.id] !== o.enabled);
+      const changedOvs = overrides.filter((o) => !pendingDeleteIds.has(o.id) && originalOverrides[o.id] !== o.enabled);
       for (const o of changedOvs) {
         await supabase.from('rbac_policy_overrides').update({ enabled: o.enabled }).eq('id', o.id);
+      }
+
+      // Delete overrides
+      for (const id of pendingDeleteIds) {
+        await supabase.from('rbac_policy_overrides').delete().eq('id', id);
+      }
+
+      // Insert new overrides
+      if (role) {
+        for (const o of pendingNewOverrides) {
+          await supabase.from('rbac_policy_overrides').insert({
+            role_id: role.id,
+            policy_type: o.policy_type as any,
+            permission_key: o.permission_key,
+            enabled: o.enabled,
+          });
+        }
       }
 
       // Audit log
@@ -227,14 +329,7 @@ export default function RoleDetailPage() {
       }
 
       toast.success(`Saved ${changedItems.length} change${changedItems.length !== 1 ? 's' : ''}`);
-
-      // Reset originals
-      const newOrigPerms: Record<string, boolean> = {};
-      permissions.forEach((p) => { newOrigPerms[p.id] = p.enabled; });
-      setOriginalPerms(newOrigPerms);
-      const newOrigOv: Record<string, boolean> = {};
-      overrides.forEach((o) => { newOrigOv[o.id] = o.enabled; });
-      setOriginalOverrides(newOrigOv);
+      await loadData();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to save');
     } finally {
@@ -364,36 +459,53 @@ export default function RoleDetailPage() {
         </Card>
 
         {/* COCO / FOFO Overrides */}
-        {overrides.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2 px-4 pt-4">
+        <Card>
+          <CardHeader className="pb-2 px-4 pt-4">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">Policy Overrides (COCO / FOFO)</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <p className="text-xs text-muted-foreground mb-3">
-                These overrides change specific permissions when the workshop business type is COCO or FOFO.
-              </p>
+              <Button variant="outline" size="sm" onClick={() => setShowAddOverride(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              These overrides change specific permissions when the workshop business type is COCO or FOFO.
+            </p>
+            {allOverrides.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No policy overrides configured</p>
+            ) : (
               <div className="space-y-2.5">
-                {overrides.map((o) => {
+                {allOverrides.map((o) => {
                   const perm = permissions.find((p) => p.permission_key === o.permission_key);
                   return (
-                    <div key={o.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{o.policy_type}</Badge>
-                        <span className="text-xs">{perm?.display_label || o.permission_key}</span>
+                    <div key={o.id} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">{o.policy_type}</Badge>
+                        <span className="text-xs truncate">{perm?.display_label || o.permission_key}</span>
                       </div>
-                      <Switch
-                        checked={o.enabled}
-                        onCheckedChange={() => toggleOverride(o.id)}
-                        className="scale-90"
-                      />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Switch
+                          checked={o.enabled}
+                          onCheckedChange={() => toggleOverride(o.id)}
+                          className="scale-90"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setDeletingOverrideId(o.id)}
+                          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Sticky Save Bar */}
@@ -408,6 +520,70 @@ export default function RoleDetailPage() {
           </Button>
         </div>
       )}
+
+      {/* Add Override Dialog */}
+      <Dialog open={showAddOverride} onOpenChange={setShowAddOverride}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add Policy Override</DialogTitle>
+            <DialogDescription>
+              Override a permission for a specific workshop business type.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Policy Type</label>
+              <Select value={newOverridePolicyType} onValueChange={setNewOverridePolicyType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {POLICY_TYPES.map(pt => (
+                    <SelectItem key={pt} value={pt}>{pt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Permission</label>
+              <Select value={newOverridePermKey} onValueChange={setNewOverridePermKey}>
+                <SelectTrigger><SelectValue placeholder="Select permission" /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {availablePermKeysForOverride.map(p => (
+                    <SelectItem key={p.permission_key} value={p.permission_key}>
+                      {p.display_label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium">Enabled in {newOverridePolicyType} workshops</label>
+              <Switch checked={newOverrideEnabled} onCheckedChange={setNewOverrideEnabled} className="scale-90" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddOverride(false)}>Cancel</Button>
+            <Button onClick={handleAddOverride} disabled={!newOverridePermKey}>Add Override</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Override Confirmation */}
+      <AlertDialog open={!!deletingOverrideId} onOpenChange={() => setDeletingOverrideId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Override?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the policy override. The change will be applied when you save.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deletingOverrideId && handleDeleteOverride(deletingOverrideId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>

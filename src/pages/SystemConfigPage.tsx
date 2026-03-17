@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useRbacPermissions } from '@/hooks/useRbacPermissions';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -7,11 +8,10 @@ import { ListTree, ClipboardList, Package, ClipboardCheck, ChevronRight, ToggleL
 
 export default function SystemConfigPage() {
   const { profile } = useAuth();
+  const { can } = useRbacPermissions();
   const navigate = useNavigate();
 
-  const isSystemAdmin = profile?.role === 'system_admin';
-  const isSuperAdmin = profile?.role === 'super_admin';
-  const hasAccess = isSystemAdmin || isSuperAdmin;
+  const hasAccess = can('config.view');
 
   if (!hasAccess) {
     return (
