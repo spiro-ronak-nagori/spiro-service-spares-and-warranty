@@ -251,8 +251,14 @@ function SpareActions({
   );
 }
 
-export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus }: SparesUsedSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const isControlled = controlledExpanded !== undefined;
+  const isExpanded = isControlled ? controlledExpanded : localExpanded;
+  const handleToggle = () => {
+    if (onToggle) onToggle();
+    else setLocalExpanded(!localExpanded);
+  };
 
   const showSubmitAll = useMemo(() => {
     if (!warrantyEnabled || !canEdit || !onSubmitAll) return false;
