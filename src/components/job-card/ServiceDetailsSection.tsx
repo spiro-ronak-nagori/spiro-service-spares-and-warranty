@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Wrench, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ServiceDetailsSectionProps {
   serviceCategories: string[];
@@ -79,8 +79,21 @@ export function ServiceDetailsSection({
               <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}</p>
             )}
           </div>
-          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
+            {canEditIssues && (
+              <span
+                role="button"
+                tabIndex={0}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => { e.stopPropagation(); onEditIssues(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onEditIssues(); } }}
+              >
+                Edit
+              </span>
+            )}
+            <span className="text-muted-foreground">
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </span>
           </div>
         </button>
       </CardHeader>
@@ -114,18 +127,6 @@ export function ServiceDetailsSection({
             </div>
           )}
 
-          {canEditIssues && (
-            <div className="pt-3 border-t border-border mt-4">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
-                onClick={onEditIssues}
-              >
-                <Pencil className="h-3 w-3" />
-                Edit Issues
-              </button>
-            </div>
-          )}
 
           {customerComments && (
             <>
