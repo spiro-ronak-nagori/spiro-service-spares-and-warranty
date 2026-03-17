@@ -137,14 +137,8 @@ export function ServiceDetailsSection({
             </>
           )}
 
-          {/* 3. Completion Remarks */}
-          {completionRemarks && (
-            <>
-              <Separator className="my-3" />
-              <p className="text-xs text-muted-foreground mb-1">Completion Remarks</p>
-              <p className="text-sm">{completionRemarks}</p>
-            </>
-          )}
+
+
 
           {/* 4. Edit CTA at bottom */}
           {canEditIssues && (
