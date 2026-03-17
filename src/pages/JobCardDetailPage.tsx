@@ -702,7 +702,7 @@ export default function JobCardDetailPage() {
             onClick={() => setShowChecklist(true)}
             disabled={isUpdating}>
             
-            Complete Checklist
+            Complete Inward Checklist
           </Button>);
 
       }
