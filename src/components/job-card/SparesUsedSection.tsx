@@ -457,23 +457,24 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
             <>
               {/* Grouped spare list */}
               <div className="divide-y divide-border/50">
-                {Array.from(groups.entries()).map(([claimType, groupSpares]) => (
-                  <div key={claimType} className="first:pt-0 pt-3 pb-1">
-                  <SpareGroup
-                    key={claimType}
-                    claimType={claimType}
-                    spares={groupSpares}
-                    expandedId={expandedSpareId}
-                    onToggleExpand={handleToggleSpare}
-                    canEdit={canEdit}
-                    warrantyEnabled={warrantyEnabled}
-                    onSubmitWarranty={onSubmitWarranty}
-                    onWithdrawSpare={onWithdrawSpare}
-                    onRespondNeedsInfo={onRespondNeedsInfo}
-                    onConvertToUserPaid={onConvertToUserPaid}
-                    onEditSpare={onEditSpare}
-                    onDeleteSpare={onDeleteSpare}
-                  />
+                {Array.from(groups.entries()).map(([claimType, groupSpares], idx) => (
+                  <div key={claimType}>
+                    {idx > 0 && <div className="border-t border-border/40 mt-3 mb-2" />}
+                    <SpareGroup
+                      claimType={claimType}
+                      spares={groupSpares}
+                      expandedId={expandedSpareId}
+                      onToggleExpand={handleToggleSpare}
+                      canEdit={canEdit}
+                      warrantyEnabled={warrantyEnabled}
+                      onSubmitWarranty={onSubmitWarranty}
+                      onWithdrawSpare={onWithdrawSpare}
+                      onRespondNeedsInfo={onRespondNeedsInfo}
+                      onConvertToUserPaid={onConvertToUserPaid}
+                      onEditSpare={onEditSpare}
+                      onDeleteSpare={onDeleteSpare}
+                    />
+                  </div>
                 ))}
               </div>
 
