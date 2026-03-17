@@ -542,6 +542,60 @@ export type Database = {
           },
         ]
       }
+      job_card_labour: {
+        Row: {
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          id: string
+          job_card_id: string
+          labour_master_id: string
+          rate: number | null
+          remarks: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          duration_minutes?: number
+          id?: string
+          job_card_id: string
+          labour_master_id: string
+          rate?: number | null
+          remarks?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          id?: string
+          job_card_id?: string
+          labour_master_id?: string
+          rate?: number | null
+          remarks?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_card_labour_job_card_id_fkey"
+            columns: ["job_card_id"]
+            isOneToOne: false
+            referencedRelation: "job_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_card_labour_labour_master_id_fkey"
+            columns: ["labour_master_id"]
+            isOneToOne: false
+            referencedRelation: "labour_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_card_spare_actions: {
         Row: {
           action_type: Database["public"]["Enums"]["spare_action_type"]
@@ -901,6 +955,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      labour_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          changed_field: string | null
+          country: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          job_card_id: string | null
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          changed_field?: string | null
+          country?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          job_card_id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          changed_field?: string | null
+          country?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          job_card_id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: []
+      }
+      labour_master: {
+        Row: {
+          country: string
+          created_at: string
+          default_rate: number | null
+          description: string | null
+          duration_editable: boolean
+          id: string
+          is_active: boolean
+          labour_code: string | null
+          labour_name: string
+          rate_editable: boolean
+          standard_duration_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          default_rate?: number | null
+          description?: string | null
+          duration_editable?: boolean
+          id?: string
+          is_active?: boolean
+          labour_code?: string | null
+          labour_name: string
+          rate_editable?: boolean
+          standard_duration_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          default_rate?: number | null
+          description?: string | null
+          duration_editable?: boolean
+          id?: string
+          is_active?: boolean
+          labour_code?: string | null
+          labour_name?: string
+          rate_editable?: boolean
+          standard_duration_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       otp_codes: {
         Row: {
