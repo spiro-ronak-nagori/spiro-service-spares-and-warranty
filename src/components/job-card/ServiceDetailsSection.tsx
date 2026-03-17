@@ -127,18 +127,6 @@ export function ServiceDetailsSection({
             </div>
           )}
 
-          {canEditIssues && (
-            <div className="pt-3 border-t border-border mt-4">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
-                onClick={onEditIssues}
-              >
-                <Pencil className="h-3 w-3" />
-                Edit Issues
-              </button>
-            </div>
-          )}
 
           {customerComments && (
             <>
