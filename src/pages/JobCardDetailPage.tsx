@@ -419,8 +419,8 @@ export default function JobCardDetailPage() {
       }
 
       toast.success(`Job card moved to ${STATUS_CONFIG[newStatus].label}`);
-      fetchJobCard();
-      fetchAuditTrail();
+      // Refresh both in parallel
+      Promise.all([fetchJobCard(), fetchAuditTrail()]);
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Failed to update job card');
