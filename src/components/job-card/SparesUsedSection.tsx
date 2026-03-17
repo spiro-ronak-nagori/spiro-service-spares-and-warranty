@@ -207,10 +207,13 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
         {spares.length === 0 ? (
           <div className="text-center py-4">
             <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">No spares recorded yet.</p>
+            <p className="text-sm text-muted-foreground">No spares added yet</p>
+            {mandatorySparesRequired && (
+              <p className="text-xs text-amber-600 mt-1 font-medium">⚠ Required before delivery</p>
+            )}
             {canEdit && onAddSpares && (
-              <Button variant="default" size="sm" onClick={onAddSpares} className="mt-3">
-                <Plus className="h-3.5 w-3.5 mr-1" />
+              <Button variant="outline" size="sm" onClick={onAddSpares} className="mt-3 gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
                 Add Spares
               </Button>
             )}
