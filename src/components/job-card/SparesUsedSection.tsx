@@ -344,7 +344,12 @@ function SpareGroup({
 /* ── Main section ── */
 export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
   const [localExpanded, setLocalExpanded] = useState(false);
-  const [expandedSpareId, setExpandedSpareId] = useState<string | null>(null);
+  // Auto-expand first actionable spare
+  const defaultExpandId = useMemo(() => {
+    const actionable = spares.find(s => needsAction(s));
+    return actionable?.id ?? null;
+  }, [spares]);
+  const [expandedSpareId, setExpandedSpareId] = useState<string | null>(defaultExpandId);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : localExpanded;
   const handleToggle = () => {
