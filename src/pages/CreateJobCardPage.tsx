@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeRegNo } from '@/lib/normalize-reg-no';
+import { useRbacPermissions } from '@/hooks/useRbacPermissions';
 import { uploadJcImage } from '@/lib/upload-jc-image';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
