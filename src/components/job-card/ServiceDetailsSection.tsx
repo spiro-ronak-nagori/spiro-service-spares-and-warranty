@@ -148,17 +148,14 @@ export function ServiceDetailsSection({
 
           {/* 4. Edit CTA at bottom */}
           {canEditIssues && (
-            <>
-              <Separator className="my-3" />
-              <button
-                type="button"
-                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={onEditIssues}
-              >
-                <Pencil className="h-3 w-3" />
-                Edit Service Details
-              </button>
-            </>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-xs font-medium text-primary mt-3 ml-[22px]"
+              onClick={onEditIssues}
+            >
+              <Pencil className="h-3 w-3" />
+              Edit Service Details
+            </button>
           )}
         </CardContent>
       )}
