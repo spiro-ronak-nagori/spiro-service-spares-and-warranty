@@ -107,7 +107,7 @@ export function WorkExecutionSection({
                   <p className="text-sm text-foreground/90">{note.text}</p>
                   {note.timestamp && (
                     <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-                      {note.timestamp.replace(' ', ' • ')}
+                      {note.timestamp.replace(/\s(?=\d{1,2}:\d{2})/, ' • ')}
                     </p>
                   )}
                 </div>
