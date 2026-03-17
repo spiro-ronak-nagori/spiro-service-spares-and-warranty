@@ -293,7 +293,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
         <button
           type="button"
           className="w-full flex items-center justify-between text-left"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleToggle}
         >
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base flex items-center gap-2">
