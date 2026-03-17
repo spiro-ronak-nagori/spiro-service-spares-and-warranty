@@ -19,6 +19,7 @@ interface CompleteWorkDialogProps {
   sparesEnabled?: boolean;
   spares?: JobCardSpare[];
   warrantyEnabled?: boolean;
+  canAddSpares?: boolean;
   onOpenSparesModal?: () => void;
 }
 
