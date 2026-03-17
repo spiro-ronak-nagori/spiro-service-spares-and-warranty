@@ -419,8 +419,8 @@ export default function JobCardDetailPage() {
       }
 
       toast.success(`Job card moved to ${STATUS_CONFIG[newStatus].label}`);
-      fetchJobCard();
-      fetchAuditTrail();
+      // Refresh both in parallel
+      Promise.all([fetchJobCard(), fetchAuditTrail()]);
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Failed to update job card');
@@ -463,24 +463,26 @@ export default function JobCardDetailPage() {
     try {
       const oldName = (jobCard as any).assigned_mechanic_name || null;
 
-      const { error } = await supabase.
-      from('job_cards').
-      update({ assigned_mechanic_name: name } as any).
-      eq('id', jobCard.id);
-      if (error) throw error;
-
-      await supabase.from('audit_trail').insert({
-        job_card_id: jobCard.id,
-        user_id: profile.id,
-        from_status: jobCard.status,
-        to_status: jobCard.status,
-        notes: JSON.stringify({
-          event: 'MECHANIC_NAME_UPDATED',
-          old_mechanic_name: oldName,
-          new_mechanic_name: name,
-          status_at_change: jobCard.status
-        })
-      });
+      // Run update + audit insert concurrently
+      const [updateResult] = await Promise.all([
+        supabase
+          .from('job_cards')
+          .update({ assigned_mechanic_name: name } as any)
+          .eq('id', jobCard.id),
+        supabase.from('audit_trail').insert({
+          job_card_id: jobCard.id,
+          user_id: profile.id,
+          from_status: jobCard.status,
+          to_status: jobCard.status,
+          notes: JSON.stringify({
+            event: 'MECHANIC_NAME_UPDATED',
+            old_mechanic_name: oldName,
+            new_mechanic_name: name,
+            status_at_change: jobCard.status
+          })
+        }),
+      ]);
+      if (updateResult.error) throw updateResult.error;
 
       setShowMechanicSheet(false);
 
@@ -489,8 +491,7 @@ export default function JobCardDetailPage() {
         await updateStatus('IN_PROGRESS', { assigned_mechanic_name: name });
       } else {
         toast.success('Mechanic name updated');
-        fetchJobCard();
-        fetchAuditTrail();
+        Promise.all([fetchJobCard(), fetchAuditTrail()]);
       }
     } catch (err: any) {
       console.error('Error saving mechanic name:', err);
@@ -565,25 +566,30 @@ export default function JobCardDetailPage() {
       return;
     }
 
+    // Close dialog immediately for perceived speed
+    setShowCompleteWork(false);
+
     // Append closure remarks as a work note with type qualifier
     const existing = (jobCard as any).mechanic_notes as string | null;
     const timestamp = format(new Date(), 'dd MMM HH:mm');
     const entry = `[${timestamp}] 🔒 Work completed — ${remarks}`;
     const updatedNotes = existing ? `${existing}\n${entry}` : entry;
 
-    const { error } = await supabase
-      .from('job_cards')
-      .update({ mechanic_notes: updatedNotes } as any)
-      .eq('id', jobCard.id);
+    // Run notes update + status transition concurrently
+    const [notesResult] = await Promise.all([
+      supabase
+        .from('job_cards')
+        .update({ mechanic_notes: updatedNotes } as any)
+        .eq('id', jobCard.id),
+      updateStatus('READY'),
+    ]);
 
-    if (error) {
-      toast.error('Failed to save work note');
-      return;
+    if (notesResult.error) {
+      console.error('Failed to save work note:', notesResult.error);
     }
 
-    await updateStatus('READY');
-    await sendSms({ jobCardId: jobCard.id, trigger: 'READY' });
-    setShowCompleteWork(false);
+    // Fire SMS in background — don't block UI
+    sendSms({ jobCardId: jobCard.id, trigger: 'READY' }).catch(console.error);
   };
 
   const handleInwardingVerified = () => {
@@ -609,25 +615,31 @@ export default function JobCardDetailPage() {
       setIsUpdating(true);
       try {
         const outSocUrl = await uploadJcImage(pendingOutSocData.file, jobCard.id, 'outgoing_soc');
-        await supabase.
-        from('job_cards').
-        update({
-          out_soc_value: pendingOutSocData.value,
-          out_soc_photo_url: outSocUrl,
-          out_soc_detected_value: pendingOutSocData.validation?.ocr?.socReading ?? null,
-          out_soc_detection_confidence: pendingOutSocData.validation?.ocr?.confidence ?? null,
-          out_soc_override_reason: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchReason : null,
-          out_soc_override_comment: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchComment : null,
-          out_soc_anomaly_flag: false
-        } as any).
-        eq('id', jobCard.id);
+        // Run SOC data save + status transition concurrently
+        await Promise.all([
+          supabase
+            .from('job_cards')
+            .update({
+              out_soc_value: pendingOutSocData.value,
+              out_soc_photo_url: outSocUrl,
+              out_soc_detected_value: pendingOutSocData.validation?.ocr?.socReading ?? null,
+              out_soc_detection_confidence: pendingOutSocData.validation?.ocr?.confidence ?? null,
+              out_soc_override_reason: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchReason : null,
+              out_soc_override_comment: pendingOutSocData.mismatchConfirmed ? pendingOutSocData.mismatchComment : null,
+              out_soc_anomaly_flag: false
+            } as any)
+            .eq('id', jobCard.id),
+          updateStatus('DELIVERED', { delivery_otp_verified: true }),
+        ]);
 
-        await updateStatus('DELIVERED', { delivery_otp_verified: true });
-        const result = await sendSms({ jobCardId: jobCard.id, trigger: 'DELIVERED' });
-        if (result?.auto_completed) {
-          fetchJobCard();
-          fetchAuditTrail();
-        }
+        // Fire SMS in background
+        sendSms({ jobCardId: jobCard.id, trigger: 'DELIVERED' })
+          .then(result => {
+            if (result?.auto_completed) {
+              Promise.all([fetchJobCard(), fetchAuditTrail()]);
+            }
+          })
+          .catch(console.error);
       } catch (err) {
         console.error('Error saving outgoing SOC:', err);
         toast.error('Failed to save outgoing SOC data');
