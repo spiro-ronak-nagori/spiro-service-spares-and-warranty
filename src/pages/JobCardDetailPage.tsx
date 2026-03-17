@@ -809,7 +809,7 @@ export default function JobCardDetailPage() {
             setShowCompleteWork(true);
           }}
           disabled={isUpdating}
-          variant={sparesBlocking ? 'outline' : 'default'}>
+          variant="default">
           
           {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           {sparesBlocking ? 'Add Required Spares' : 'Mark Work Completed'}
