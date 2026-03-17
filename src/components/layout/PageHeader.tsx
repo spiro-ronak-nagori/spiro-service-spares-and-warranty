@@ -62,7 +62,7 @@ export function PageHeader({
           
           <img src={spiroLogo} alt="Spiro" className="h-10 w-10 object-contain flex-shrink-0" />
           <div className="min-w-0">
-            <h1 className="font-semibold leading-tight truncate text-sm text-left px-[40px]">
+            <h1 className="font-semibold leading-tight truncate text-sm px-[20px] text-center ml-[6px]">
               {title}
             </h1>
             {subtitle &&
