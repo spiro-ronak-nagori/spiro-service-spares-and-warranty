@@ -121,6 +121,10 @@ export default function RoleDetailPage() {
   useEffect(() => {
     if (!isSystemAdmin || !roleKey) return;
     loadData();
+    // Load countries for override scoping
+    supabase.from('countries_master').select('name').eq('is_active', true).order('sort_order').then(({ data }) => {
+      setCountries(data || []);
+    });
   }, [isSystemAdmin, roleKey]);
 
   const loadData = async () => {
