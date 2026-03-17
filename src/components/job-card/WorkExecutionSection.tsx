@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Hammer, ChevronDown, ChevronUp, User, ClipboardPen, Loader2 } from 'lucide-react';
+import { Hammer, ChevronDown, ChevronUp, User, ClipboardPen, Loader2, Plus } from 'lucide-react';
 
 interface WorkExecutionSectionProps {
   assignedMechanicName?: string | null;
@@ -12,6 +12,18 @@ interface WorkExecutionSectionProps {
   onAddNote?: (note: string) => Promise<void>;
   isExpanded?: boolean;
   onToggle?: () => void;
+}
+
+/** Parse "[dd MMM HH:mm] note text" lines into structured entries */
+function parseNotes(raw: string | null | undefined): { text: string; timestamp: string }[] {
+  if (!raw) return [];
+  return raw.split('\n').filter(Boolean).map((line) => {
+    const match = line.match(/^\[([^\]]+)\]\s*(.*)/);
+    if (match) {
+      return { timestamp: match[1], text: match[2] };
+    }
+    return { timestamp: '', text: line };
+  });
 }
 
 export function WorkExecutionSection({
@@ -39,12 +51,11 @@ export function WorkExecutionSection({
   };
 
   const isExpanded = controlledExpanded ?? false;
+  const parsedNotes = useMemo(() => parseNotes(mechanicNotes), [mechanicNotes]);
 
-  // Collapsed subtitle: mechanic name or latest note line
-  const latestNoteLine = mechanicNotes
-    ? mechanicNotes.split('\n').filter(Boolean).pop() || null
-    : null;
-  const subtitle = assignedMechanicName || latestNoteLine || 'No notes yet';
+  // Collapsed subtitle: mechanic name or latest note text
+  const latestNote = parsedNotes.length > 0 ? parsedNotes[parsedNotes.length - 1].text : null;
+  const subtitle = assignedMechanicName || latestNote || 'No notes yet';
 
   return (
     <Card>
@@ -84,26 +95,39 @@ export function WorkExecutionSection({
           )}
 
           {/* 2. Work Notes */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClipboardPen className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Work Notes</p>
-            </div>
-            {canAddNote && !showNoteInput && (
-              <button
-                type="button"
-                className="text-xs font-medium text-primary"
-                onClick={() => setShowNoteInput(true)}
-              >
-                + Add Note
-              </button>
-            )}
+          <div className="flex items-center gap-2">
+            <ClipboardPen className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">Work Notes</p>
           </div>
-          {mechanicNotes ? (
-            <p className="text-sm whitespace-pre-wrap text-foreground/80 mt-0.5 ml-[22px]">{mechanicNotes}</p>
+
+          {parsedNotes.length > 0 ? (
+            <div className="mt-1.5 ml-[22px] space-y-2.5">
+              {parsedNotes.map((note, i) => (
+                <div key={i}>
+                  <p className="text-sm text-foreground/90">{note.text}</p>
+                  {note.timestamp && (
+                    <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+                      {note.timestamp.replace(' ', ' • ')}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           ) : !showNoteInput ? (
             <p className="text-xs text-muted-foreground/60 mt-0.5 ml-[22px]">No notes yet</p>
           ) : null}
+
+          {/* Add Note CTA — anchored below notes */}
+          {canAddNote && !showNoteInput && (
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-xs font-medium text-primary mt-3 ml-[22px]"
+              onClick={() => setShowNoteInput(true)}
+            >
+              <Plus className="h-3 w-3" />
+              Add Note
+            </button>
+          )}
 
           {/* Inline note input */}
           {showNoteInput && (
