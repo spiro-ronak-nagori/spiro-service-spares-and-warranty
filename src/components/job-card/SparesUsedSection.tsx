@@ -110,20 +110,28 @@ function SparePhotos({ photos, kind, label }: { photos: JobCardSpare['photos']; 
   const filtered = (photos || []).filter(p => p.photo_kind === kind);
   if (filtered.length === 0) return null;
   return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground flex items-center gap-1">
-        <Camera className="h-3 w-3" />
+    <div>
+      <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1 mb-1">
+        <Camera className="h-2.5 w-2.5" />
         {label}
       </p>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {filtered.map(photo => (
-          <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-16 h-16 rounded-md overflow-hidden border border-border bg-muted">
+          <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer" className="block w-14 h-14 rounded overflow-hidden border border-border bg-muted">
             <img src={photo.photo_url} alt={photo.description_prompt || label} className="w-full h-full object-cover" loading="lazy" />
           </a>
         ))}
       </div>
     </div>
   );
+}
+
+/* ── Check if spare needs action ── */
+function needsAction(spare: JobCardSpare): boolean {
+  const state = getWarrantyDisplayState(spare);
+  return ['SUBMISSION_PENDING', 'READY_TO_SUBMIT', 'NEEDS_INFO'].includes(state) && spare.approval_state === 'DRAFT'
+    || spare.approval_state === 'NEEDS_INFO'
+    || spare.approval_state === 'REJECTED';
 }
 
 /* ── Single spare item (collapsed/expanded) ── */
@@ -142,18 +150,12 @@ function SpareItem({
   const partName = spare.spare_part?.part_name || 'Unknown Part';
   const partCode = spare.spare_part?.part_code;
 
-  const claimColor = spare.claim_type === 'WARRANTY'
-    ? 'text-blue-600'
-    : spare.claim_type === 'GOODWILL'
-      ? 'text-purple-600'
-      : 'text-muted-foreground';
-
   return (
-    <div className="py-2.5">
+    <div className="py-2">
       {/* Collapsed summary — always visible */}
       <button
         type="button"
-        className="w-full flex items-start justify-between text-left gap-2"
+        className="w-full flex items-start justify-between text-left gap-2 active:bg-muted/30 rounded-md -mx-1 px-1 py-0.5 transition-colors"
         onClick={onToggleExpand}
       >
         <div className="flex-1 min-w-0">
@@ -163,49 +165,52 @@ function SpareItem({
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             <span className="text-xs text-muted-foreground">Qty: {spare.qty}</span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className={`text-xs font-medium ${claimColor}`}>{CLAIM_LABEL[spare.claim_type]}</span>
             {statusText && (
-              <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                {statusText}
-              </span>
+              <>
+                <span className="text-xs text-muted-foreground">·</span>
+                <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                  {statusText}
+                </span>
+              </>
             )}
           </div>
         </div>
-        <div className="shrink-0 text-muted-foreground mt-0.5">
-          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-        </div>
+        {expanded && (
+          <div className="shrink-0 text-muted-foreground/50 mt-1">
+            <ChevronUp className="h-3 w-3" />
+          </div>
+        )}
       </button>
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-2.5 space-y-2 pl-0">
+        <div className="mt-1.5 space-y-1.5 pl-0">
           {spare.serial_number && (
             <div className="text-xs">
-              <span className="text-muted-foreground">New Part Serial#:</span>{' '}
+              <span className="text-muted-foreground/70">Serial#:</span>{' '}
               <span className="font-medium text-foreground">{spare.serial_number}</span>
             </div>
           )}
-          <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
-
           {spare.old_part_serial_number && (
             <div className="text-xs">
-              <span className="text-muted-foreground">Old Part Serial#:</span>{' '}
+              <span className="text-muted-foreground/70">Old Part#:</span>{' '}
               <span className="font-medium text-foreground">{spare.old_part_serial_number}</span>
             </div>
           )}
+
+          <SparePhotos photos={spare.photos} kind="NEW_PART_PROOF" label={PHOTO_KIND_LABEL.NEW_PART_PROOF} />
           <SparePhotos photos={spare.photos} kind="OLD_PART_EVIDENCE" label={PHOTO_KIND_LABEL.OLD_PART_EVIDENCE} />
           <SparePhotos photos={spare.photos} kind="ADDITIONAL" label={PHOTO_KIND_LABEL.ADDITIONAL} />
 
           {spare.technician_comment && (
-            <p className="text-xs text-muted-foreground italic">"{spare.technician_comment}"</p>
+            <p className="text-[11px] text-muted-foreground italic">"{spare.technician_comment}"</p>
           )}
 
           <SpareDecisionInfo spare={spare} />
 
           {/* Actions */}
           {canEdit && (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pt-1">
               {warrantyEnabled && onSubmitWarranty && spare.claim_type !== 'USER_PAID' && spare.approval_state === 'DRAFT' && (
                 <Button variant="default" size="sm" className="h-8 text-xs w-full"
                   onClick={() => onSubmitWarranty(spare)}>
@@ -224,7 +229,7 @@ function SpareItem({
 
               {spare.approval_state === 'NEEDS_INFO' && (
                 <>
-                  <div className="bg-accent/50 border border-border rounded-md p-2 text-xs">
+                  <div className="bg-accent/50 border border-border rounded p-1.5 text-xs">
                     <span className="font-medium text-foreground">Admin requested more info</span>
                   </div>
                   {onRespondNeedsInfo && (
@@ -263,7 +268,7 @@ function SpareItem({
               )}
 
               {!locked && (onEditSpare || onDeleteSpare) && (
-                <div className="flex items-center gap-4 pt-0.5">
+                <div className="flex items-center gap-4">
                   {onEditSpare && (
                     <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
                       onClick={() => onEditSpare(spare)}>
@@ -282,7 +287,7 @@ function SpareItem({
               )}
 
               {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   Claim submitted. Withdraw to make changes.
                 </p>
               )}
@@ -306,21 +311,15 @@ function SpareGroup({
   onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
   onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
 }) {
-  const claimColor = claimType === 'WARRANTY'
-    ? 'text-blue-600'
-    : claimType === 'GOODWILL'
-      ? 'text-purple-600'
-      : 'text-muted-foreground';
-
   return (
     <div>
-      <div className="flex items-center gap-2 py-1.5">
-        <span className={`text-xs font-semibold uppercase tracking-wide ${claimColor}`}>
+      <div className="flex items-center gap-1.5 pb-1">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           {CLAIM_LABEL[claimType]}
         </span>
-        <span className="text-[10px] text-muted-foreground">({spares.length})</span>
+        <span className="text-[10px] text-muted-foreground/60">({spares.length})</span>
       </div>
-      <div className="divide-y divide-border">
+      <div className="space-y-0.5">
         {spares.map((spare) => (
           <SpareItem
             key={spare.id}
@@ -345,7 +344,12 @@ function SpareGroup({
 /* ── Main section ── */
 export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
   const [localExpanded, setLocalExpanded] = useState(false);
-  const [expandedSpareId, setExpandedSpareId] = useState<string | null>(null);
+  // Auto-expand first actionable spare
+  const defaultExpandId = useMemo(() => {
+    const actionable = spares.find(s => needsAction(s));
+    return actionable?.id ?? null;
+  }, [spares]);
+  const [expandedSpareId, setExpandedSpareId] = useState<string | null>(defaultExpandId);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : localExpanded;
   const handleToggle = () => {
@@ -460,7 +464,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
           ) : (
             <>
               {/* Grouped spare list */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {Array.from(groups.entries()).map(([claimType, groupSpares]) => (
                   <SpareGroup
                     key={claimType}
