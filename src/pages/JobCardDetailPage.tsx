@@ -916,24 +916,27 @@ export default function JobCardDetailPage() {
 
         {/* 5. Timeline */}
         <Card>
-          <CardHeader
-            className="pb-3 cursor-pointer"
-            onClick={() => setShowTimeline(!showTimeline)}>
-            
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Timeline
-              </CardTitle>
-              {showTimeline ?
-              <ChevronUp className="h-4 w-4" /> :
-
-              <ChevronDown className="h-4 w-4" />
-              }
-            </div>
-            <CardDescription>
-              {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
-            </CardDescription>
+          <CardHeader className="pb-0">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between text-left"
+              onClick={() => setShowTimeline(!showTimeline)}
+            >
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Timeline
+                </CardTitle>
+                {!showTimeline && (
+                  <p className="text-xs text-muted-foreground mt-1 ml-6">
+                    {auditTrail.length} status change{auditTrail.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
+                {showTimeline ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </button>
           </CardHeader>
           {showTimeline &&
           <CardContent className="pt-0">

@@ -57,38 +57,16 @@ export function ServiceDetailsSection({
 
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (serviceCategories.length === 0 && issueCategories.length === 0) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            Service Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No services selected</p>
-          {canEditIssues && (
-            <button
-              type="button"
-              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary"
-              onClick={onEditIssues}
-            >
-              <Pencil className="h-3 w-3" />
-              Edit Issues
-            </button>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
   const summaryLine = (() => {
     const catNames = grouped.filter((g) => g.code !== '__orphan__').map((g) => g.name);
     const maxShow = 3;
     if (catNames.length <= maxShow) return catNames.join(', ');
     return `${catNames.slice(0, maxShow).join(', ')} +${catNames.length - maxShow} more`;
   })();
+
+  const subtitle = serviceCategories.length === 0 && issueCategories.length === 0
+    ? 'No services selected'
+    : `${totalCategories} ${totalCategories === 1 ? 'category' : 'categories'} · ${totalIssues} ${totalIssues === 1 ? 'issue' : 'issues'}`;
 
   return (
     <Card>
@@ -104,12 +82,7 @@ export function ServiceDetailsSection({
               Service Details
             </CardTitle>
             {!isExpanded && (
-              <div className="mt-1 ml-6">
-                <p className="text-xs text-muted-foreground">
-                  {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} • {totalIssues} {totalIssues === 1 ? 'issue' : 'issues'}
-                </p>
-                <p className="text-sm text-foreground/80 truncate mt-0.5">{summaryLine}</p>
-              </div>
+              <p className="text-xs text-muted-foreground mt-1 ml-6 truncate">{subtitle}{totalIssues > 0 ? ` · ${summaryLine}` : ''}</p>
             )}
           </div>
           <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
@@ -120,28 +93,32 @@ export function ServiceDetailsSection({
 
       {isExpanded && (
         <CardContent className="pt-3">
-          <div className="space-y-4">
-            {grouped.map((group) => (
-              <div key={group.code}>
-                <p className="text-sm font-semibold text-foreground">{group.name}</p>
-                {group.issues.length > 0 && (
-                  <ul className="mt-1.5 ml-3 space-y-1">
-                    {group.issues.slice(0, MAX_VISIBLE_ISSUES).map((issue) => (
-                      <li key={issue.code} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-muted-foreground/40 mt-0.5 text-xs">•</span>
-                        <span>{issue.name}</span>
-                      </li>
-                    ))}
-                    {group.issues.length > MAX_VISIBLE_ISSUES && (
-                      <li className="text-xs text-muted-foreground/70 ml-4">
-                        +{group.issues.length - MAX_VISIBLE_ISSUES} more
-                      </li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
+          {serviceCategories.length === 0 && issueCategories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No services selected</p>
+          ) : (
+            <div className="space-y-4">
+              {grouped.map((group) => (
+                <div key={group.code}>
+                  <p className="text-sm font-semibold text-foreground">{group.name}</p>
+                  {group.issues.length > 0 && (
+                    <ul className="mt-1.5 ml-3 space-y-1">
+                      {group.issues.slice(0, MAX_VISIBLE_ISSUES).map((issue) => (
+                        <li key={issue.code} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <span className="text-muted-foreground/40 mt-0.5 text-xs">•</span>
+                          <span>{issue.name}</span>
+                        </li>
+                      ))}
+                      {group.issues.length > MAX_VISIBLE_ISSUES && (
+                        <li className="text-xs text-muted-foreground/70 ml-4">
+                          +{group.issues.length - MAX_VISIBLE_ISSUES} more
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {canEditIssues && (
             <div className="pt-3 border-t border-border mt-4">
