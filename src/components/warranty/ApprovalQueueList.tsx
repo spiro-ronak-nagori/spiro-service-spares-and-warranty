@@ -138,7 +138,7 @@ export function ApprovalQueueList({ onSelectItem }: ApprovalQueueListProps) {
           </Select>
           {workshops.length > 0 && (
             <Select value={workshopFilter} onValueChange={setWorkshopFilter}>
-              <SelectTrigger className="h-9 min-w-0">
+              <SelectTrigger className="h-9 min-w-0 px-2 text-xs">
                 <SelectValue placeholder="All Workshops" />
               </SelectTrigger>
               <SelectContent>
