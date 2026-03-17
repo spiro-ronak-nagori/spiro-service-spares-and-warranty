@@ -84,6 +84,8 @@ export default function JobCardDetailPage() {
 
   // Checklist — read from persisted column
   const [showChecklist, setShowChecklist] = useState(false);
+  // If checklist_status is already persisted in DB, we don't need to wait for the feature flag
+  const persistedChecklistStatusRaw = jobCard ? (jobCard as any).checklist_status as string | null : null;
   const [checklistStatusResolved, setChecklistStatusResolved] = useState(false);
 
   // Mechanic name
@@ -218,12 +220,12 @@ export default function JobCardDetailPage() {
   }, [jobCard?.issue_categories, sparesEnabled]);
 
   // Resolve checklist_status for INWARDED job cards where it's still NULL
-  // This runs once and persists the result to the DB column
+  // Only needs feature flag when checklist_status is not yet persisted
   useEffect(() => {
-    if (!id || !jobCard || checklistFlagLoading || checklistStatusResolved) return;
+    if (!id || !jobCard || checklistStatusResolved) return;
     const currentChecklistStatus = (jobCard as any).checklist_status;
 
-    // If already persisted, nothing to do
+    // If already persisted, nothing to do — instant resolution
     if (currentChecklistStatus) {
       setChecklistStatusResolved(true);
       return;
@@ -235,11 +237,13 @@ export default function JobCardDetailPage() {
       return;
     }
 
+    // For NULL status on INWARDED cards, we need the feature flag to decide
+    if (checklistFlagLoading) return;
+
     // If feature flag is off, persist NOT_APPLICABLE
     if (!checklistEnabledForThisJC) {
       (async () => {
         await supabase.from('job_cards').update({ checklist_status: 'NOT_APPLICABLE' } as any).eq('id', id);
-        // Update local state
         setJobCard(prev => prev ? { ...prev, checklist_status: 'NOT_APPLICABLE' } as any : prev);
         setChecklistStatusResolved(true);
       })();
@@ -646,13 +650,16 @@ export default function JobCardDetailPage() {
 
   const vehicle = jobCard.vehicle;
 
-  // Compute checklist section status from persisted column
+  // Compute checklist section status from persisted column — instant when DB value exists
   const persistedChecklistStatus = (jobCard as any).checklist_status as string | null;
   const checklistSectionStatus = (() => {
-    if (checklistFlagLoading || !checklistStatusResolved) return 'loading' as const;
-    if (!persistedChecklistStatus || persistedChecklistStatus === 'NOT_APPLICABLE') return 'not_applicable' as const;
+    // If DB has a value, use it instantly — no waiting for feature flag
+    if (persistedChecklistStatus === 'NOT_APPLICABLE') return 'not_applicable' as const;
     if (persistedChecklistStatus === 'COMPLETED') return 'completed' as const;
-    return 'pending' as const;
+    if (persistedChecklistStatus === 'PENDING') return 'pending' as const;
+    // NULL = needs resolution; show loading only if we're still resolving
+    if (!checklistStatusResolved) return 'loading' as const;
+    return 'not_applicable' as const;
   })();
 
   // Show checklist section on INWARDED status (and IN_PROGRESS to show completed state)
@@ -660,7 +667,7 @@ export default function JobCardDetailPage() {
 
   // Determine if sticky CTA needs checklist gate for INWARDED
   const inwardedNeedsChecklist = jobCard.status === 'INWARDED' && persistedChecklistStatus === 'PENDING';
-  const checklistStillLoading = checklistFlagLoading || !checklistStatusResolved;
+  const checklistStillLoading = !persistedChecklistStatus && !checklistStatusResolved;
 
   // Determine sticky CTA content
   const renderStickyCta = () => {
