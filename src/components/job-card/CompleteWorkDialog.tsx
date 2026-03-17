@@ -183,11 +183,15 @@ export function CompleteWorkDialog({
                       ))}
                     </ul>
                   </div>
-                  {onOpenSparesModal && (
+                  {canAddSpares && onOpenSparesModal ? (
                       <Button type="button" variant="destructive" size="sm" onClick={handleAddSparesNow} className="mt-2 h-11">
                       <Package className="h-3.5 w-3.5 mr-1.5" />
                       Add Spares Now
                     </Button>
+                  ) : (
+                    <p className="text-xs text-destructive/80 mt-2 font-medium">
+                      Ask your Spares Manager to add the required spares before completing work.
+                    </p>
                   )}
                 </div>
               </div>
