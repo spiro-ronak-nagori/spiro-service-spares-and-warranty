@@ -987,20 +987,6 @@ export default function JobCardDetailPage() {
 
         }
 
-        {/* Spares required alert (inline, not a CTA) */}
-        {sparesEnabled && mandatorySparesRequired && spares.length === 0 && (jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') &&
-        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-sm text-destructive flex-1">
-              Spares required for selected issues. Please add spares to complete work.
-            </p>
-            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={() => {setEditingSpare(null);setShowSparesModal(true);}}>
-              <Package className="h-3.5 w-3.5 mr-1" />
-              Add Spares
-            </Button>
-          </div>
-        }
-
         {/* 4. Spares Used Section */}
         {sparesEnabled &&
         <SparesUsedSection
@@ -1015,7 +1001,9 @@ export default function JobCardDetailPage() {
           onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
           onSubmitAll={warrantyEnabled ? () => setShowSubmitAll(true) : undefined}
           canEdit={jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED'}
-          warrantyEnabled={warrantyEnabled} />
+          warrantyEnabled={warrantyEnabled}
+          mandatorySparesRequired={mandatorySparesRequired}
+          jobCardStatus={jobCard.status} />
 
         }
 
