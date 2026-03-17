@@ -600,7 +600,9 @@ export default function RoleDetailPage() {
               </Select>
             </div>
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium">Enabled in {newOverridePolicyType} workshops</label>
+              <label className="text-xs font-medium">
+                Enabled in {newOverridePolicyType === 'ALL' ? 'all' : newOverridePolicyType} workshops
+              </label>
               <Switch checked={newOverrideEnabled} onCheckedChange={setNewOverrideEnabled} className="scale-90" />
             </div>
           </div>
