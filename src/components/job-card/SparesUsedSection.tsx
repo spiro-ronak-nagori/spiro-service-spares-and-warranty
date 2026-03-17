@@ -28,6 +28,8 @@ interface SparesUsedSectionProps {
   warrantyEnabled?: boolean;
   mandatorySparesRequired?: boolean;
   jobCardStatus?: string;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
 const CLAIM_LABEL: Record<string, string> = {
