@@ -249,10 +249,19 @@ export function SparesModal({
 
           if (shouldMerge && existingRows.length > 0) {
             const row = existingRows[0];
+            const newQty = row.qty + line.qty;
+            const maxQty = line.part?.max_qty_allowed || 50;
+
+            if (newQty > maxQty) {
+              toast.error(`Maximum quantity (${maxQty}) reached for ${line.part?.part_name || 'this part'}`);
+              setSaving(false);
+              return;
+            }
+
             const { error } = await supabase
               .from('job_card_spares' as any)
               .update({
-                qty: row.qty + line.qty,
+                qty: newQty,
                 updated_by: profileId,
                 technician_comment: line.comment || row.technician_comment,
               } as any)
