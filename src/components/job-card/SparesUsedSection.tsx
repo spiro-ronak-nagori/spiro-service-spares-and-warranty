@@ -290,7 +290,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
   const showWarningIndicator = showSparesWarning && isActiveStatus;
 
   return (
-    <Card id="spares-used-section" className={showWarningIndicator ? 'border-amber-300 bg-amber-50/30' : ''}>
+    <Card id="spares-used-section">
       <CardHeader className={isExpanded ? "pb-0" : ""}>
         <button
           type="button"
@@ -303,33 +303,22 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
               Spares Used
             </CardTitle>
             {!isExpanded && (
-              <div className="ml-6 mt-1 space-y-0.5">
-                <p className="text-xs text-muted-foreground">
-                  {spares.length} {spares.length === 1 ? 'item' : 'items'}
-                </p>
-                {showWarningIndicator && (
-                  <p className="text-xs text-amber-700 flex items-center gap-1">
+              <p className="text-xs mt-1 ml-6">
+                {showWarningIndicator ? (
+                  <span className="text-amber-700 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3 shrink-0" />
                     Spares required for selected issues
-                  </p>
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {spares.length} {spares.length === 1 ? 'item' : 'items'}
+                  </span>
                 )}
-              </div>
+              </p>
             )}
           </div>
-          <div className="shrink-0 ml-2 flex items-center gap-2 self-start mt-1">
-            {/* "+ Add" shortcut only when collapsed with no spares */}
-            {!isExpanded && spares.length === 0 && canEdit && onAddSpares && (
-              <span
-                role="button"
-                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={(e) => { e.stopPropagation(); onAddSpares(); }}
-              >
-                + Add
-              </span>
-            )}
-            <span className="text-muted-foreground">
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </span>
+          <div className="shrink-0 ml-2 text-muted-foreground self-start mt-1">
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </button>
       </CardHeader>
