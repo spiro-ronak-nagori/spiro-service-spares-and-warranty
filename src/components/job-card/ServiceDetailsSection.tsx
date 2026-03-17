@@ -59,8 +59,14 @@ export function ServiceDetailsSection({
   const totalCategories = serviceCategories.length;
   const totalIssues = issueCategories.length;
 
+  const isControlled = controlledExpanded !== undefined;
   const autoExpand = (totalCategories + totalIssues) < 5;
-  const [isExpanded, setIsExpanded] = useState(autoExpand);
+  const [localExpanded, setLocalExpanded] = useState(autoExpand);
+  const isExpanded = isControlled ? controlledExpanded : localExpanded;
+  const handleToggle = () => {
+    if (onToggle) onToggle();
+    else setLocalExpanded(!localExpanded);
+  };
 
   const subtitle = serviceCategories.length === 0 && issueCategories.length === 0
     ? 'No services selected'
