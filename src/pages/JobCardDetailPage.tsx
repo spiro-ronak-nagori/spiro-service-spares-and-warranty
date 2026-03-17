@@ -795,36 +795,52 @@ export default function JobCardDetailPage() {
       }
     }
 
-    if (status === 'IN_PROGRESS' && can('jc.mark_completed')) {
+    if (status === 'IN_PROGRESS') {
       const sparesBlocking = sparesEnabled && mandatorySparesRequired && spares.length === 0;
       const canAddSpares = can('spares.add');
-      if (sparesBlocking && !canAddSpares) {
-        // Technician can't add spares — show disabled CTA with guidance
+      const canComplete = can('jc.mark_completed');
+
+      if (canComplete) {
+        if (sparesBlocking && !canAddSpares) {
+          // Technician can't add spares — show disabled CTA with guidance
+          return (
+            <Button
+              className="w-full h-12 text-sm font-semibold"
+              disabled
+              variant="default">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Spares Required — Contact Spares Manager
+            </Button>);
+        }
         return (
           <Button
             className="w-full h-12 text-sm font-semibold"
-            disabled
+            onClick={() => {
+              if (sparesBlocking && canAddSpares) {
+                setEditingSpare(null);
+                setShowSparesModal(true);
+                return;
+              }
+              setShowCompleteWork(true);
+            }}
+            disabled={isUpdating}
             variant="default">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            Spares Required — Contact Spares Manager
+            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            {sparesBlocking ? 'Add Required Spares' : 'Mark Work Completed'}
           </Button>);
       }
-      return (
-        <Button
-          className="w-full h-12 text-sm font-semibold"
-          onClick={() => {
-            if (sparesBlocking && canAddSpares) {
-              setEditingSpare(null);
-              setShowSparesModal(true);
-              return;
-            }
-            setShowCompleteWork(true);
-          }}
-          disabled={isUpdating}
-          variant="default">
-          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          {sparesBlocking ? 'Add Required Spares' : 'Mark Work Completed'}
-        </Button>);
+
+      // User can't complete work but CAN add spares — show Add Spare CTA
+      if (canAddSpares) {
+        return (
+          <Button
+            className="w-full h-12 text-sm font-semibold"
+            onClick={() => { setEditingSpare(null); setShowSparesModal(true); }}
+            disabled={isUpdating}
+            variant="default">
+            + Add Spare
+          </Button>);
+      }
     }
 
     if (status === 'REOPENED' && can('jc.start_work')) {
