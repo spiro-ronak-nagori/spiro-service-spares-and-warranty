@@ -885,7 +885,7 @@ export default function JobCardDetailPage() {
           canEditIssues={canEditIssues}
           onEditIssues={() => setShowEditIssues(true)}
           customerComments={(jobCard as any).customer_comments}
-          completionRemarks={jobCard.completion_remarks}
+          
           isExpanded={expandedSection === 'service'}
           onToggle={() => toggleSection('service')}
         />
