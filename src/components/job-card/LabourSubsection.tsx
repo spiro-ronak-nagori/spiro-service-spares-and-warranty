@@ -92,13 +92,13 @@ export function LabourSubsection({
       </div>
 
       {isLoading ? (
-        <div className="mt-1.5 ml-[22px]">
+        <div className="mt-1 ml-[22px]">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground/60 mt-0.5 ml-[22px]">No labour added yet</p>
+        <p className="text-xs text-muted-foreground/60 mt-1 ml-[22px]">No labour added yet</p>
       ) : (
-        <div className="mt-1.5 ml-[22px] space-y-1">
+        <div className="mt-1 ml-[22px] space-y-1">
           {rows.map((row) => (
             <button
               key={row.labourMasterId}
