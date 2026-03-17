@@ -261,7 +261,7 @@ export default function ManageLabourPage() {
                     <p className="text-xs text-muted-foreground">Allow labour entries in job cards for {selectedCountry}</p>
                   </div>
                   <Switch
-                    checked={labourEnabled && sparesEnabled}
+                    checked={!!labourEnabledLocal && sparesEnabled}
                     onCheckedChange={handleToggleLabourEnabled}
                     disabled={!sparesEnabled}
                   />
