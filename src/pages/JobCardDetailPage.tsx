@@ -84,6 +84,8 @@ export default function JobCardDetailPage() {
 
   // Checklist — read from persisted column
   const [showChecklist, setShowChecklist] = useState(false);
+  // If checklist_status is already persisted in DB, we don't need to wait for the feature flag
+  const persistedChecklistStatusRaw = jobCard ? (jobCard as any).checklist_status as string | null : null;
   const [checklistStatusResolved, setChecklistStatusResolved] = useState(false);
 
   // Mechanic name
