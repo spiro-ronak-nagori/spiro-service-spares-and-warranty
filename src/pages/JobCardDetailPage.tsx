@@ -157,9 +157,6 @@ export default function JobCardDetailPage() {
       if (newMechanicName !== undefined) {
         updatePayload.assigned_mechanic_name = newMechanicName || null;
       }
-      if (newMechanicNotes !== undefined) {
-        updatePayload.mechanic_notes = newMechanicNotes || null;
-      }
 
       const hasIssueChanges = addedIssues.length > 0 || removedIssues.length > 0 || addedServices.length > 0 || removedServices.length > 0;
       const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || '')) ||
