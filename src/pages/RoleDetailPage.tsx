@@ -103,7 +103,7 @@ export default function RoleDetailPage() {
       const { data: roleData } = await supabase
         .from('rbac_roles')
         .select('*')
-        .eq('role_key', roleKey)
+        .eq('role_key', roleKey as any)
         .single();
 
       if (!roleData) { navigate('/console/roles'); return; }

@@ -30,6 +30,8 @@ import ShortLinkRedirect from "./pages/ShortLinkRedirect";
 import WarrantyApprovalsPage from "./pages/WarrantyApprovalsPage";
 import ManageWarrantyAdminsPage from "./pages/ManageWarrantyAdminsPage";
 import ManageChecklistPage from "./pages/ManageChecklistPage";
+import ManageRolesPage from "./pages/ManageRolesPage";
+import RoleDetailPage from "./pages/RoleDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
