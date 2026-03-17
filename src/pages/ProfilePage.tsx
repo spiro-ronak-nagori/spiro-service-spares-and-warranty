@@ -253,7 +253,7 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && profile?.role !== 'warranty_admin' && (
+        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && profile?.role !== 'warranty_admin' && profile?.role !== 'system_admin' && (
           <Card>
             <CardContent className="py-8 text-center">
               <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

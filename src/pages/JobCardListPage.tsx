@@ -199,15 +199,17 @@ export default function JobCardListPage() {
   return (
     <AppLayout>
       <PageHeader 
-        title="Aftersales Platform"
+        title={isSparesManager ? 'Spares Management' : 'Aftersales Platform'}
         rightAction={
-          <Button 
-            size="icon" 
-            className="h-9 w-9"
-            onClick={handleCreateJobCard}
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
+          !isSparesManager ? (
+            <Button 
+              size="icon" 
+              className="h-9 w-9"
+              onClick={handleCreateJobCard}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          ) : undefined
         }
       />
       

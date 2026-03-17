@@ -9,7 +9,7 @@ export type JobCardStatus =
   | 'REOPENED'
   | 'COMPLETED';
 
-export type UserRole = 'technician' | 'workshop_admin' | 'country_admin' | 'super_admin' | 'system_admin' | 'warranty_admin';
+export type UserRole = 'technician' | 'workshop_admin' | 'country_admin' | 'super_admin' | 'system_admin' | 'warranty_admin' | 'spares_manager';
 
 export type SpareActionType = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'TECH_RESPONSE' | 'RESUBMIT' | 'EDIT_RESET' | 'WITHDRAW';
 

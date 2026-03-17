@@ -387,17 +387,15 @@ export function InviteUserDialog({
               {/* Scope Summary */}
               <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
                 <div className="flex items-center gap-1.5">
-                  {role === 'workshop_admin' ? (
-                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  ) : (
-                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  )}
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium">Access Scope</span>
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto">Workshop</Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   {role === 'workshop_admin'
                     ? `Will have admin access to ${selectedWorkshop?.name || 'the assigned workshop'} — can manage team, view all job cards, and configure workshop settings.`
+                    : role === 'spares_manager'
+                    ? `Will have spares management access to ${selectedWorkshop?.name || 'the assigned workshop'} — can view job cards and manage spare parts (add, edit, submit warranty claims).`
                     : `Will have technician access to ${selectedWorkshop?.name || 'the assigned workshop'} — can create and work on job cards assigned to them.`
                   }
                 </p>
