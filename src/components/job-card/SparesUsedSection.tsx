@@ -26,6 +26,8 @@ interface SparesUsedSectionProps {
   onSubmitAll?: () => void;
   canEdit?: boolean;
   warrantyEnabled?: boolean;
+  mandatorySparesRequired?: boolean;
+  jobCardStatus?: string;
 }
 
 const CLAIM_LABEL: Record<string, string> = {
