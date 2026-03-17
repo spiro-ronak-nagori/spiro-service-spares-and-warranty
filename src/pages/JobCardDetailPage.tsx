@@ -1000,7 +1000,7 @@ export default function JobCardDetailPage() {
         isSaving={isSavingIssues}
         mechanicName={(jobCard as any).assigned_mechanic_name}
         showMechanicFields={showMechanicFieldsInEdit}
-        mechanicNotes={(jobCard as any).mechanic_notes} />
+        />
 
       }
 
