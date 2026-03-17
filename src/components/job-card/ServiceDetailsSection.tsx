@@ -55,14 +55,8 @@ export function ServiceDetailsSection({
   const totalCategories = serviceCategories.length;
   const totalIssues = issueCategories.length;
 
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const summaryLine = (() => {
-    const catNames = grouped.filter((g) => g.code !== '__orphan__').map((g) => g.name);
-    const maxShow = 3;
-    if (catNames.length <= maxShow) return catNames.join(', ');
-    return `${catNames.slice(0, maxShow).join(', ')} +${catNames.length - maxShow} more`;
-  })();
+  const autoExpand = (totalCategories + totalIssues) < 5;
+  const [isExpanded, setIsExpanded] = useState(autoExpand);
 
   const subtitle = serviceCategories.length === 0 && issueCategories.length === 0
     ? 'No services selected'
