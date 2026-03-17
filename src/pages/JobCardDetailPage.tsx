@@ -76,8 +76,8 @@ export default function JobCardDetailPage() {
   const workshopCountry = (jobCard as any)?.workshop?.country || null;
   const workshopType = (jobCard as any)?.workshop?.type || null;
 
-  // RBAC permissions — scoped to the JC's workshop type for COCO/FOFO overlays
-  const { can } = useRbacPermissions(workshopType);
+  // RBAC permissions — scoped to the JC's workshop type + country for COCO/FOFO overlays
+  const { can } = useRbacPermissions(workshopType, workshopCountry);
 
   // Spares (country-aware)
   const { sparesEnabled, warrantyEnabled } = useSparesFeatureFlags(workshopCountry);
