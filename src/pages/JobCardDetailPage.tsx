@@ -715,15 +715,32 @@ export default function JobCardDetailPage() {
     }
 
     if (status === 'IN_PROGRESS' || status === 'REOPENED') {
+      const sparesBlocking = sparesEnabled && mandatorySparesRequired && spares.length === 0;
       return (
-        <Button
-          className="w-full h-12 text-sm font-semibold"
-          onClick={() => setShowCompleteWork(true)}
-          disabled={isUpdating}>
-          
-          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Mark Work Completed
-        </Button>);
+        <div className="space-y-1.5">
+          <Button
+            className="w-full h-12 text-sm font-semibold"
+            onClick={() => {
+              if (sparesBlocking) {
+                // Scroll to & expand spares section
+                if (expandedSection !== 'spares') toggleSection('spares');
+                document.getElementById('spares-used-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+              }
+              setShowCompleteWork(true);
+            }}
+            disabled={isUpdating || sparesBlocking}
+            variant={sparesBlocking ? 'outline' : 'default'}>
+            
+            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Mark Work Completed
+          </Button>
+          {sparesBlocking && (
+            <p className="text-xs text-center text-muted-foreground">
+              Add required spares to continue
+            </p>
+          )}
+        </div>);
 
     }
 
