@@ -1323,22 +1323,32 @@ export default function JobCardDetailPage() {
           open={showLabourSheet}
           onOpenChange={(open) => {
             setShowLabourSheet(open);
-            if (!open) setEditingLabour(null);
+            if (!open) setEditingLabourRow(null);
           }}
           catalogue={labourCatalogue}
-          editingEntry={editingLabour}
+          existingEntries={labourEntries}
+          editingRow={editingLabourRow}
           onSave={handleSaveLabour}
+          onRemove={() => {
+            if (editingLabourRow) {
+              setShowLabourSheet(false);
+              setDeletingLabourRow(editingLabourRow);
+              setEditingLabourRow(null);
+            }
+          }}
           isSaving={isSavingLabour}
+          canEdit={canEditLabourInJc && can('labour.edit')}
+          canRemove={canEditLabourInJc && can('labour.remove')}
         />
       )}
 
       {/* Labour Delete Confirmation */}
       <ConfirmationDialog
-        open={!!deletingLabourId}
-        onOpenChange={(open) => { if (!open) setDeletingLabourId(null); }}
+        open={!!deletingLabourRow}
+        onOpenChange={(open) => { if (!open) setDeletingLabourRow(null); }}
         title="Remove Labour"
-        description="Are you sure you want to remove this labour entry? This action cannot be undone."
-        onConfirm={handleDeleteLabour}
+        description={`Remove all ${deletingLabourRow?.labourName || ''} labour from this job card? This action cannot be undone.`}
+        onConfirm={handleDeleteLabourRow}
         confirmLabel="Remove"
         variant="destructive"
       />
