@@ -279,33 +279,7 @@ function SpareItem({
     </div>
   );
 }
-                      onClick={(e) => { e.stopPropagation(); onEditSpare(spare); }}>
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                    </button>
-                  )}
-                  {onDeleteSpare && (
-                    <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-destructive"
-                      onClick={(e) => { e.stopPropagation(); onDeleteSpare(spare.id); }}>
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </button>
-                  )}
-                </div>
-              )}
 
-              {locked && !['APPROVED', 'REJECTED', 'NEEDS_INFO'].includes(spare.approval_state) && (
-                <p className="text-xs text-muted-foreground">
-                  Claim submitted. Withdraw to make changes.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ── Main section ── */
 export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare, onDeleteSpare, onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onSubmitAll, canEdit, warrantyEnabled, mandatorySparesRequired, jobCardStatus, isExpanded: controlledExpanded, onToggle }: SparesUsedSectionProps) {
