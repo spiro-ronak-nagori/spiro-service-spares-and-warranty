@@ -43,6 +43,7 @@ export default function ProfilePage() {
       case 'country_admin': return 'Country Admin';
       case 'workshop_admin': return 'Workshop Admin';
       case 'warranty_admin': return 'Warranty Admin';
+      case 'spares_manager': return 'Spares Manager';
       default: return 'Technician';
     }
   };
