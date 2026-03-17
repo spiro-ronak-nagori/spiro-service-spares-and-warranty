@@ -797,11 +797,23 @@ export default function JobCardDetailPage() {
 
     if (status === 'IN_PROGRESS' && can('jc.mark_completed')) {
       const sparesBlocking = sparesEnabled && mandatorySparesRequired && spares.length === 0;
+      const canAddSpares = can('spares.add');
+      if (sparesBlocking && !canAddSpares) {
+        // Technician can't add spares — show disabled CTA with guidance
+        return (
+          <Button
+            className="w-full h-12 text-sm font-semibold"
+            disabled
+            variant="default">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Spares Required — Contact Spares Manager
+          </Button>);
+      }
       return (
         <Button
           className="w-full h-12 text-sm font-semibold"
           onClick={() => {
-            if (sparesBlocking && can('spares.add')) {
+            if (sparesBlocking && canAddSpares) {
               setEditingSpare(null);
               setShowSparesModal(true);
               return;
