@@ -14,7 +14,7 @@ export default function SuperAdminConsolePage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [exporting, setExporting] = useState(false);
-  const { can } = useRbacPermissions();
+  const { can, isLoading: rbacLoading } = useRbacPermissions();
   const [lastExport, setLastExport] = useState<{
     status: string;
     finished_at: string | null;
@@ -40,6 +40,16 @@ export default function SuperAdminConsolePage() {
         if (data && data.length > 0) setLastExport(data[0]);
       });
   }, [isSystemAdmin]);
+
+  if (rbacLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!hasAccess) {
     return (
@@ -85,7 +95,7 @@ export default function SuperAdminConsolePage() {
       label: 'Manage Team',
       description: 'Invite and manage your workshop team members',
       icon: Users,
-      path: `/console/workshops/${profile?.workshop_id}/team`,
+      path: '/manage-team',
       visible: can('users.manage_workshop_team') && !can('config.manage_workshops') && !!profile?.workshop_id,
     },
     {
