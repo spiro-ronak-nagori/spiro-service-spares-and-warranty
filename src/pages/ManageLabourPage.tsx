@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useCountries } from '@/hooks/useCountries';
@@ -92,7 +92,7 @@ export default function ManageLabourPage() {
     setIsSaving(true);
     try {
       const payload: any = {
-        country_name: selectedCountry,
+        country: selectedCountry,
         labour_name: form.labour_name.trim(),
         labour_code: form.labour_code.trim() || null,
         description: form.description.trim() || null,
@@ -116,8 +116,8 @@ export default function ManageLabourPage() {
           entity_id: editingItem.id,
           country: selectedCountry,
           actor_user_id: profile.id,
-          old_values: { labour_name: editingItem.labour_name, is_active: editingItem.is_active },
-          new_values: payload,
+          old_value: JSON.stringify({ labour_name: editingItem.labour_name, is_active: editingItem.is_active }),
+          new_value: JSON.stringify(payload),
         });
         toast.success('Labour item updated');
       } else {
@@ -134,7 +134,7 @@ export default function ManageLabourPage() {
           entity_id: (data as any).id,
           country: selectedCountry,
           actor_user_id: profile.id,
-          new_values: payload,
+          new_value: JSON.stringify(payload),
         });
         toast.success('Labour item added');
       }
@@ -179,7 +179,7 @@ export default function ManageLabourPage() {
         entity_type: 'CONFIG',
         country: selectedCountry,
         actor_user_id: profile.id,
-        new_values: { ENABLE_LABOUR: enabled },
+        new_value: JSON.stringify({ ENABLE_LABOUR: enabled }),
       });
 
       toast.success(`Labour ${enabled ? 'enabled' : 'disabled'} for ${selectedCountry}`);

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface LabourMasterItem {
   id: string;
-  country_name: string;
+  country: string;
   labour_code: string | null;
   labour_name: string;
   description: string | null;
@@ -12,7 +12,6 @@ export interface LabourMasterItem {
   is_active: boolean;
   duration_editable: boolean;
   rate_editable: boolean;
-  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -45,8 +44,8 @@ export function useLabourMaster(country: string | null) {
       const { data, error } = await supabase
         .from('labour_master' as any)
         .select('*')
-        .eq('country_name', country)
-        .order('sort_order');
+        .eq('country', country)
+        .order('labour_name');
       if (error) throw error;
       setItems((data || []) as unknown as LabourMasterItem[]);
     } catch (err) {
@@ -123,7 +122,7 @@ export async function addJobCardLabour(
     entity_id: (data as any).id,
     job_card_id: jobCardId,
     actor_user_id: profileId,
-    new_values: { labour_master_id: labourMasterId, duration_minutes: durationMinutes, rate, remarks },
+    new_value: JSON.stringify({ labour_master_id: labourMasterId, duration_minutes: durationMinutes, rate, remarks }),
   });
 
   return data;
@@ -150,7 +149,7 @@ export async function updateJobCardLabour(
     entity_id: id,
     job_card_id: jobCardId,
     actor_user_id: profileId,
-    new_values: updates,
+    new_value: JSON.stringify(updates),
   });
 }
 
