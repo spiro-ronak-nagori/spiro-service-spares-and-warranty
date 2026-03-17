@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VALID_ROLES = ["technician", "workshop_admin", "country_admin", "super_admin", "system_admin", "warranty_admin"];
+const VALID_ROLES = ["technician", "workshop_admin", "country_admin", "super_admin", "system_admin", "warranty_admin", "spares_manager"];
 // Roles that require system_admin to assign
 const SYSTEM_ADMIN_ONLY_ROLES = ["super_admin", "system_admin"];
 // Roles that require at least super_admin

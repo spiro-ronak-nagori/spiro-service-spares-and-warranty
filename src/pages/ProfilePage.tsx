@@ -31,6 +31,7 @@ export default function ProfilePage() {
       case 'country_admin': return 'default';
       case 'workshop_admin': return 'default';
       case 'warranty_admin': return 'default';
+      case 'spares_manager': return 'default';
       default: return 'secondary';
     }
   };
@@ -42,11 +43,12 @@ export default function ProfilePage() {
       case 'country_admin': return 'Country Admin';
       case 'workshop_admin': return 'Workshop Admin';
       case 'warranty_admin': return 'Warranty Admin';
+      case 'spares_manager': return 'Spares Manager';
       default: return 'Technician';
     }
   };
 
-  const canManageTeam = profile?.role === 'workshop_admin' || profile?.role === 'super_admin' || profile?.role === 'country_admin' || profile?.role === 'system_admin';
+  const canManageTeam = ['workshop_admin', 'super_admin', 'country_admin', 'system_admin'].includes(profile?.role || '');
 
   // Fetch warranty admin assignments with resolved workshop names
   const { data: warrantyAssignments } = useQuery({
@@ -251,7 +253,7 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && profile?.role !== 'warranty_admin' && (
+        {!workshop && profile?.role !== 'super_admin' && profile?.role !== 'country_admin' && profile?.role !== 'warranty_admin' && profile?.role !== 'system_admin' && (
           <Card>
             <CardContent className="py-8 text-center">
               <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

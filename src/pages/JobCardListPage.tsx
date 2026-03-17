@@ -35,6 +35,7 @@ export default function JobCardListPage() {
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
   const isElevatedAdmin = isSuperAdmin || isCountryAdmin;
+  const isSparesManager = profile?.role === 'spares_manager';
   const [activeTab, setActiveTab] = useState<TabValue>('ongoing');
   const [searchQuery, setSearchQuery] = useState('');
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
@@ -198,15 +199,17 @@ export default function JobCardListPage() {
   return (
     <AppLayout>
       <PageHeader 
-        title="Aftersales Platform"
+        title={isSparesManager ? 'Spares Management' : 'Aftersales Platform'}
         rightAction={
-          <Button 
-            size="icon" 
-            className="h-9 w-9"
-            onClick={handleCreateJobCard}
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
+          !isSparesManager ? (
+            <Button 
+              size="icon" 
+              className="h-9 w-9"
+              onClick={handleCreateJobCard}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          ) : undefined
         }
       />
       
