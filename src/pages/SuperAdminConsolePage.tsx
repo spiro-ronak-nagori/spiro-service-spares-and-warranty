@@ -95,7 +95,7 @@ export default function SuperAdminConsolePage() {
       label: 'Manage Team',
       description: 'Invite and manage your workshop team members',
       icon: Users,
-      path: `/console/workshops/${profile?.workshop_id}/team`,
+      path: '/manage-team',
       visible: can('users.manage_workshop_team') && !can('config.manage_workshops') && !!profile?.workshop_id,
     },
     {
