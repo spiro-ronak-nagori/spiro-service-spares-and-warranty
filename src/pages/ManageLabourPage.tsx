@@ -159,6 +159,7 @@ export default function ManageLabourPage() {
 
   const handleToggleLabourEnabled = async (enabled: boolean) => {
     if (!selectedCountry || !profile) return;
+    setLabourEnabledLocal(enabled);
     try {
       const { data: existing } = await supabase
         .from('country_settings' as any)
