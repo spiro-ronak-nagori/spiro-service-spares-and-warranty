@@ -464,7 +464,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
           ) : (
             <>
               {/* Grouped spare list */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {Array.from(groups.entries()).map(([claimType, groupSpares]) => (
                   <SpareGroup
                     key={claimType}
