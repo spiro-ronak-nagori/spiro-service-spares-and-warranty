@@ -35,6 +35,7 @@ export default function JobCardListPage() {
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
   const isElevatedAdmin = isSuperAdmin || isCountryAdmin;
+  const isSparesManager = profile?.role === 'spares_manager';
   const [activeTab, setActiveTab] = useState<TabValue>('ongoing');
   const [searchQuery, setSearchQuery] = useState('');
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
