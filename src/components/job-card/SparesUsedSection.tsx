@@ -151,11 +151,10 @@ function SpareItem({
   const partCode = spare.spare_part?.part_code;
 
   return (
-    <div className="py-2">
-      {/* Collapsed summary — always visible */}
+    <div className="py-1">
       <button
         type="button"
-        className="w-full flex items-start justify-between text-left gap-2 active:bg-muted/30 rounded-md -mx-1 px-1 py-0.5 transition-colors"
+        className="w-full flex items-center justify-between text-left gap-2 active:bg-muted/50 hover:bg-muted/30 rounded-lg px-2 py-2.5 -mx-2 transition-colors"
         onClick={onToggleExpand}
       >
         <div className="flex-1 min-w-0">
@@ -163,23 +162,16 @@ function SpareItem({
             {partName}
             {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
           </p>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <span className="text-xs text-muted-foreground">Qty: {spare.qty}</span>
-            {statusText && (
-              <>
-                <span className="text-xs text-muted-foreground">·</span>
-                <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                  {statusText}
-                </span>
-              </>
-            )}
-          </div>
+          {statusText && (
+            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive mt-1">
+              {statusText}
+            </span>
+          )}
+          <p className="text-xs text-muted-foreground mt-0.5">Qty: {spare.qty}</p>
         </div>
-        {expanded && (
-          <div className="shrink-0 text-muted-foreground/50 mt-1">
-            <ChevronUp className="h-3 w-3" />
-          </div>
-        )}
+        <div className="shrink-0 text-muted-foreground/80">
+          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+        </div>
       </button>
 
       {/* Expanded details */}
