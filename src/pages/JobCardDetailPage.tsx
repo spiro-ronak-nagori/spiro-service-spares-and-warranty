@@ -159,8 +159,7 @@ export default function JobCardDetailPage() {
       }
 
       const hasIssueChanges = addedIssues.length > 0 || removedIssues.length > 0 || addedServices.length > 0 || removedServices.length > 0;
-      const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || '')) ||
-        (newMechanicNotes !== undefined && newMechanicNotes !== ((jobCard as any).mechanic_notes || ''));
+      const hasMechanicChanges = (newMechanicName !== undefined && newMechanicName !== ((jobCard as any).assigned_mechanic_name || ''));
 
       if (!hasIssueChanges && !hasMechanicChanges) {
         setShowEditIssues(false);
