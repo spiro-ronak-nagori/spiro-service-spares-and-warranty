@@ -49,7 +49,7 @@ export function BottomNavigation() {
     }
 
     // Warranty Approvals tab (for non-warranty_admin roles that have it)
-    if (can('nav.warranty_approvals') && profile?.role !== 'warranty_admin') {
+    if (can('nav.warranty_approvals') && (profile?.role as string) !== 'warranty_admin') {
       items.push({ to: '/warranty-approvals', icon: ShieldCheck, label: 'Approvals' });
     }
 
