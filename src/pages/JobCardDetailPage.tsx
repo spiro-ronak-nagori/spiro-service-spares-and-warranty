@@ -217,15 +217,36 @@ export default function JobCardDetailPage() {
     checkMandatorySpares();
   }, [jobCard?.issue_categories, sparesEnabled]);
 
-  // Check if vehicle checklist is applicable and completed
+  // Resolve checklist_status for INWARDED job cards where it's still NULL
+  // This runs once and persists the result to the DB column
   useEffect(() => {
-    if (!id || !checklistEnabledForThisJC || !jobCard) {
-      setChecklistCompleted(null);
-      setChecklistApplicable(false);
-      setChecklistCheckLoading(false);
+    if (!id || !jobCard || checklistFlagLoading || checklistStatusResolved) return;
+    const currentChecklistStatus = (jobCard as any).checklist_status;
+
+    // If already persisted, nothing to do
+    if (currentChecklistStatus) {
+      setChecklistStatusResolved(true);
       return;
     }
-    setChecklistCheckLoading(true);
+
+    // Only resolve for INWARDED status (other statuses with NULL = legacy NOT_APPLICABLE)
+    if (jobCard.status !== 'INWARDED') {
+      setChecklistStatusResolved(true);
+      return;
+    }
+
+    // If feature flag is off, persist NOT_APPLICABLE
+    if (!checklistEnabledForThisJC) {
+      (async () => {
+        await supabase.from('job_cards').update({ checklist_status: 'NOT_APPLICABLE' } as any).eq('id', id);
+        // Update local state
+        setJobCard(prev => prev ? { ...prev, checklist_status: 'NOT_APPLICABLE' } as any : prev);
+        setChecklistStatusResolved(true);
+      })();
+      return;
+    }
+
+    // Feature flag is on — check template applicability
     (async () => {
       try {
         const template = await resolveChecklistTemplate(
@@ -233,80 +254,16 @@ export default function JobCardDetailPage() {
           jobCard.workshop_id,
           workshopCountry
         );
-        if (!template) {
-          setChecklistApplicable(false);
-          setChecklistCompleted(null);
-
-          // Audit: checklist not applicable (no matching template)
-          if (jobCard.status === 'INWARDED' && profile) {
-            const { data: existing } = await supabase.
-            from('audit_trail').
-            select('id').
-            eq('job_card_id', id).
-            like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%').
-            limit(1);
-            if (!existing || existing.length === 0) {
-              await supabase.from('audit_trail').insert({
-                job_card_id: id,
-                user_id: profile.id,
-                from_status: jobCard.status,
-                to_status: jobCard.status,
-                notes: JSON.stringify({
-                  event: 'VEHICLE_CHECKLIST_NOT_APPLICABLE',
-                  country: workshopCountry,
-                  reason: 'no_matching_template'
-                })
-              });
-            }
-          }
-          return;
-        }
-        setChecklistApplicable(true);
-
-        const { data } = await supabase.
-        from('checklist_runs' as any).
-        select('id').
-        eq('job_card_id', id).
-        limit(1).
-        maybeSingle();
-        setChecklistCompleted(!!data);
-      } catch {
-        setChecklistCompleted(null);
-        setChecklistApplicable(false);
+        const status = template ? 'PENDING' : 'NOT_APPLICABLE';
+        await supabase.from('job_cards').update({ checklist_status: status } as any).eq('id', id);
+        setJobCard(prev => prev ? { ...prev, checklist_status: status } as any : prev);
+      } catch (err) {
+        console.error('Failed to resolve checklist status:', err);
       } finally {
-        setChecklistCheckLoading(false);
+        setChecklistStatusResolved(true);
       }
     })();
-  }, [id, checklistEnabledForThisJC, showChecklist, jobCard?.workshop_id]);
-
-  // Audit when checklist feature is OFF for this country (once per JC)
-  useEffect(() => {
-    if (!id || !jobCard || !profile || checklistFlagLoading) return;
-    if (checklistEnabledForThisJC) return;
-    if (jobCard.status !== 'INWARDED') return;
-
-    (async () => {
-      const { data: existing } = await supabase.
-      from('audit_trail').
-      select('id').
-      eq('job_card_id', id).
-      like('notes', '%VEHICLE_CHECKLIST_NOT_APPLICABLE%').
-      limit(1);
-      if (!existing || existing.length === 0) {
-        await supabase.from('audit_trail').insert({
-          job_card_id: id,
-          user_id: profile.id,
-          from_status: jobCard.status,
-          to_status: jobCard.status,
-          notes: JSON.stringify({
-            event: 'VEHICLE_CHECKLIST_NOT_APPLICABLE',
-            country: workshopCountry,
-            reason: 'feature_flag_off'
-          })
-        });
-      }
-    })();
-  }, [id, jobCard?.status, checklistEnabledForThisJC, checklistFlagLoading]);
+  }, [id, jobCard?.id, jobCard?.status, checklistEnabledForThisJC, checklistFlagLoading, checklistStatusResolved]);
 
   const fetchJobCard = async () => {
     if (!id) return;
