@@ -1032,6 +1032,160 @@ export type Database = {
           },
         ]
       }
+      rbac_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          changed_field: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          target_role: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          changed_field?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          target_role?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          changed_field?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          target_role?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      rbac_permissions: {
+        Row: {
+          created_at: string
+          display_label: string
+          enabled: boolean
+          id: string
+          permission_group: Database["public"]["Enums"]["rbac_permission_group"]
+          permission_key: string
+          role_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_label: string
+          enabled?: boolean
+          id?: string
+          permission_group: Database["public"]["Enums"]["rbac_permission_group"]
+          permission_key: string
+          role_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_label?: string
+          enabled?: boolean
+          id?: string
+          permission_group?: Database["public"]["Enums"]["rbac_permission_group"]
+          permission_key?: string
+          role_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "rbac_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_policy_overrides: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          permission_key: string
+          policy_type: Database["public"]["Enums"]["rbac_policy_type"]
+          role_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled: boolean
+          id?: string
+          permission_key: string
+          policy_type: Database["public"]["Enums"]["rbac_policy_type"]
+          role_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          permission_key?: string
+          policy_type?: Database["public"]["Enums"]["rbac_policy_type"]
+          role_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_policy_overrides_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "rbac_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_roles: {
+        Row: {
+          created_at: string
+          default_scope: Database["public"]["Enums"]["rbac_scope_type"]
+          description: string | null
+          display_name: string
+          id: string
+          is_system_managed: boolean
+          role_key: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_scope?: Database["public"]["Enums"]["rbac_scope_type"]
+          description?: string | null
+          display_name: string
+          id?: string
+          is_system_managed?: boolean
+          role_key: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_scope?: Database["public"]["Enums"]["rbac_scope_type"]
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_system_managed?: boolean
+          role_key?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       report_daily_snapshot: {
         Row: {
           active_floor: number
@@ -1867,6 +2021,17 @@ export type Database = {
         | "CLOSED"
         | "REOPENED"
         | "COMPLETED"
+      rbac_permission_group:
+        | "NAVIGATION"
+        | "JOB_CARDS"
+        | "SPARES_MANAGEMENT"
+        | "WARRANTY"
+        | "REPORTS"
+        | "USERS_TEAM"
+        | "MASTERS_CONFIG"
+        | "PROFILE_SELF"
+      rbac_policy_type: "DEFAULT" | "COCO" | "FOFO"
+      rbac_scope_type: "global" | "country" | "workshop" | "assignment"
       spare_action_type:
         | "SUBMIT"
         | "APPROVE"
@@ -1884,6 +2049,7 @@ export type Database = {
         | "country_admin"
         | "system_admin"
         | "warranty_admin"
+        | "spares_manager"
       user_status: "INVITED" | "ACTIVE" | "REMOVED"
       workshop_grade: "A" | "B" | "C"
       workshop_type: "COCO" | "FOFO"
@@ -2036,6 +2202,18 @@ export const Constants = {
         "REOPENED",
         "COMPLETED",
       ],
+      rbac_permission_group: [
+        "NAVIGATION",
+        "JOB_CARDS",
+        "SPARES_MANAGEMENT",
+        "WARRANTY",
+        "REPORTS",
+        "USERS_TEAM",
+        "MASTERS_CONFIG",
+        "PROFILE_SELF",
+      ],
+      rbac_policy_type: ["DEFAULT", "COCO", "FOFO"],
+      rbac_scope_type: ["global", "country", "workshop", "assignment"],
       spare_action_type: [
         "SUBMIT",
         "APPROVE",
@@ -2054,6 +2232,7 @@ export const Constants = {
         "country_admin",
         "system_admin",
         "warranty_admin",
+        "spares_manager",
       ],
       user_status: ["INVITED", "ACTIVE", "REMOVED"],
       workshop_grade: ["A", "B", "C"],
