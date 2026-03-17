@@ -47,6 +47,7 @@ interface PolicyOverride {
   policy_type: string;
   permission_key: string;
   enabled: boolean;
+  country: string | null;
 }
 
 interface RoleData {

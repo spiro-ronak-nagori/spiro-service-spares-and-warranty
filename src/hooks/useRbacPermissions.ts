@@ -14,24 +14,27 @@ interface RbacPermissionState {
 /**
  * RBAC runtime permission hook.
  * Fetches permissions for the current user's role, then applies
- * COCO/FOFO policy overrides based on the workshop type.
+ * COCO/FOFO policy overrides based on the workshop type and country.
  *
- * Usage:
- *   const { can, isLoading } = useRbacPermissions();
- *   if (can('spares.add')) { ... }
+ * Overrides are matched with country precedence:
+ *   1. Country-specific override (exact match) wins
+ *   2. Global override (country IS NULL) is fallback
  *
- * Pass an optional workshopType override for job-card-level checks
- * where the JC's workshop type may differ from the user's home workshop.
+ * Pass an optional workshopTypeOverride / workshopCountryOverride
+ * for job-card-level checks where the JC's workshop may differ from the user's home workshop.
  */
-export function useRbacPermissions(workshopTypeOverride?: string | null): RbacPermissionState {
+export function useRbacPermissions(
+  workshopTypeOverride?: string | null,
+  workshopCountryOverride?: string | null,
+): RbacPermissionState {
   const { profile, workshop } = useAuth();
   const [basePerms, setBasePerms] = useState<Map<string, boolean>>(new Map());
-  const [overrides, setOverrides] = useState<{ policy_type: string; permission_key: string; enabled: boolean }[]>([]);
+  const [overrides, setOverrides] = useState<{ policy_type: string; permission_key: string; enabled: boolean; country: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const roleKey = profile?.role;
-  // Workshop type: prefer the override (for JC context), then user's own workshop
   const workshopType = workshopTypeOverride ?? workshop?.type ?? null;
+  const workshopCountry = workshopCountryOverride ?? workshop?.country ?? null;
 
   useEffect(() => {
     if (!roleKey) {
@@ -43,7 +46,6 @@ export function useRbacPermissions(workshopTypeOverride?: string | null): RbacPe
     const load = async () => {
       setIsLoading(true);
       try {
-        // Fetch role ID
         const { data: roleData } = await supabase
           .from('rbac_roles')
           .select('id')
@@ -52,26 +54,23 @@ export function useRbacPermissions(workshopTypeOverride?: string | null): RbacPe
 
         if (!roleData || cancelled) { setIsLoading(false); return; }
 
-        // Fetch base permissions
-        const { data: permData } = await supabase
-          .from('rbac_permissions')
-          .select('permission_key, enabled')
-          .eq('role_id', roleData.id);
+        const [permRes, ovRes] = await Promise.all([
+          supabase
+            .from('rbac_permissions')
+            .select('permission_key, enabled')
+            .eq('role_id', roleData.id),
+          supabase
+            .from('rbac_policy_overrides')
+            .select('policy_type, permission_key, enabled, country')
+            .eq('role_id', roleData.id),
+        ]);
 
         if (cancelled) return;
 
         const map = new Map<string, boolean>();
-        (permData || []).forEach((p: any) => map.set(p.permission_key, p.enabled));
+        (permRes.data || []).forEach((p: any) => map.set(p.permission_key, p.enabled));
         setBasePerms(map);
-
-        // Fetch policy overrides for this role
-        const { data: ovData } = await supabase
-          .from('rbac_policy_overrides')
-          .select('policy_type, permission_key, enabled')
-          .eq('role_id', roleData.id);
-
-        if (cancelled) return;
-        setOverrides((ovData || []) as any[]);
+        setOverrides((ovRes.data || []) as any[]);
       } catch (err) {
         console.error('RBAC load error', err);
       } finally {
@@ -83,28 +82,46 @@ export function useRbacPermissions(workshopTypeOverride?: string | null): RbacPe
     return () => { cancelled = true; };
   }, [roleKey]);
 
-  // Compute effective permission set applying workshop-type overlay
+  // Compute effective permission set applying workshop-type + country overlay
   const enabledKeys = useMemo(() => {
     const keys = new Set<string>();
     basePerms.forEach((enabled, key) => {
       if (enabled) keys.add(key);
     });
 
-    // Apply COCO/FOFO overrides if workshop type matches
     if (workshopType) {
-      for (const ov of overrides) {
-        if (ov.policy_type === workshopType) {
-          if (ov.enabled) {
-            keys.add(ov.permission_key);
-          } else {
-            keys.delete(ov.permission_key);
-          }
+      // Group overrides by permission_key for this policy_type
+      // Then pick the most specific match: country-specific > global (null)
+      const relevantOverrides = overrides.filter(ov => ov.policy_type === workshopType);
+
+      // Build a map: permission_key -> best override
+      const bestOverride = new Map<string, { enabled: boolean; specificity: number }>();
+
+      for (const ov of relevantOverrides) {
+        const isCountryMatch = workshopCountry && ov.country === workshopCountry;
+        const isGlobal = ov.country === null || ov.country === undefined;
+
+        if (!isCountryMatch && !isGlobal) continue; // different country, skip
+
+        const specificity = isCountryMatch ? 2 : 1; // country-specific wins
+        const current = bestOverride.get(ov.permission_key);
+
+        if (!current || specificity > current.specificity) {
+          bestOverride.set(ov.permission_key, { enabled: ov.enabled, specificity });
+        }
+      }
+
+      for (const [permKey, { enabled }] of bestOverride) {
+        if (enabled) {
+          keys.add(permKey);
+        } else {
+          keys.delete(permKey);
         }
       }
     }
 
     return keys;
-  }, [basePerms, overrides, workshopType]);
+  }, [basePerms, overrides, workshopType, workshopCountry]);
 
   const can = useCallback(
     (permissionKey: string) => enabledKeys.has(permissionKey),
