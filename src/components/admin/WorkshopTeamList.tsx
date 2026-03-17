@@ -103,18 +103,25 @@ export function WorkshopTeamList({ workshopId, workshopName }: WorkshopTeamListP
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case 'system_admin': return 'System Admin';
       case 'super_admin': return 'Super Admin';
       case 'country_admin': return 'Country Admin';
       case 'workshop_admin': return 'Admin';
-      default: return 'Technician';
+      case 'warranty_admin': return 'Warranty Admin';
+      case 'spares_manager': return 'Spares Manager';
+      case 'technician': return 'Technician';
+      default: return role;
     }
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
+      case 'system_admin': return 'destructive' as const;
       case 'super_admin': return 'destructive' as const;
       case 'country_admin': return 'default' as const;
       case 'workshop_admin': return 'default' as const;
+      case 'warranty_admin': return 'default' as const;
+      case 'spares_manager': return 'default' as const;
       default: return 'secondary' as const;
     }
   };
