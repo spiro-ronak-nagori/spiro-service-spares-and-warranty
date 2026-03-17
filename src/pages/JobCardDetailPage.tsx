@@ -117,7 +117,7 @@ export default function JobCardDetailPage() {
   // Mechanic name editability: editable from INWARDED until READY, and again if REOPENED
   const MECHANIC_EDITABLE_STATUSES: JobCardStatus[] = ['INWARDED', 'IN_PROGRESS', 'REOPENED'];
   const canEditMechanic = jobCard ? mechanicNameEnabledForThisJC && MECHANIC_EDITABLE_STATUSES.includes(jobCard.status) : false;
-  const mechanicLocked = jobCard ? ['READY', 'DELIVERED', 'COMPLETED', 'CLOSED'].includes(jobCard.status) : false;
+  const showMechanicFieldsInEdit = canEditMechanic && !!(jobCard as any)?.assigned_mechanic_name;
 
   const handleSaveIssues = async (newServiceCategories: string[], newIssueCategories: string[]) => {
     if (!jobCard || !profile || !canEditIssues) {
