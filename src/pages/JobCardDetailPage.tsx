@@ -650,13 +650,16 @@ export default function JobCardDetailPage() {
 
   const vehicle = jobCard.vehicle;
 
-  // Compute checklist section status from persisted column
+  // Compute checklist section status from persisted column — instant when DB value exists
   const persistedChecklistStatus = (jobCard as any).checklist_status as string | null;
   const checklistSectionStatus = (() => {
-    if (checklistFlagLoading || !checklistStatusResolved) return 'loading' as const;
-    if (!persistedChecklistStatus || persistedChecklistStatus === 'NOT_APPLICABLE') return 'not_applicable' as const;
+    // If DB has a value, use it instantly — no waiting for feature flag
+    if (persistedChecklistStatus === 'NOT_APPLICABLE') return 'not_applicable' as const;
     if (persistedChecklistStatus === 'COMPLETED') return 'completed' as const;
-    return 'pending' as const;
+    if (persistedChecklistStatus === 'PENDING') return 'pending' as const;
+    // NULL = needs resolution; show loading only if we're still resolving
+    if (!checklistStatusResolved) return 'loading' as const;
+    return 'not_applicable' as const;
   })();
 
   // Show checklist section on INWARDED status (and IN_PROGRESS to show completed state)
@@ -664,7 +667,7 @@ export default function JobCardDetailPage() {
 
   // Determine if sticky CTA needs checklist gate for INWARDED
   const inwardedNeedsChecklist = jobCard.status === 'INWARDED' && persistedChecklistStatus === 'PENDING';
-  const checklistStillLoading = checklistFlagLoading || !checklistStatusResolved;
+  const checklistStillLoading = !persistedChecklistStatus && !checklistStatusResolved;
 
   // Determine sticky CTA content
   const renderStickyCta = () => {
