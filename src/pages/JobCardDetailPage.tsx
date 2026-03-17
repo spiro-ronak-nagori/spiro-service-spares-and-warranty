@@ -15,7 +15,6 @@ import {
   User, 
   Phone, 
   Gauge, 
-  Calendar,
   Wrench,
   Clock,
   CheckCircle2,
@@ -23,11 +22,12 @@ import {
   ChevronDown,
   ChevronUp,
   Package,
-  Pencil
+  Pencil,
+  Loader2
 } from 'lucide-react';
 import { JobCard, AuditTrailEntry, JobCardStatus, STATUS_CONFIG, canTransitionTo } from '@/types';
 import { useServiceCategoryNames } from '@/hooks/useServiceCategoryNames';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { OtpVerificationDialog } from '@/components/job-card/OtpVerificationDialog';
 import { CompleteWorkDialog } from '@/components/job-card/CompleteWorkDialog';
@@ -240,7 +240,6 @@ export default function JobCardDetailPage() {
           setChecklistCompleted(null);
 
           // Audit: checklist not applicable (no matching template)
-          // Only audit once per JC — check if already audited
           if (jobCard.status === 'INWARDED' && profile) {
             const { data: existing } = await supabase
               .from('audit_trail')
@@ -285,7 +284,7 @@ export default function JobCardDetailPage() {
   // Audit when checklist feature is OFF for this country (once per JC)
   useEffect(() => {
     if (!id || !jobCard || !profile || checklistFlagLoading) return;
-    if (checklistEnabledForThisJC) return; // feature is on, no skip audit needed
+    if (checklistEnabledForThisJC) return;
     if (jobCard.status !== 'INWARDED') return;
 
     (async () => {
@@ -445,14 +444,12 @@ export default function JobCardDetailPage() {
     try {
       const oldName = (jobCard as any).assigned_mechanic_name || null;
 
-      // Save mechanic name on job card
       const { error } = await supabase
         .from('job_cards')
         .update({ assigned_mechanic_name: name } as any)
         .eq('id', jobCard.id);
       if (error) throw error;
 
-      // Audit mechanic name change
       await supabase.from('audit_trail').insert({
         job_card_id: jobCard.id,
         user_id: profile.id,
@@ -468,7 +465,6 @@ export default function JobCardDetailPage() {
 
       setShowMechanicSheet(false);
 
-      // If this was triggered from Start Work, proceed
       if (mechanicSheetForStartWork) {
         setMechanicSheetForStartWork(false);
         await updateStatus('IN_PROGRESS', { assigned_mechanic_name: name });
@@ -705,78 +701,114 @@ export default function JobCardDetailPage() {
   // Show checklist section on INWARDED status (and IN_PROGRESS to show completed state)
   const showChecklistSection = ['INWARDED', 'IN_PROGRESS', 'REOPENED', 'READY', 'DELIVERED', 'COMPLETED', 'CLOSED'].includes(jobCard.status);
 
+  // Determine if sticky CTA needs checklist gate for INWARDED
+  const inwardedNeedsChecklist = jobCard.status === 'INWARDED' && checklistEnabledForThisJC && checklistApplicable && !checklistCompleted;
+  const checklistStillLoading = checklistFlagLoading || checklistCheckLoading;
+
+  // Determine sticky CTA content
+  const renderStickyCta = () => {
+    const status = jobCard.status;
+
+    if (status === 'DRAFT') {
+      return (
+        <Button
+          className="w-full h-12 text-sm font-semibold"
+          onClick={handleInwardingAction}
+          disabled={isUpdating}
+        >
+          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Complete Inwarding
+        </Button>
+      );
+    }
+
+    if (status === 'INWARDED') {
+      if (checklistStillLoading) {
+        return (
+          <Button className="w-full h-12 text-sm font-semibold" disabled>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Checking…
+          </Button>
+        );
+      }
+      if (inwardedNeedsChecklist) {
+        return (
+          <Button
+            className="w-full h-12 text-sm font-semibold"
+            onClick={() => setShowChecklist(true)}
+            disabled={isUpdating}
+          >
+            Complete Checklist
+          </Button>
+        );
+      }
+      return (
+        <Button
+          className="w-full h-12 text-sm font-semibold"
+          onClick={handleStartWork}
+          disabled={isUpdating}
+        >
+          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Start Work
+        </Button>
+      );
+    }
+
+    if (status === 'IN_PROGRESS' || status === 'REOPENED') {
+      return (
+        <Button
+          className="w-full h-12 text-sm font-semibold"
+          onClick={() => setShowCompleteWork(true)}
+          disabled={isUpdating}
+        >
+          {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Mark Work Completed
+        </Button>
+      );
+    }
+
+    if (status === 'READY') {
+      return (
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 h-12 text-sm font-semibold"
+            onClick={() => setShowReopenDialog(true)}
+            disabled={isUpdating}
+          >
+            Reopen
+          </Button>
+          <Button
+            className="flex-1 h-12 text-sm font-semibold"
+            onClick={handleDeliveryAction}
+            disabled={isUpdating}
+          >
+            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Deliver Vehicle
+          </Button>
+        </div>
+      );
+    }
+
+    // DELIVERED / COMPLETED / CLOSED → no CTA
+    return null;
+  };
+
+  const stickyCta = renderStickyCta();
+  const hasStickyCta = stickyCta !== null;
+
   return (
     <AppLayout>
-      <PageHeader 
+      {/* Header: JC number centered, status pill on right */}
+      <PageHeader
         title={jobCard.jc_number}
-        subtitle={vehicle?.reg_no}
         showBack
+        rightAction={<StatusPill status={jobCard.status} size="md" />}
       />
       
-      <div className="p-4 space-y-4">
-        {/* Status Card */}
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Current Status</p>
-                <div className="mt-1">
-                  <StatusPill status={jobCard.status} size="md" />
-                </div>
-              </div>
-              {jobCard.updated_at && (
-                <div className="text-right text-sm text-muted-foreground">
-                  <p>Last updated</p>
-                  <p className="font-medium text-foreground">
-                    {formatDistanceToNow(new Date(jobCard.updated_at), { addSuffix: true })}
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <div className={`p-4 space-y-4 ${hasStickyCta ? 'pb-24' : ''}`}>
 
-        {/* Vehicle Checklist Section */}
-        {showChecklistSection && (
-          <ChecklistStatusSection
-            status={checklistSectionStatus}
-            onComplete={() => setShowChecklist(true)}
-          />
-        )}
-
-        {/* Assigned Mechanic Section */}
-        {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name && (
-          <MechanicNameSection
-            name={(jobCard as any).assigned_mechanic_name}
-            canEdit={canEditMechanic}
-            locked={mechanicLocked}
-            onEdit={() => {
-              setMechanicSheetForStartWork(false);
-              setShowMechanicSheet(true);
-            }}
-          />
-        )}
-
-        {/* Action Buttons */}
-        <ActionButtons 
-          jobCard={jobCard}
-          isUpdating={isUpdating}
-          onSendInwardingOtp={handleInwardingAction}
-          onStartWork={handleStartWork}
-          onCompleteWork={() => setShowCompleteWork(true)}
-          onConfirmDelivery={handleDeliveryAction}
-          onReopenJobCard={() => setShowReopenDialog(true)}
-          sparesEnabled={sparesEnabled}
-          sparesCount={spares.length}
-          mandatorySparesRequired={mandatorySparesRequired}
-          onAddSpares={() => { setEditingSpare(null); setShowSparesModal(true); }}
-          checklistEnabled={checklistEnabledForThisJC}
-          checklistApplicable={checklistApplicable}
-          checklistCompleted={checklistCompleted}
-          checklistLoading={checklistFlagLoading || checklistCheckLoading}
-        />
-
-        {/* Vehicle & Customer Info */}
+        {/* 1. Vehicle Details */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -852,7 +884,7 @@ export default function JobCardDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Service Details */}
+        {/* 2. Service Details */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -948,7 +980,42 @@ export default function JobCardDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Spares Used Section */}
+        {/* 3. Vehicle Checklist */}
+        {showChecklistSection && (
+          <ChecklistStatusSection
+            status={checklistSectionStatus}
+            onComplete={() => setShowChecklist(true)}
+          />
+        )}
+
+        {/* Assigned Mechanic Section */}
+        {mechanicNameEnabledForThisJC && (jobCard as any).assigned_mechanic_name && (
+          <MechanicNameSection
+            name={(jobCard as any).assigned_mechanic_name}
+            canEdit={canEditMechanic}
+            locked={mechanicLocked}
+            onEdit={() => {
+              setMechanicSheetForStartWork(false);
+              setShowMechanicSheet(true);
+            }}
+          />
+        )}
+
+        {/* Spares required alert (inline, not a CTA) */}
+        {sparesEnabled && mandatorySparesRequired && spares.length === 0 && (jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') && (
+          <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+            <p className="text-sm text-destructive flex-1">
+              Spares required for selected issues. Please add spares to complete work.
+            </p>
+            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={() => { setEditingSpare(null); setShowSparesModal(true); }}>
+              <Package className="h-3.5 w-3.5 mr-1" />
+              Add Spares
+            </Button>
+          </div>
+        )}
+
+        {/* 4. Spares Used Section */}
         {sparesEnabled && (
           <SparesUsedSection
             spares={spares}
@@ -966,7 +1033,7 @@ export default function JobCardDetailPage() {
           />
         )}
 
-        {/* Timeline */}
+        {/* 5. Timeline */}
         <Card>
           <CardHeader 
             className="pb-3 cursor-pointer"
@@ -1037,6 +1104,15 @@ export default function JobCardDetailPage() {
           )}
         </Card>
       </div>
+
+      {/* Sticky CTA bar — above bottom navigation */}
+      {hasStickyCta && (
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+56px)] left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border px-4 py-3 shadow-[0_-2px_10px_-3px_hsl(var(--foreground)/0.08)]">
+          <div className="mx-auto max-w-lg">
+            {stickyCta}
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       <OtpVerificationDialog
@@ -1192,153 +1268,4 @@ export default function JobCardDetailPage() {
       />
     </AppLayout>
   );
-}
-
-interface ActionButtonsProps {
-  jobCard: JobCard;
-  isUpdating: boolean;
-  onSendInwardingOtp: () => void;
-  onStartWork: () => void;
-  onCompleteWork: () => void;
-  onConfirmDelivery: () => void;
-  onReopenJobCard: () => void;
-  sparesEnabled?: boolean;
-  sparesCount?: number;
-  mandatorySparesRequired?: boolean;
-  onAddSpares?: () => void;
-  checklistEnabled?: boolean;
-  checklistApplicable?: boolean;
-  checklistCompleted?: boolean | null;
-  checklistLoading?: boolean;
-}
-
-function ActionButtons({ 
-  jobCard, 
-  isUpdating,
-  onSendInwardingOtp,
-  onStartWork,
-  onCompleteWork,
-  onConfirmDelivery,
-  onReopenJobCard,
-  sparesEnabled,
-  sparesCount = 0,
-  mandatorySparesRequired,
-  onAddSpares,
-  checklistEnabled,
-  checklistApplicable,
-  checklistCompleted,
-  checklistLoading,
-}: ActionButtonsProps) {
-  const status = jobCard.status;
-
-  if (status === 'DRAFT') {
-    return (
-      <Button 
-        className="w-full h-12 text-base"
-        onClick={onSendInwardingOtp}
-        disabled={isUpdating}
-      >
-        Send Inwarding OTP
-      </Button>
-    );
-  }
-
-  if (status === 'INWARDED' || status === 'REOPENED') {
-    const stillLoadingChecklist = checklistEnabled && checklistLoading && status === 'INWARDED';
-    return (
-      <Button 
-        className="w-full h-12 text-base"
-        onClick={onStartWork}
-        disabled={isUpdating || stillLoadingChecklist}
-      >
-        Start Work
-      </Button>
-    );
-  }
-
-  if (status === 'IN_PROGRESS') {
-    return (
-      <div className="space-y-3">
-        {sparesEnabled && mandatorySparesRequired && sparesCount === 0 && onAddSpares && (
-          <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-sm text-destructive flex-1">
-              Spares required for selected issues. Please add spares to complete work.
-            </p>
-            <Button variant="destructive" size="sm" className="shrink-0 h-7 text-xs" onClick={onAddSpares}>
-              <Package className="h-3.5 w-3.5 mr-1" />
-              Add Spares
-            </Button>
-          </div>
-        )}
-        <Button 
-          className="w-full h-12 text-base"
-          onClick={onCompleteWork}
-          disabled={isUpdating}
-        >
-          Complete Work
-        </Button>
-      </div>
-    );
-  }
-
-  if (status === 'READY') {
-    return (
-      <div className="space-y-3">
-        <Button 
-          className="w-full h-12 text-base"
-          onClick={onConfirmDelivery}
-          disabled={isUpdating}
-        >
-          Confirm Delivery
-        </Button>
-        <Button 
-          variant="outline"
-          className="w-full h-12 text-base"
-          onClick={onReopenJobCard}
-          disabled={isUpdating}
-        >
-          Reopen Job Card
-        </Button>
-      </div>
-    );
-  }
-
-  if (status === 'DELIVERED') {
-    return (
-      <Card className="bg-success/10 border-success/20">
-        <CardContent className="py-4 text-center">
-          <CheckCircle2 className="h-8 w-8 mx-auto text-success mb-2" />
-          <p className="font-medium text-success">Vehicle Delivered</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Awaiting customer feedback — auto-completes in 2 days
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (status === 'COMPLETED') {
-    return (
-      <Card className="bg-muted">
-        <CardContent className="py-4 text-center">
-          <CheckCircle2 className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="font-medium">Completed</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (status === 'CLOSED') {
-    return (
-      <Card className="bg-muted">
-        <CardContent className="py-4 text-center">
-          <CheckCircle2 className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="font-medium">Job Card Closed</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return null;
 }
