@@ -180,15 +180,23 @@ export default function RoleDetailPage() {
     }
   };
 
+  const orderedGroupKeys = useMemo(() => {
+    const discoveredGroups = Array.from(new Set(permissions.map((p) => p.permission_group)));
+    return [
+      ...GROUP_ORDER.filter((groupKey) => discoveredGroups.includes(groupKey)),
+      ...discoveredGroups.filter((groupKey) => !GROUP_ORDER.includes(groupKey)).sort(),
+    ];
+  }, [permissions]);
+
   const groupedPerms = useMemo(() => {
     const groups: Record<string, Permission[]> = {};
-    GROUP_ORDER.forEach((g) => { groups[g] = []; });
+    orderedGroupKeys.forEach((groupKey) => { groups[groupKey] = []; });
     permissions.forEach((p) => {
       if (!groups[p.permission_group]) groups[p.permission_group] = [];
       groups[p.permission_group].push(p);
     });
     return groups;
-  }, [permissions]);
+  }, [orderedGroupKeys, permissions]);
 
   const togglePerm = (id: string) => {
     setPermissions((prev) =>
