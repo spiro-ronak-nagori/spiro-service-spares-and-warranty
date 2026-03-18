@@ -226,6 +226,12 @@ export interface JobCardSpare {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  // Usage approval fields
+  usage_approval_state: UsageApprovalState;
+  usage_approved_by: string | null;
+  usage_decided_at: string | null;
+  usage_rejection_comment: string | null;
+  usage_approved_qty: number | null;
   spare_part?: SparePart;
   photos?: JobCardSparePhoto[];
 }
