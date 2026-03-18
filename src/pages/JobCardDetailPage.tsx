@@ -891,12 +891,22 @@ export default function JobCardDetailPage() {
 
     if (status === 'IN_PROGRESS') {
       const sparesBlocking = sparesEnabled && mandatorySparesRequired && spares.length === 0;
-      const canAddSpares = can('spares.add');
+      const hasPendingUsageApproval = sparesEnabled && spares.some(s => (s as any).usage_approval_state === 'PENDING');
+      const canAddSparesPermission = can('spares.add');
       const canComplete = can('jc.mark_completed');
 
       if (canComplete) {
-        if (sparesBlocking && !canAddSpares) {
-          // Technician can't add spares — show disabled CTA with guidance
+        if (hasPendingUsageApproval) {
+          return (
+            <Button
+              className="w-full h-12 text-sm font-semibold"
+              disabled
+              variant="default">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Waiting Spares Approval
+            </Button>);
+        }
+        if (sparesBlocking && !canAddSparesPermission) {
           return (
             <Button
               className="w-full h-12 text-sm font-semibold"
@@ -910,7 +920,7 @@ export default function JobCardDetailPage() {
           <Button
             className="w-full h-12 text-sm font-semibold"
             onClick={() => {
-              if (sparesBlocking && canAddSpares) {
+              if (sparesBlocking && canAddSparesPermission) {
                 setEditingSpare(null);
                 setShowSparesModal(true);
                 return;
@@ -925,7 +935,7 @@ export default function JobCardDetailPage() {
       }
 
       // User can't complete work but CAN add spares — show Add Spare CTA
-      if (canAddSpares) {
+      if (canAddSparesPermission) {
         return (
           <Button
             className="w-full h-12 text-sm font-semibold"
@@ -1071,11 +1081,13 @@ export default function JobCardDetailPage() {
           onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
           onSubmitAll={warrantyEnabled && can('spares.submit_warranty') ? () => setShowSubmitAll(true) : undefined}
           canEdit={(jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') && can('spares.edit')}
+          canApproveSpares={can('spares.approve')}
           warrantyEnabled={warrantyEnabled}
           mandatorySparesRequired={mandatorySparesRequired}
           jobCardStatus={jobCard.status}
           isExpanded={expandedSection === 'spares'}
           onToggle={() => toggleSection('spares')}
+          onUsageApprovalAction={refetchSpares}
         />
         }
 
@@ -1234,7 +1246,8 @@ export default function JobCardDetailPage() {
         vehicleColorCode={(jobCard.vehicle as any)?.color_code}
         warrantyEnabled={warrantyEnabled}
         onSaved={handleSparesModalSaved}
-        editingSpare={editingSpare} />
+        editingSpare={editingSpare}
+        canApproveSpares={can('spares.approve')} />
 
       }
 

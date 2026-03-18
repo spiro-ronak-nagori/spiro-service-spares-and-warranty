@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRbacPermissions } from '@/hooks/useRbacPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -30,7 +31,8 @@ const TAB_STATUSES: Record<TabValue, JobCardStatus[]> = {
 export default function JobCardListPage() {
   const navigate = useNavigate();
   const { workshop, profile } = useAuth();
-
+  const { can } = useRbacPermissions();
+  const canApproveSpares = can('spares.approve');
 
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
@@ -41,6 +43,7 @@ export default function JobCardListPage() {
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [pendingApprovalJcIds, setPendingApprovalJcIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [workshops, setWorkshops] = useState<{ id: string; name: string }[]>([]);
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>('all');
@@ -127,7 +130,6 @@ export default function JobCardListPage() {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Type cast the data
       const typedData = (data || []).map((item: any) => ({
         ...item,
         status: item.status as JobCardStatus,
@@ -136,6 +138,20 @@ export default function JobCardListPage() {
       })) as JobCard[];
       
       setJobCards(typedData);
+
+      // Fetch pending usage approvals for approvers
+      if (canApproveSpares && typedData.length > 0) {
+        const jcIds = typedData.map(jc => jc.id);
+        const { data: pendingSpares } = await supabase
+          .from('job_card_spares' as any)
+          .select('job_card_id')
+          .in('job_card_id', jcIds)
+          .eq('usage_approval_state', 'PENDING');
+        const ids = new Set((pendingSpares || []).map((s: any) => s.job_card_id as string));
+        setPendingApprovalJcIds(ids);
+      } else {
+        setPendingApprovalJcIds(new Set());
+      }
     } catch (error) {
       console.error('Error fetching job cards:', error);
     } finally {
@@ -152,7 +168,6 @@ export default function JobCardListPage() {
     let result = jobCards.filter((jc) => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
-      // Client-side secondary filter for vehicle/owner (JC number already filtered server-side)
       return (
         jc.vehicle?.reg_no?.toLowerCase().includes(query) ||
         jc.jc_number.toLowerCase().includes(query) ||
@@ -160,7 +175,7 @@ export default function JobCardListPage() {
       );
     });
 
-    // Sort
+    // Sort: pending approval JCs first for approvers, then by selected sort
     switch (sortBy) {
       case 'oldest':
         result = [...result].sort((a, b) => 
@@ -182,8 +197,17 @@ export default function JobCardListPage() {
         );
     }
 
+    // Float pending-approval JCs to top for approvers
+    if (canApproveSpares && pendingApprovalJcIds.size > 0) {
+      result = [...result].sort((a, b) => {
+        const aPending = pendingApprovalJcIds.has(a.id) ? 0 : 1;
+        const bPending = pendingApprovalJcIds.has(b.id) ? 0 : 1;
+        return aPending - bPending;
+      });
+    }
+
     return result;
-  }, [jobCards, searchQuery, sortBy]);
+  }, [jobCards, searchQuery, sortBy, canApproveSpares, pendingApprovalJcIds]);
 
   const totalPages = Math.ceil(filteredAndSortedJobCards.length / ITEMS_PER_PAGE);
   const paginatedJobCards = filteredAndSortedJobCards.slice(

@@ -39,6 +39,7 @@ interface SparesModalProps {
   warrantyEnabled: boolean;
   onSaved: () => void;
   editingSpare?: JobCardSpare | null;
+  canApproveSpares?: boolean;
 }
 
 const emptyLine = (): SpareLineInput => ({
@@ -68,7 +69,7 @@ const editLineFromSpare = (spare: JobCardSpare): SpareLineInput => ({
 export function SparesModal({
   open, onOpenChange, jobCardId, profileId,
   vehicleModel, vehicleColorCode, warrantyEnabled, onSaved,
-  editingSpare,
+  editingSpare, canApproveSpares = false,
 }: SparesModalProps) {
   const { parts, isLoading: partsLoading, warnings } = useApplicableSpareParts(vehicleModel, vehicleColorCode);
   const [lines, setLines] = useState<SpareLineInput[]>([emptyLine()]);
@@ -283,6 +284,49 @@ export function SparesModal({
               .single();
             if (error) throw error;
             spareId = (inserted as any).id;
+          }
+        }
+
+        // Auto-approve or log usage request
+        const { data: userData } = await supabase.auth.getUser();
+        if (canApproveSpares) {
+          await supabase
+            .from('job_card_spares' as any)
+            .update({
+              usage_approval_state: 'APPROVED',
+              usage_approved_by: userData?.user?.id || null,
+              usage_decided_at: new Date().toISOString(),
+            } as any)
+            .eq('id', spareId);
+
+          // Log auto-approval action
+          if (userData?.user) {
+            let workshopId: string | null = null;
+            const { data: jcRow } = await supabase.from('job_cards').select('workshop_id').eq('id', jobCardId).maybeSingle();
+            workshopId = jcRow?.workshop_id || null;
+            await supabase.from('job_card_spare_actions' as any).insert({
+              job_card_spare_id: spareId,
+              job_card_id: jobCardId,
+              workshop_id: workshopId,
+              action_type: 'USAGE_APPROVE',
+              comment: 'Auto-approved (user has approval rights)',
+              actor_user_id: userData.user.id,
+            } as any);
+          }
+        } else {
+          // Log usage request action
+          if (userData?.user) {
+            let workshopId: string | null = null;
+            const { data: jcRow } = await supabase.from('job_cards').select('workshop_id').eq('id', jobCardId).maybeSingle();
+            workshopId = jcRow?.workshop_id || null;
+            await supabase.from('job_card_spare_actions' as any).insert({
+              job_card_spare_id: spareId,
+              job_card_id: jobCardId,
+              workshop_id: workshopId,
+              action_type: 'USAGE_REQUEST',
+              comment: null,
+              actor_user_id: userData.user.id,
+            } as any);
           }
         }
 
