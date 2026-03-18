@@ -54,7 +54,7 @@ export function CompleteWorkDialog({
   const allIssues = jobCard.issue_categories;
   const isRemarksValid = remarks.trim().length >= MIN_REMARKS_LENGTH;
   const allChecked = allIssues.length === 0 || allIssues.every(item => checkedItems.has(item));
-  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.docBlockers.length > 0 || sparesBlocker.approvalBlockers.length > 0);
+  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.docBlockers.length > 0 || sparesBlocker.approvalBlockers.length > 0 || sparesBlocker.usageApprovalBlockers.length > 0);
   const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker && !checkingSpares && !isSubmitting;
 
   useEffect(() => {
