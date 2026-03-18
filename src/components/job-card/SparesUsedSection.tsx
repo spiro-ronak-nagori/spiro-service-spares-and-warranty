@@ -139,16 +139,169 @@ function needsAction(spare: JobCardSpare): boolean {
     || spare.approval_state === 'REJECTED';
 }
 
+/* ── Usage Approval Inline UI ── */
+function UsageApprovalActions({ spare, onAction }: { spare: JobCardSpare; onAction: () => void }) {
+  const [mode, setMode] = useState<'idle' | 'approving' | 'rejecting'>('idle');
+  const [adjustedQty, setAdjustedQty] = useState(spare.qty);
+  const [rejectComment, setRejectComment] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleApprove = async () => {
+    setIsSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: jcRow } = await supabase.from('job_cards').select('workshop_id').eq('id', spare.job_card_id).maybeSingle();
+      const workshopId = jcRow?.workshop_id || null;
+
+      await supabase
+        .from('job_card_spares' as any)
+        .update({
+          usage_approval_state: 'APPROVED',
+          usage_approved_by: userData?.user?.id || null,
+          usage_decided_at: new Date().toISOString(),
+          usage_approved_qty: adjustedQty !== spare.qty ? adjustedQty : null,
+        } as any)
+        .eq('id', spare.id);
+
+      if (userData?.user) {
+        await supabase.from('job_card_spare_actions' as any).insert({
+          job_card_spare_id: spare.id,
+          job_card_id: spare.job_card_id,
+          workshop_id: workshopId,
+          action_type: 'USAGE_APPROVE',
+          comment: adjustedQty !== spare.qty ? `Qty adjusted: ${spare.qty} → ${adjustedQty}` : null,
+          actor_user_id: userData.user.id,
+        } as any);
+      }
+
+      toast.success('Spare approved');
+      onAction();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to approve');
+    } finally {
+      setIsSaving(false);
+      setMode('idle');
+    }
+  };
+
+  const handleReject = async () => {
+    if (rejectComment.trim().length < 5) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: jcRow } = await supabase.from('job_cards').select('workshop_id').eq('id', spare.job_card_id).maybeSingle();
+      const workshopId = jcRow?.workshop_id || null;
+
+      await supabase
+        .from('job_card_spares' as any)
+        .update({
+          usage_approval_state: 'REJECTED',
+          usage_approved_by: userData?.user?.id || null,
+          usage_decided_at: new Date().toISOString(),
+          usage_rejection_comment: rejectComment.trim(),
+        } as any)
+        .eq('id', spare.id);
+
+      if (userData?.user) {
+        await supabase.from('job_card_spare_actions' as any).insert({
+          job_card_spare_id: spare.id,
+          job_card_id: spare.job_card_id,
+          workshop_id: workshopId,
+          action_type: 'USAGE_REJECT',
+          comment: rejectComment.trim(),
+          actor_user_id: userData.user.id,
+        } as any);
+      }
+
+      toast.success('Spare rejected');
+      onAction();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reject');
+    } finally {
+      setIsSaving(false);
+      setMode('idle');
+    }
+  };
+
+  if (mode === 'approving') {
+    return (
+      <div className="space-y-2 pt-1.5 border-t border-border">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Approve qty:</span>
+          <Input
+            type="number"
+            min={1}
+            max={spare.spare_part?.max_qty_allowed || 50}
+            value={adjustedQty}
+            onChange={(e) => setAdjustedQty(Math.max(1, parseInt(e.target.value) || 1))}
+            className="h-8 w-20 text-sm"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" className="h-8 text-xs flex-1" onClick={handleApprove} disabled={isSaving}>
+            <Check className="h-3 w-3 mr-1" />
+            Confirm
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setMode('idle')} disabled={isSaving}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'rejecting') {
+    return (
+      <div className="space-y-2 pt-1.5 border-t border-border">
+        <Textarea
+          placeholder="Reason for rejection (required)..."
+          value={rejectComment}
+          onChange={(e) => setRejectComment(e.target.value)}
+          className="min-h-[60px] text-sm"
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <Button variant="destructive" size="sm" className="h-8 text-xs flex-1" onClick={handleReject} disabled={isSaving || rejectComment.trim().length < 5}>
+            <X className="h-3 w-3 mr-1" />
+            Reject
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setMode('idle')} disabled={isSaving}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-2 pt-1.5">
+      <Button variant="default" size="sm" className="h-8 text-xs flex-1" onClick={() => { setAdjustedQty(spare.qty); setMode('approving'); }}>
+        <Check className="h-3 w-3 mr-1" />
+        Approve
+      </Button>
+      <Button variant="outline" size="sm" className="h-8 text-xs flex-1 text-destructive border-destructive/30" onClick={() => setMode('rejecting')}>
+        <X className="h-3 w-3 mr-1" />
+        Reject
+      </Button>
+    </div>
+  );
+}
+
 /* ── Single spare item (collapsed/expanded) ── */
 function SpareItem({
-  spare, canEdit, warrantyEnabled, expanded, onToggleExpand,
+  spare, canEdit, canApproveSpares, warrantyEnabled, expanded, onToggleExpand,
   onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onEditSpare, onDeleteSpare,
+  onUsageApprovalAction,
 }: {
-  spare: JobCardSpare; canEdit?: boolean; warrantyEnabled?: boolean;
+  spare: JobCardSpare; canEdit?: boolean; canApproveSpares?: boolean; warrantyEnabled?: boolean;
   expanded: boolean; onToggleExpand: () => void;
   onSubmitWarranty?: (s: JobCardSpare) => void; onWithdrawSpare?: (s: JobCardSpare) => void;
   onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
   onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
+  onUsageApprovalAction?: () => void;
 }) {
   const locked = isLocked(spare);
   const statusText = getStatusText(spare, warrantyEnabled);
