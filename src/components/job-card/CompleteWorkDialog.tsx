@@ -109,6 +109,10 @@ export function CompleteWorkDialog({
             }
           }
         }
+        // Usage approval blocker
+        if (spare.usage_approval_state === 'PENDING') {
+          blocker.usageApprovalBlockers.push(`${part.part_name}: Spares usage approval pending`);
+        }
       }
     } catch (err) {
       console.error('Failed to check spares blockers:', err);
