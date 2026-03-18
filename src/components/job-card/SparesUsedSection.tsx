@@ -375,7 +375,20 @@ function SpareItem({
             <p className="text-[11px] text-muted-foreground italic">"{spare.technician_comment}"</p>
           )}
 
+          {/* Usage rejection comment */}
+          {usageState === 'REJECTED' && spare.usage_rejection_comment && (
+            <div className="bg-destructive/5 border border-destructive/20 rounded p-2 text-xs">
+              <span className="font-medium text-destructive">Rejected:</span>{' '}
+              <span className="text-foreground">{spare.usage_rejection_comment}</span>
+            </div>
+          )}
+
           <SpareDecisionInfo spare={spare} />
+
+          {/* Usage Approval Actions — for approvers on PENDING spares */}
+          {canApproveSpares && usageState === 'PENDING' && onUsageApprovalAction && (
+            <UsageApprovalActions spare={spare} onAction={onUsageApprovalAction} />
+          )}
 
           {/* Actions */}
           {canEdit && (
