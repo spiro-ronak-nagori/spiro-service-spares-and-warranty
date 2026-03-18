@@ -130,7 +130,6 @@ export default function JobCardListPage() {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Type cast the data
       const typedData = (data || []).map((item: any) => ({
         ...item,
         status: item.status as JobCardStatus,
@@ -139,6 +138,20 @@ export default function JobCardListPage() {
       })) as JobCard[];
       
       setJobCards(typedData);
+
+      // Fetch pending usage approvals for approvers
+      if (canApproveSpares && typedData.length > 0) {
+        const jcIds = typedData.map(jc => jc.id);
+        const { data: pendingSpares } = await supabase
+          .from('job_card_spares' as any)
+          .select('job_card_id')
+          .in('job_card_id', jcIds)
+          .eq('usage_approval_state', 'PENDING');
+        const ids = new Set((pendingSpares || []).map((s: any) => s.job_card_id as string));
+        setPendingApprovalJcIds(ids);
+      } else {
+        setPendingApprovalJcIds(new Set());
+      }
     } catch (error) {
       console.error('Error fetching job cards:', error);
     } finally {
