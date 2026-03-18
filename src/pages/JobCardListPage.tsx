@@ -358,6 +358,7 @@ export default function JobCardListPage() {
                       jobCard={jc}
                       onClick={() => navigate(`/job-card/${jc.id}`)}
                       showWorkshop={isElevatedAdmin}
+                      showApprovalPill={canApproveSpares && pendingApprovalJcIds.has(jc.id)}
                     />
                   ))}
                   
@@ -409,9 +410,10 @@ interface JobCardListItemProps {
   jobCard: JobCard;
   onClick: () => void;
   showWorkshop?: boolean;
+  showApprovalPill?: boolean;
 }
 
-function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProps) {
+function JobCardListItem({ jobCard, onClick, showWorkshop, showApprovalPill }: JobCardListItemProps) {
   const vehicle = jobCard.vehicle;
   const timeAgo = formatDistanceToNow(new Date(jobCard.updated_at), { addSuffix: true });
   const workshopName = (jobCard as any).workshop?.name;
@@ -446,6 +448,11 @@ function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProp
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            {showApprovalPill && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-medium">
+                Approval
+              </span>
+            )}
             <StatusPill status={jobCard.status} />
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </div>

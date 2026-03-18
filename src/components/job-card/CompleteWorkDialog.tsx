@@ -28,6 +28,7 @@ interface SparesBlocker {
   issuesRequiringSpares: string[];
   docBlockers: string[];
   approvalBlockers: string[];
+  usageApprovalBlockers: string[];
 }
 
 const MIN_REMARKS_LENGTH = 30;
@@ -53,7 +54,7 @@ export function CompleteWorkDialog({
   const allIssues = jobCard.issue_categories;
   const isRemarksValid = remarks.trim().length >= MIN_REMARKS_LENGTH;
   const allChecked = allIssues.length === 0 || allIssues.every(item => checkedItems.has(item));
-  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.docBlockers.length > 0 || sparesBlocker.approvalBlockers.length > 0);
+  const hasSparesBlocker = sparesBlocker && (sparesBlocker.missingSpares || sparesBlocker.docBlockers.length > 0 || sparesBlocker.approvalBlockers.length > 0 || sparesBlocker.usageApprovalBlockers.length > 0);
   const canSubmit = isRemarksValid && allChecked && !hasSparesBlocker && !checkingSpares && !isSubmitting;
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export function CompleteWorkDialog({
 
   const checkSparesBlockers = async () => {
     setCheckingSpares(true);
-    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], docBlockers: [], approvalBlockers: [] };
+    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], docBlockers: [], approvalBlockers: [], usageApprovalBlockers: [] };
 
     try {
       if (spares.length === 0 && jobCard.issue_categories.length > 0) {
@@ -107,6 +108,10 @@ export function CompleteWorkDialog({
               blocker.approvalBlockers.push(`${part.part_name}: ${spare.claim_type} claim rejected — withdraw & edit, change to User Paid, or remove`);
             }
           }
+        }
+        // Usage approval blocker
+        if (spare.usage_approval_state === 'PENDING') {
+          blocker.usageApprovalBlockers.push(`${part.part_name}: Spares usage approval pending`);
         }
       }
     } catch (err) {
@@ -209,6 +214,28 @@ export function CompleteWorkDialog({
                   </p>
                   <ul className="space-y-1">
                     {sparesBlocker.approvalBlockers.map((msg, i) => (
+                      <li key={i} className="text-xs text-amber-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        {msg}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Usage Approval Pending Warning */}
+          {sparesBlocker && sparesBlocker.usageApprovalBlockers.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <Package className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-medium text-amber-800">
+                    Waiting for spares usage approval
+                  </p>
+                  <ul className="space-y-1">
+                    {sparesBlocker.usageApprovalBlockers.map((msg, i) => (
                       <li key={i} className="text-xs text-amber-700 flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                         {msg}
