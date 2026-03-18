@@ -710,6 +710,11 @@ export type Database = {
           technician_comment: string | null
           updated_at: string
           updated_by: string | null
+          usage_approval_state: string
+          usage_approved_by: string | null
+          usage_approved_qty: number | null
+          usage_decided_at: string | null
+          usage_rejection_comment: string | null
         }
         Insert: {
           approval_state?: Database["public"]["Enums"]["approval_state"]
@@ -736,6 +741,11 @@ export type Database = {
           technician_comment?: string | null
           updated_at?: string
           updated_by?: string | null
+          usage_approval_state?: string
+          usage_approved_by?: string | null
+          usage_approved_qty?: number | null
+          usage_decided_at?: string | null
+          usage_rejection_comment?: string | null
         }
         Update: {
           approval_state?: Database["public"]["Enums"]["approval_state"]
@@ -762,6 +772,11 @@ export type Database = {
           technician_comment?: string | null
           updated_at?: string
           updated_by?: string | null
+          usage_approval_state?: string
+          usage_approved_by?: string | null
+          usage_approved_qty?: number | null
+          usage_decided_at?: string | null
+          usage_rejection_comment?: string | null
         }
         Relationships: [
           {
@@ -2186,6 +2201,9 @@ export type Database = {
         | "RESUBMIT"
         | "EDIT_RESET"
         | "WITHDRAW"
+        | "USAGE_REQUEST"
+        | "USAGE_APPROVE"
+        | "USAGE_REJECT"
       spare_photo_kind: "NEW_PART_PROOF" | "OLD_PART_EVIDENCE" | "ADDITIONAL"
       user_role:
         | "technician"
@@ -2369,6 +2387,9 @@ export const Constants = {
         "RESUBMIT",
         "EDIT_RESET",
         "WITHDRAW",
+        "USAGE_REQUEST",
+        "USAGE_APPROVE",
+        "USAGE_REJECT",
       ],
       spare_photo_kind: ["NEW_PART_PROOF", "OLD_PART_EVIDENCE", "ADDITIONAL"],
       user_role: [
