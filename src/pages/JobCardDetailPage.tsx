@@ -1081,11 +1081,13 @@ export default function JobCardDetailPage() {
           onConvertToUserPaid={warrantyEnabled ? handleConvertToUserPaid : undefined}
           onSubmitAll={warrantyEnabled && can('spares.submit_warranty') ? () => setShowSubmitAll(true) : undefined}
           canEdit={(jobCard.status === 'IN_PROGRESS' || jobCard.status === 'REOPENED') && can('spares.edit')}
+          canApproveSpares={can('spares.approve')}
           warrantyEnabled={warrantyEnabled}
           mandatorySparesRequired={mandatorySparesRequired}
           jobCardStatus={jobCard.status}
           isExpanded={expandedSection === 'spares'}
           onToggle={() => toggleSection('spares')}
+          onUsageApprovalAction={refetchSpares}
         />
         }
 
