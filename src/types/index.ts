@@ -11,7 +11,9 @@ export type JobCardStatus =
 
 export type UserRole = 'technician' | 'workshop_admin' | 'country_admin' | 'super_admin' | 'system_admin' | 'warranty_admin' | 'spares_manager';
 
-export type SpareActionType = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'TECH_RESPONSE' | 'RESUBMIT' | 'EDIT_RESET' | 'WITHDRAW';
+export type SpareActionType = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'TECH_RESPONSE' | 'RESUBMIT' | 'EDIT_RESET' | 'WITHDRAW' | 'USAGE_REQUEST' | 'USAGE_APPROVE' | 'USAGE_REJECT';
+
+export type UsageApprovalState = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface SpareAction {
   id: string;
