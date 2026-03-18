@@ -67,7 +67,7 @@ export function CompleteWorkDialog({
 
   const checkSparesBlockers = async () => {
     setCheckingSpares(true);
-    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], docBlockers: [], approvalBlockers: [] };
+    const blocker: SparesBlocker = { missingSpares: false, issuesRequiringSpares: [], docBlockers: [], approvalBlockers: [], usageApprovalBlockers: [] };
 
     try {
       if (spares.length === 0 && jobCard.issue_categories.length > 0) {
