@@ -2,9 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Package, Camera, Plus, Pencil, Trash2, Send, RotateCcw, UserCheck, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
-import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState } from '@/types';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Package, Camera, Plus, Pencil, Trash2, Send, RotateCcw, UserCheck, ChevronDown, ChevronUp, AlertTriangle, Check, X } from 'lucide-react';
+import { JobCardSpare, SparePhotoKind, getWarrantyDisplayState, WarrantyDisplayState, UsageApprovalState } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface SparesUsedSectionProps {
   spares: JobCardSpare[];
@@ -18,11 +21,13 @@ interface SparesUsedSectionProps {
   onConvertToUserPaid?: (spare: JobCardSpare) => void;
   onSubmitAll?: () => void;
   canEdit?: boolean;
+  canApproveSpares?: boolean;
   warrantyEnabled?: boolean;
   mandatorySparesRequired?: boolean;
   jobCardStatus?: string;
   isExpanded?: boolean;
   onToggle?: () => void;
+  onUsageApprovalAction?: () => void;
 }
 
 const CLAIM_LABEL: Record<string, string> = {
