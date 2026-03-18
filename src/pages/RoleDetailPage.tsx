@@ -335,34 +335,47 @@ export default function RoleDetailPage() {
     setShowConfirm(false);
     setSaving(true);
     try {
+      const errors: string[] = [];
+
       // Update changed permissions
       const changedPerms = permissions.filter((p) => originalPerms[p.id] !== p.enabled);
       for (const p of changedPerms) {
-        await supabase.from('rbac_permissions').update({ enabled: p.enabled }).eq('id', p.id);
+        const { error } = await supabase.from('rbac_permissions').update({ enabled: p.enabled }).eq('id', p.id);
+        if (error) errors.push(`Permission ${p.permission_key}: ${error.message}`);
       }
 
       // Update changed overrides
       const changedOvs = overrides.filter((o) => !pendingDeleteIds.has(o.id) && originalOverrides[o.id] !== o.enabled);
       for (const o of changedOvs) {
-        await supabase.from('rbac_policy_overrides').update({ enabled: o.enabled }).eq('id', o.id);
+        const { error } = await supabase.from('rbac_policy_overrides').update({ enabled: o.enabled }).eq('id', o.id);
+        if (error) errors.push(`Override ${o.permission_key}: ${error.message}`);
       }
 
       // Delete overrides
       for (const id of pendingDeleteIds) {
-        await supabase.from('rbac_policy_overrides').delete().eq('id', id);
+        const { error } = await supabase.from('rbac_policy_overrides').delete().eq('id', id);
+        if (error) errors.push(`Delete override: ${error.message}`);
       }
 
       // Insert new overrides
       if (role) {
         for (const o of pendingNewOverrides) {
-          await supabase.from('rbac_policy_overrides').insert({
+          const { error } = await supabase.from('rbac_policy_overrides').insert({
             role_id: role.id,
             policy_type: o.policy_type as any,
             permission_key: o.permission_key,
             enabled: o.enabled,
             country: o.country,
           } as any);
+          if (error) errors.push(`New override ${o.policy_type} ${o.permission_key}: ${error.message}`);
         }
+      }
+
+      if (errors.length > 0) {
+        console.error('[RBAC Save] Errors:', errors);
+        toast.error(`Failed to save: ${errors[0]}`);
+        await loadData();
+        return;
       }
 
       // Audit log
@@ -385,6 +398,7 @@ export default function RoleDetailPage() {
       toast.success(`Saved ${changedItems.length} change${changedItems.length !== 1 ? 's' : ''}`);
       await loadData();
     } catch (err: any) {
+      console.error('[RBAC Save] Exception:', err);
       toast.error(err?.message || 'Failed to save');
     } finally {
       setSaving(false);
