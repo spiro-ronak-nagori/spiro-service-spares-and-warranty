@@ -483,15 +483,17 @@ function SpareItem({
 
 /* ── Claim type group ── */
 function SpareGroup({
-  claimType, spares, expandedId, onToggleExpand, canEdit, warrantyEnabled,
+  claimType, spares, expandedId, onToggleExpand, canEdit, canApproveSpares, warrantyEnabled,
   onSubmitWarranty, onWithdrawSpare, onRespondNeedsInfo, onConvertToUserPaid, onEditSpare, onDeleteSpare,
+  onUsageApprovalAction,
 }: {
   claimType: string; spares: JobCardSpare[];
   expandedId: string | null; onToggleExpand: (id: string) => void;
-  canEdit?: boolean; warrantyEnabled?: boolean;
+  canEdit?: boolean; canApproveSpares?: boolean; warrantyEnabled?: boolean;
   onSubmitWarranty?: (s: JobCardSpare) => void; onWithdrawSpare?: (s: JobCardSpare) => void;
   onRespondNeedsInfo?: (s: JobCardSpare) => void; onConvertToUserPaid?: (s: JobCardSpare) => void;
   onEditSpare?: (s: JobCardSpare) => void; onDeleteSpare?: (id: string) => void;
+  onUsageApprovalAction?: () => void;
 }) {
   return (
     <div>
@@ -509,6 +511,7 @@ function SpareGroup({
             expanded={expandedId === spare.id}
             onToggleExpand={() => onToggleExpand(spare.id)}
             canEdit={canEdit}
+            canApproveSpares={canApproveSpares}
             warrantyEnabled={warrantyEnabled}
             onSubmitWarranty={onSubmitWarranty}
             onWithdrawSpare={onWithdrawSpare}
@@ -516,6 +519,7 @@ function SpareGroup({
             onConvertToUserPaid={onConvertToUserPaid}
             onEditSpare={onEditSpare}
             onDeleteSpare={onDeleteSpare}
+            onUsageApprovalAction={onUsageApprovalAction}
           />
         ))}
       </div>
