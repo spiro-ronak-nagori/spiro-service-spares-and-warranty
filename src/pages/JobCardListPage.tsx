@@ -43,6 +43,7 @@ export default function JobCardListPage() {
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [pendingApprovalJcIds, setPendingApprovalJcIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [workshops, setWorkshops] = useState<{ id: string; name: string }[]>([]);
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>('all');
