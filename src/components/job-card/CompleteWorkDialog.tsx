@@ -28,6 +28,7 @@ interface SparesBlocker {
   issuesRequiringSpares: string[];
   docBlockers: string[];
   approvalBlockers: string[];
+  usageApprovalBlockers: string[];
 }
 
 const MIN_REMARKS_LENGTH = 30;
