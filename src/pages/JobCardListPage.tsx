@@ -168,7 +168,6 @@ export default function JobCardListPage() {
     let result = jobCards.filter((jc) => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
-      // Client-side secondary filter for vehicle/owner (JC number already filtered server-side)
       return (
         jc.vehicle?.reg_no?.toLowerCase().includes(query) ||
         jc.jc_number.toLowerCase().includes(query) ||
@@ -176,7 +175,7 @@ export default function JobCardListPage() {
       );
     });
 
-    // Sort
+    // Sort: pending approval JCs first for approvers, then by selected sort
     switch (sortBy) {
       case 'oldest':
         result = [...result].sort((a, b) => 
@@ -198,8 +197,17 @@ export default function JobCardListPage() {
         );
     }
 
+    // Float pending-approval JCs to top for approvers
+    if (canApproveSpares && pendingApprovalJcIds.size > 0) {
+      result = [...result].sort((a, b) => {
+        const aPending = pendingApprovalJcIds.has(a.id) ? 0 : 1;
+        const bPending = pendingApprovalJcIds.has(b.id) ? 0 : 1;
+        return aPending - bPending;
+      });
+    }
+
     return result;
-  }, [jobCards, searchQuery, sortBy]);
+  }, [jobCards, searchQuery, sortBy, canApproveSpares, pendingApprovalJcIds]);
 
   const totalPages = Math.ceil(filteredAndSortedJobCards.length / ITEMS_PER_PAGE);
   const paginatedJobCards = filteredAndSortedJobCards.slice(
