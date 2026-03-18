@@ -60,6 +60,11 @@ interface RoleData {
   updated_at: string;
 }
 
+interface SaveResult {
+  status: 'success' | 'error';
+  message: string;
+}
+
 const GROUP_LABELS: Record<string, string> = {
   NAVIGATION: 'Navigation',
   JOB_CARDS: 'Job Cards',
@@ -80,8 +85,6 @@ const GROUP_ORDER = [
 const getGroupLabel = (groupKey: string) =>
   GROUP_LABELS[groupKey] || groupKey.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 
-const POLICY_TYPES = ['ALL', 'COCO', 'FOFO'];
-
 const SCOPE_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   global: { icon: <Globe className="h-4 w-4" />, label: 'Global', color: 'bg-primary/10 text-primary' },
   country: { icon: <MapPin className="h-4 w-4" />, label: 'Country', color: 'bg-amber-500/10 text-amber-600' },
@@ -100,11 +103,11 @@ export default function RoleDetailPage() {
   const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState<SaveResult | null>(null);
 
   // Track original state for change detection
   const [originalPerms, setOriginalPerms] = useState<Record<string, boolean>>({});
   const [originalOverrides, setOriginalOverrides] = useState<Record<string, boolean>>({});
-  const [showConfirm, setShowConfirm] = useState(false);
 
   // Add override dialog
   const [showAddOverride, setShowAddOverride] = useState(false);
@@ -125,56 +128,81 @@ export default function RoleDetailPage() {
   useEffect(() => {
     if (!isSystemAdmin || !roleKey) return;
     loadData();
-    // Load countries for override scoping
-    supabase.from('countries_master').select('name').eq('is_active', true).order('sort_order').then(({ data }) => {
-      setCountries(data || []);
-    });
+
+    supabase
+      .from('countries_master')
+      .select('name')
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => {
+        setCountries(data || []);
+      });
   }, [isSystemAdmin, roleKey]);
 
-  const loadData = async () => {
+  const loadData = async (): Promise<{ ok: boolean; error?: string }> => {
     setLoading(true);
     setPendingDeleteIds(new Set());
     setPendingNewOverrides([]);
+
     try {
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('rbac_roles')
         .select('*')
         .eq('role_key', roleKey as any)
         .single();
 
-      if (!roleData) { navigate('/console/roles'); return; }
+      if (roleError) throw roleError;
+      if (!roleData) {
+        navigate('/console/roles');
+        return { ok: false, error: 'Role not found' };
+      }
+
       setRole(roleData as any);
 
-      const { data: permData } = await supabase
+      const { data: permData, error: permError } = await supabase
         .from('rbac_permissions')
         .select('*')
         .eq('role_id', roleData.id)
         .order('sort_order');
 
+      if (permError) throw permError;
+
       setPermissions((permData || []) as Permission[]);
       const origPerms: Record<string, boolean> = {};
-      (permData || []).forEach((p: any) => { origPerms[p.id] = p.enabled; });
+      (permData || []).forEach((p: any) => {
+        origPerms[p.id] = p.enabled;
+      });
       setOriginalPerms(origPerms);
 
-      const { data: overrideData } = await supabase
+      const { data: overrideData, error: overrideError } = await supabase
         .from('rbac_policy_overrides')
         .select('*')
         .eq('role_id', roleData.id);
 
+      if (overrideError) throw overrideError;
+
       setOverrides((overrideData || []) as PolicyOverride[]);
       const origOv: Record<string, boolean> = {};
-      (overrideData || []).forEach((o: any) => { origOv[o.id] = o.enabled; });
+      (overrideData || []).forEach((o: any) => {
+        origOv[o.id] = o.enabled;
+      });
       setOriginalOverrides(origOv);
 
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
         .eq('role', roleKey as any)
         .eq('is_active', true);
 
+      if (countError) throw countError;
+
       setUserCount(count || 0);
-    } catch (err) {
-      console.error(err);
+      return { ok: true };
+    } catch (err: any) {
+      console.error('Failed to load role details', err);
+      const message = err?.message || 'Failed to load role details';
+      toast.error(message);
+      return { ok: false, error: message };
     } finally {
       setLoading(false);
     }
@@ -214,60 +242,66 @@ export default function RoleDetailPage() {
     }
   }, [permissionSections, permissions]);
 
+  const clearSaveResult = () => {
+    if (saveResult) setSaveResult(null);
+  };
+
   const togglePerm = (id: string) => {
+    clearSaveResult();
     setPermissions((prev) =>
       prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p))
     );
   };
 
   const toggleOverride = (id: string) => {
-    // Check if it's a pending new override
-    const isPending = pendingNewOverrides.some(o => o.id === id);
+    clearSaveResult();
+
+    const isPending = pendingNewOverrides.some((o) => o.id === id);
     if (isPending) {
-      setPendingNewOverrides(prev => prev.map(o => o.id === id ? { ...o, enabled: !o.enabled } : o));
-    } else {
-      setOverrides((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o))
-      );
+      setPendingNewOverrides((prev) => prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o)));
+      return;
     }
+
+    setOverrides((prev) => prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o)));
   };
 
   // All overrides combined (existing + pending new, minus pending deletes)
   const allOverrides = useMemo(() => {
-    const existing = overrides.filter(o => !pendingDeleteIds.has(o.id));
+    const existing = overrides.filter((o) => !pendingDeleteIds.has(o.id));
     return [...existing, ...pendingNewOverrides];
   }, [overrides, pendingDeleteIds, pendingNewOverrides]);
 
   // Available permission keys for new override (exclude already overridden for same policy type)
   const availablePermKeysForOverride = useMemo(() => {
     const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
-    // For "ALL" type, check both COCO and FOFO existing overrides
     const typesToCheck = newOverridePolicyType === 'ALL' ? ['COCO', 'FOFO'] : [newOverridePolicyType];
     const existingKeys = new Set(
       allOverrides
-        .filter(o => typesToCheck.includes(o.policy_type) && o.country === resolvedCountry)
-        .map(o => o.permission_key)
+        .filter((o) => typesToCheck.includes(o.policy_type) && o.country === resolvedCountry)
+        .map((o) => o.permission_key)
     );
-    return permissions.filter(p => !existingKeys.has(p.permission_key));
+
+    return permissions.filter((p) => !existingKeys.has(p.permission_key));
   }, [permissions, allOverrides, newOverridePolicyType, newOverrideCountry]);
 
   const handleAddOverride = () => {
     if (!newOverridePermKey || !role) return;
+
+    clearSaveResult();
+
     const resolvedCountry = newOverrideCountry === '__GLOBAL__' ? null : newOverrideCountry;
-    
-    // "ALL" creates paired COCO + FOFO overrides
     const typesToCreate = newOverridePolicyType === 'ALL' ? ['COCO', 'FOFO'] : [newOverridePolicyType];
-    
-    for (const policyType of typesToCreate) {
-      const tempId = `new_${Date.now()}_${policyType}_${Math.random()}`;
-      setPendingNewOverrides(prev => [...prev, {
-        id: tempId,
-        policy_type: policyType,
-        permission_key: newOverridePermKey,
-        enabled: newOverrideEnabled,
-        country: resolvedCountry,
-      }]);
-    }
+
+    const timestamp = Date.now();
+    const newEntries = typesToCreate.map((policyType, index) => ({
+      id: `new_${timestamp}_${policyType}_${index}`,
+      policy_type: policyType,
+      permission_key: newOverridePermKey,
+      enabled: newOverrideEnabled,
+      country: resolvedCountry,
+    }));
+
+    setPendingNewOverrides((prev) => [...prev, ...newEntries]);
     setShowAddOverride(false);
     setNewOverridePermKey('');
     setNewOverrideEnabled(false);
@@ -275,11 +309,13 @@ export default function RoleDetailPage() {
   };
 
   const handleDeleteOverride = (id: string) => {
-    const isPending = pendingNewOverrides.some(o => o.id === id);
+    clearSaveResult();
+
+    const isPending = pendingNewOverrides.some((o) => o.id === id);
     if (isPending) {
-      setPendingNewOverrides(prev => prev.filter(o => o.id !== id));
+      setPendingNewOverrides((prev) => prev.filter((o) => o.id !== id));
     } else {
-      setPendingDeleteIds(prev => new Set(prev).add(id));
+      setPendingDeleteIds((prev) => new Set(prev).add(id));
     }
     setDeletingOverrideId(null);
   };
@@ -292,6 +328,7 @@ export default function RoleDetailPage() {
 
   const changedItems = useMemo(() => {
     const items: { label: string; from: string; to: string }[] = [];
+
     permissions.forEach((p) => {
       if (originalPerms[p.id] !== p.enabled) {
         items.push({
@@ -301,6 +338,7 @@ export default function RoleDetailPage() {
         });
       }
     });
+
     overrides.forEach((o) => {
       const countryTag = o.country ? ` [${o.country}]` : ' [Global]';
       if (pendingDeleteIds.has(o.id)) {
@@ -319,6 +357,7 @@ export default function RoleDetailPage() {
         });
       }
     });
+
     pendingNewOverrides.forEach((o) => {
       const countryTag = o.country ? ` [${o.country}]` : ' [Global]';
       const perm = permissions.find((p) => p.permission_key === o.permission_key);
@@ -328,78 +367,139 @@ export default function RoleDetailPage() {
         to: o.enabled ? 'Enabled' : 'Disabled',
       });
     });
+
     return items;
   }, [permissions, overrides, originalPerms, originalOverrides, pendingDeleteIds, pendingNewOverrides]);
 
+  const runOperations = async (
+    operations: Array<{ label: string; execute: () => Promise<{ error: any }> }>
+  ) => {
+    const results = await Promise.all(
+      operations.map(async (operation) => {
+        const { error } = await operation.execute();
+        return {
+          label: operation.label,
+          error,
+        };
+      })
+    );
+
+    return results
+      .filter((result) => result.error)
+      .map((result) => `${result.label}: ${result.error.message}`);
+  };
+
   const handleSave = async () => {
-    setShowConfirm(false);
+    if (!hasChanges || saving) return;
+
     setSaving(true);
+    setSaveResult(null);
+
+    const saveCount = changedItems.length;
+
     try {
-      const errors: string[] = [];
-
-      // Update changed permissions
       const changedPerms = permissions.filter((p) => originalPerms[p.id] !== p.enabled);
-      for (const p of changedPerms) {
-        const { error } = await supabase.from('rbac_permissions').update({ enabled: p.enabled }).eq('id', p.id);
-        if (error) errors.push(`Permission ${p.permission_key}: ${error.message}`);
-      }
-
-      // Update changed overrides
       const changedOvs = overrides.filter((o) => !pendingDeleteIds.has(o.id) && originalOverrides[o.id] !== o.enabled);
-      for (const o of changedOvs) {
-        const { error } = await supabase.from('rbac_policy_overrides').update({ enabled: o.enabled }).eq('id', o.id);
-        if (error) errors.push(`Override ${o.permission_key}: ${error.message}`);
-      }
 
-      // Delete overrides
-      for (const id of pendingDeleteIds) {
-        const { error } = await supabase.from('rbac_policy_overrides').delete().eq('id', id);
-        if (error) errors.push(`Delete override: ${error.message}`);
-      }
+      const coreOperations: Array<{ label: string; execute: () => Promise<{ error: any }> }> = [
+        ...changedPerms.map((permission) => ({
+          label: `Permission ${permission.permission_key}`,
+          execute: () => supabase.from('rbac_permissions').update({ enabled: permission.enabled }).eq('id', permission.id),
+        })),
+        ...changedOvs.map((override) => ({
+          label: `Override ${override.policy_type} ${override.permission_key}${override.country ? ` [${override.country}]` : ''}`,
+          execute: () => supabase.from('rbac_policy_overrides').update({ enabled: override.enabled }).eq('id', override.id),
+        })),
+        ...Array.from(pendingDeleteIds).map((id) => ({
+          label: `Delete override ${id}`,
+          execute: () => supabase.from('rbac_policy_overrides').delete().eq('id', id),
+        })),
+        ...pendingNewOverrides.map((override) => ({
+          label: `New override ${override.policy_type} ${override.permission_key}${override.country ? ` [${override.country}]` : ''}`,
+          execute: () =>
+            supabase.from('rbac_policy_overrides').insert({
+              role_id: role?.id,
+              policy_type: override.policy_type as any,
+              permission_key: override.permission_key,
+              enabled: override.enabled,
+              country: override.country,
+            } as any),
+        })),
+      ];
 
-      // Insert new overrides
-      if (role) {
-        for (const o of pendingNewOverrides) {
-          const { error } = await supabase.from('rbac_policy_overrides').insert({
-            role_id: role.id,
-            policy_type: o.policy_type as any,
-            permission_key: o.permission_key,
-            enabled: o.enabled,
-            country: o.country,
-          } as any);
-          if (error) errors.push(`New override ${o.policy_type} ${o.permission_key}: ${error.message}`);
-        }
-      }
+      const coreErrors = await runOperations(coreOperations);
 
-      if (errors.length > 0) {
-        console.error('[RBAC Save] Errors:', errors);
-        toast.error(`Failed to save: ${errors[0]}`);
-        await loadData();
+      if (coreErrors.length > 0) {
+        console.error('[RBAC Save] Core save errors:', coreErrors);
+        const reloadResult = await loadData();
+        const message = reloadResult.ok
+          ? `Save failed. Showing actual saved state. ${coreErrors[0]}`
+          : `Save failed. ${coreErrors[0]}`;
+
+        setSaveResult({ status: 'error', message });
+        toast.error(message);
         return;
       }
 
-      // Audit log
+      const postSaveOperations: Array<{ label: string; execute: () => Promise<{ error: any }> }> = [];
+
       if (role && profile) {
-        for (const item of changedItems) {
-          await supabase.from('rbac_audit_log').insert({
-            actor_user_id: profile.user_id,
-            action: 'permission_change',
-            target_role: role.role_key,
-            changed_field: item.label,
-            old_value: item.from,
-            new_value: item.to,
-          });
-        }
+        postSaveOperations.push(
+          ...changedItems.map((item) => ({
+            label: `Audit ${item.label}`,
+            execute: () =>
+              supabase.from('rbac_audit_log').insert({
+                actor_user_id: profile.user_id,
+                action: 'permission_change',
+                target_role: role.role_key,
+                changed_field: item.label,
+                old_value: item.from,
+                new_value: item.to,
+              }),
+          }))
+        );
       }
 
-      // Bump RBAC permission version to invalidate caches
-      await supabase.from('system_settings').update({ value: String(Date.now()), updated_at: new Date().toISOString() }).eq('key', 'RBAC_PERMISSION_VERSION');
+      postSaveOperations.push({
+        label: 'RBAC cache refresh',
+        execute: () =>
+          supabase
+            .from('system_settings')
+            .update({ value: String(Date.now()), updated_at: new Date().toISOString() })
+            .eq('key', 'RBAC_PERMISSION_VERSION'),
+      });
 
-      toast.success(`Saved ${changedItems.length} change${changedItems.length !== 1 ? 's' : ''}`);
-      await loadData();
+      const postSaveErrors = await runOperations(postSaveOperations);
+      const reloadResult = await loadData();
+
+      if (!reloadResult.ok) {
+        const message = 'Changes were saved, but the page could not refresh with the latest backend state.';
+        setSaveResult({ status: 'error', message });
+        toast.error(message);
+        return;
+      }
+
+      if (postSaveErrors.length > 0) {
+        console.error('[RBAC Save] Post-save errors:', postSaveErrors);
+        const message = `Saved ${saveCount} change${saveCount !== 1 ? 's' : ''}, but some follow-up sync failed. ${postSaveErrors[0]}`;
+        setSaveResult({ status: 'success', message });
+        toast.success(`Saved ${saveCount} change${saveCount !== 1 ? 's' : ''}`);
+        return;
+      }
+
+      const message = `Saved ${saveCount} change${saveCount !== 1 ? 's' : ''} successfully.`;
+      setSaveResult({ status: 'success', message });
+      toast.success(message);
     } catch (err: any) {
       console.error('[RBAC Save] Exception:', err);
-      toast.error(err?.message || 'Failed to save');
+      const reloadResult = await loadData();
+      const baseMessage = err?.message || 'Failed to save changes';
+      const message = reloadResult.ok
+        ? `Save failed. Showing actual saved state. ${baseMessage}`
+        : baseMessage;
+
+      setSaveResult({ status: 'error', message });
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -483,6 +583,39 @@ export default function RoleDetailPage() {
           </CardContent>
         </Card>
 
+        {(hasChanges || saveResult) && (
+          <Card>
+            <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant={hasChanges ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
+                    {hasChanges
+                      ? `${changedItems.length} unsaved`
+                      : saveResult?.status === 'success'
+                        ? 'Saved'
+                        : 'Save failed'}
+                  </Badge>
+                  <p className="text-sm font-medium">
+                    {hasChanges ? 'Unsaved role changes detected' : 'Latest save status'}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {hasChanges
+                    ? 'Changes stay local on this page until you click Save.'
+                    : saveResult?.message}
+                </p>
+              </div>
+
+              {hasChanges && (
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Permission Groups */}
         <Card>
           <CardHeader className="pb-2 px-4 pt-4">
@@ -550,10 +683,9 @@ export default function RoleDetailPage() {
                     <div key={o.id} className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">{o.policy_type}</Badge>
-                        {o.country && (
+                        {o.country ? (
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{o.country}</Badge>
-                        )}
-                        {!o.country && (
+                        ) : (
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 opacity-50">Global</Badge>
                         )}
                         <span className="text-xs truncate">{perm?.display_label || o.permission_key}</span>
@@ -580,19 +712,6 @@ export default function RoleDetailPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Sticky Save Bar */}
-      {hasChanges && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-3 flex items-center justify-between z-50">
-          <span className="text-xs text-muted-foreground">
-            {changedItems.length} unsaved change{changedItems.length !== 1 ? 's' : ''}
-          </span>
-          <Button size="sm" onClick={() => setShowConfirm(true)} disabled={saving}>
-            <Save className="h-4 w-4 mr-1" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-      )}
 
       {/* Add Override Dialog */}
       <Dialog open={showAddOverride} onOpenChange={setShowAddOverride}>
@@ -621,8 +740,8 @@ export default function RoleDetailPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__GLOBAL__">All Countries (Global)</SelectItem>
-                  {countries.map(c => (
-                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                  {countries.map((country) => (
+                    <SelectItem key={country.name} value={country.name}>{country.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -635,9 +754,9 @@ export default function RoleDetailPage() {
               <Select value={newOverridePermKey} onValueChange={setNewOverridePermKey}>
                 <SelectTrigger><SelectValue placeholder="Select permission" /></SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {availablePermKeysForOverride.map(p => (
-                    <SelectItem key={p.permission_key} value={p.permission_key}>
-                      {p.display_label}
+                  {availablePermKeysForOverride.map((permission) => (
+                    <SelectItem key={permission.permission_key} value={permission.permission_key}>
+                      {permission.display_label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -671,34 +790,6 @@ export default function RoleDetailPage() {
             <AlertDialogAction onClick={() => deletingOverrideId && handleDeleteOverride(deletingOverrideId)}>
               Delete
             </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Role: {role.display_name}</p>
-                <div className="max-h-48 overflow-y-auto space-y-1.5">
-                  {changedItems.map((item, i) => (
-                    <div key={i} className="text-xs flex items-center gap-2 py-1 border-b last:border-0">
-                      <span className="flex-1">{item.label}</span>
-                      <Badge variant="outline" className="text-[10px] line-through">{item.from}</Badge>
-                      <span>→</span>
-                      <Badge variant={item.to === 'Enabled' ? 'default' : 'secondary'} className="text-[10px]">{item.to}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSave}>Confirm & Save</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
