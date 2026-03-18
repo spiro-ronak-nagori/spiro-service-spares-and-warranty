@@ -440,7 +440,7 @@ export default function RoleDetailPage() {
         return;
       }
 
-      const postSaveOperations: Array<{ label: string; execute: () => Promise<{ error: any }> }> = [];
+      const postSaveOperations: Array<{ label: string; execute: () => any }> = [];
 
       if (role && profile) {
         postSaveOperations.push(
@@ -467,7 +467,6 @@ export default function RoleDetailPage() {
             .update({ value: String(Date.now()), updated_at: new Date().toISOString() })
             .eq('key', 'RBAC_PERMISSION_VERSION'),
       });
-
       const postSaveErrors = await runOperations(postSaveOperations);
       const reloadResult = await loadData();
 
