@@ -372,14 +372,14 @@ export default function RoleDetailPage() {
   }, [permissions, overrides, originalPerms, originalOverrides, pendingDeleteIds, pendingNewOverrides]);
 
   const runOperations = async (
-    operations: Array<{ label: string; execute: () => Promise<{ error: any }> }>
+    operations: Array<{ label: string; execute: () => any }>
   ) => {
     const results = await Promise.all(
       operations.map(async (operation) => {
-        const { error } = await operation.execute();
+        const response = await operation.execute();
         return {
           label: operation.label,
-          error,
+          error: response?.error ?? null,
         };
       })
     );
@@ -401,7 +401,7 @@ export default function RoleDetailPage() {
       const changedPerms = permissions.filter((p) => originalPerms[p.id] !== p.enabled);
       const changedOvs = overrides.filter((o) => !pendingDeleteIds.has(o.id) && originalOverrides[o.id] !== o.enabled);
 
-      const coreOperations: Array<{ label: string; execute: () => Promise<{ error: any }> }> = [
+      const coreOperations: Array<{ label: string; execute: () => any }> = [
         ...changedPerms.map((permission) => ({
           label: `Permission ${permission.permission_key}`,
           execute: () => supabase.from('rbac_permissions').update({ enabled: permission.enabled }).eq('id', permission.id),
@@ -426,7 +426,6 @@ export default function RoleDetailPage() {
             } as any),
         })),
       ];
-
       const coreErrors = await runOperations(coreOperations);
 
       if (coreErrors.length > 0) {
