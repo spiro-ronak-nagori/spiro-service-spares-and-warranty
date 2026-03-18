@@ -410,9 +410,10 @@ interface JobCardListItemProps {
   jobCard: JobCard;
   onClick: () => void;
   showWorkshop?: boolean;
+  showApprovalPill?: boolean;
 }
 
-function JobCardListItem({ jobCard, onClick, showWorkshop }: JobCardListItemProps) {
+function JobCardListItem({ jobCard, onClick, showWorkshop, showApprovalPill }: JobCardListItemProps) {
   const vehicle = jobCard.vehicle;
   const timeAgo = formatDistanceToNow(new Date(jobCard.updated_at), { addSuffix: true });
   const workshopName = (jobCard as any).workshop?.name;
