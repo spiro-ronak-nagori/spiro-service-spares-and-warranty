@@ -358,6 +358,7 @@ export default function JobCardListPage() {
                       jobCard={jc}
                       onClick={() => navigate(`/job-card/${jc.id}`)}
                       showWorkshop={isElevatedAdmin}
+                      showApprovalPill={canApproveSpares && pendingApprovalJcIds.has(jc.id)}
                     />
                   ))}
                   
