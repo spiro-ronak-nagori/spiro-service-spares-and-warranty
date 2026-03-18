@@ -69,7 +69,7 @@ const editLineFromSpare = (spare: JobCardSpare): SpareLineInput => ({
 export function SparesModal({
   open, onOpenChange, jobCardId, profileId,
   vehicleModel, vehicleColorCode, warrantyEnabled, onSaved,
-  editingSpare,
+  editingSpare, canApproveSpares = false,
 }: SparesModalProps) {
   const { parts, isLoading: partsLoading, warnings } = useApplicableSpareParts(vehicleModel, vehicleColorCode);
   const [lines, setLines] = useState<SpareLineInput[]>([emptyLine()]);
