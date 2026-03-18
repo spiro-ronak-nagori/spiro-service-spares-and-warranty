@@ -307,6 +307,17 @@ function SpareItem({
   const statusText = getStatusText(spare, warrantyEnabled);
   const partName = spare.spare_part?.part_name || 'Unknown Part';
   const partCode = spare.spare_part?.part_code;
+  const usageState = spare.usage_approval_state || 'APPROVED'; // backwards compat
+
+  const usagePill = usageState === 'PENDING' ? (
+    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 mt-1 mr-1">
+      Approval Pending
+    </span>
+  ) : usageState === 'REJECTED' ? (
+    <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive mt-1 mr-1">
+      Rejected
+    </span>
+  ) : null;
 
   return (
     <div className="py-1">
@@ -320,12 +331,20 @@ function SpareItem({
             {partName}
             {partCode && <span className="text-muted-foreground font-normal ml-1.5">({partCode})</span>}
           </p>
-          {statusText && (
-            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive mt-1">
-              {statusText}
-            </span>
-          )}
-          <p className="text-xs text-muted-foreground mt-0.5">Qty: {spare.qty}</p>
+          <div className="flex flex-wrap items-center gap-0.5">
+            {usagePill}
+            {statusText && (
+              <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive mt-1">
+                {statusText}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Qty: {spare.qty}
+            {spare.usage_approved_qty && spare.usage_approved_qty !== spare.qty && (
+              <span className="ml-1 text-primary">(approved: {spare.usage_approved_qty})</span>
+            )}
+          </p>
         </div>
         <div className="shrink-0 text-muted-foreground/80">
           <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
