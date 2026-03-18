@@ -225,6 +225,28 @@ export function CompleteWorkDialog({
             </div>
           )}
 
+          {/* Usage Approval Pending Warning */}
+          {sparesBlocker && sparesBlocker.usageApprovalBlockers.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <Package className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-medium text-amber-800">
+                    Waiting for spares usage approval
+                  </p>
+                  <ul className="space-y-1">
+                    {sparesBlocker.usageApprovalBlockers.map((msg, i) => (
+                      <li key={i} className="text-xs text-amber-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        {msg}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Incomplete Documentation Warning */}
           {sparesBlocker && sparesBlocker.docBlockers.length > 0 && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-2">
