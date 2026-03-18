@@ -660,6 +660,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                       expandedId={expandedSpareId}
                       onToggleExpand={handleToggleSpare}
                       canEdit={canEdit}
+                      canApproveSpares={canApproveSpares}
                       warrantyEnabled={warrantyEnabled}
                       onSubmitWarranty={onSubmitWarranty}
                       onWithdrawSpare={onWithdrawSpare}
@@ -667,6 +668,7 @@ export function SparesUsedSection({ spares, isLoading, onAddSpares, onEditSpare,
                       onConvertToUserPaid={onConvertToUserPaid}
                       onEditSpare={onEditSpare}
                       onDeleteSpare={onDeleteSpare}
+                      onUsageApprovalAction={onUsageApprovalAction}
                     />
                   </div>
                 ))}

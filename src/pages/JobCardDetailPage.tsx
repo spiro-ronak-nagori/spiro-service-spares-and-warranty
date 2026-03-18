@@ -1246,7 +1246,8 @@ export default function JobCardDetailPage() {
         vehicleColorCode={(jobCard.vehicle as any)?.color_code}
         warrantyEnabled={warrantyEnabled}
         onSaved={handleSparesModalSaved}
-        editingSpare={editingSpare} />
+        editingSpare={editingSpare}
+        canApproveSpares={can('spares.approve')} />
 
       }
 
