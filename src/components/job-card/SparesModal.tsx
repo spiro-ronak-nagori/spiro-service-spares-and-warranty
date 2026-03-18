@@ -39,6 +39,7 @@ interface SparesModalProps {
   warrantyEnabled: boolean;
   onSaved: () => void;
   editingSpare?: JobCardSpare | null;
+  canApproveSpares?: boolean;
 }
 
 const emptyLine = (): SpareLineInput => ({
