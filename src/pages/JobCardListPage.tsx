@@ -31,7 +31,8 @@ const TAB_STATUSES: Record<TabValue, JobCardStatus[]> = {
 export default function JobCardListPage() {
   const navigate = useNavigate();
   const { workshop, profile } = useAuth();
-
+  const { can } = useRbacPermissions();
+  const canApproveSpares = can('spares.approve');
 
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'system_admin';
   const isCountryAdmin = profile?.role === 'country_admin';
