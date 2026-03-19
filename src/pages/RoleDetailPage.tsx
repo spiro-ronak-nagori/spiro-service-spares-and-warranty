@@ -581,35 +581,13 @@ export default function RoleDetailPage() {
           </CardContent>
         </Card>
 
-        {(hasChanges || saveResult) && (
-          <Card>
-            <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Badge variant={hasChanges ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
-                    {hasChanges
-                      ? `${changedItems.length} unsaved`
-                      : saveResult?.status === 'success'
-                        ? 'Saved'
-                        : 'Save failed'}
-                  </Badge>
-                  <p className="text-sm font-medium">
-                    {hasChanges ? 'Unsaved role changes detected' : 'Latest save status'}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {hasChanges
-                    ? 'Changes stay local on this page until you click Save.'
-                    : saveResult?.message}
-                </p>
-              </div>
-
-              {hasChanges && (
-                <Button size="sm" onClick={handleSave} disabled={saving}>
-                  <Save className="h-4 w-4 mr-1" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              )}
+        {saveResult && !hasChanges && (
+          <Card className={saveResult.status === 'error' ? 'border-destructive' : 'border-green-500'}>
+            <CardContent className="p-3 flex items-center gap-2">
+              <Badge variant={saveResult.status === 'success' ? 'secondary' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                {saveResult.status === 'success' ? 'Saved' : 'Failed'}
+              </Badge>
+              <p className="text-xs text-muted-foreground">{saveResult.message}</p>
             </CardContent>
           </Card>
         )}
@@ -710,6 +688,26 @@ export default function RoleDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sticky bottom save bar */}
+      {hasChanges && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 shadow-lg">
+          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                {changedItems.length} unsaved
+              </Badge>
+              <p className="text-xs text-muted-foreground truncate">
+                Changes stay local until you save
+              </p>
+            </div>
+            <Button size="sm" onClick={handleSave} disabled={saving} className="shrink-0">
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add Override Dialog */}
       <Dialog open={showAddOverride} onOpenChange={setShowAddOverride}>
