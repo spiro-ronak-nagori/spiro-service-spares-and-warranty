@@ -689,6 +689,26 @@ export default function RoleDetailPage() {
         </Card>
       </div>
 
+      {/* Sticky bottom save bar */}
+      {hasChanges && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 shadow-lg">
+          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                {changedItems.length} unsaved
+              </Badge>
+              <p className="text-xs text-muted-foreground truncate">
+                Changes stay local until you save
+              </p>
+            </div>
+            <Button size="sm" onClick={handleSave} disabled={saving} className="shrink-0">
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Add Override Dialog */}
       <Dialog open={showAddOverride} onOpenChange={setShowAddOverride}>
         <DialogContent className="max-w-sm">
