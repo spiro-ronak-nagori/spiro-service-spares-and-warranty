@@ -534,7 +534,7 @@ export default function RoleDetailPage() {
   return (
     <AppLayout>
       <PageHeader title={role.display_name} showBack backTo="/console/roles" />
-      <div className="p-4 space-y-4 pb-24">
+      <div className={`p-4 space-y-4 ${hasChanges ? 'pb-44' : 'pb-24'}`}>
         {/* Role Overview */}
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -582,7 +582,7 @@ export default function RoleDetailPage() {
         </Card>
 
         {saveResult && !hasChanges && (
-          <Card className={saveResult.status === 'error' ? 'border-destructive' : 'border-green-500'}>
+          <Card className={saveResult.status === 'error' ? 'border-destructive' : ''}>
             <CardContent className="p-3 flex items-center gap-2">
               <Badge variant={saveResult.status === 'success' ? 'secondary' : 'destructive'} className="text-[10px] px-1.5 py-0">
                 {saveResult.status === 'success' ? 'Saved' : 'Failed'}
@@ -691,8 +691,8 @@ export default function RoleDetailPage() {
 
       {/* Sticky bottom save bar */}
       {hasChanges && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 shadow-lg">
-          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+        <div className="fixed bottom-20 left-0 right-0 z-[60] px-4 py-3">
+          <div className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <div className="flex items-center gap-2 min-w-0">
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
                 {changedItems.length} unsaved
