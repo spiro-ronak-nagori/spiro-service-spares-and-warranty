@@ -487,6 +487,7 @@ export default function JobCardDetailPage() {
         const msg = error.message || '';
         if (msg.includes('CHECKLIST_REQUIRED')) {
           toast.error('Please complete the vehicle checklist before starting work.');
+          setShowChecklist(true);
         } else if (msg.includes('INVALID_TRANSITION')) {
           toast.error('This status change is not allowed from the current state.');
         } else if (msg.includes('UNAUTHORIZED')) {
